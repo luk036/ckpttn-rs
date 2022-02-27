@@ -1,0 +1,185 @@
+#include <cassert>                 // for assert
+#include <ckpttn/FMConstrMgr.hpp>  // for LegalCheck, LegalCheck::notsat...
+#include <ckpttn/PartMgrBase.hpp>  // for PartMgrBase, part, SimpleNetlist
+#include <ckpttn/moveinfo.hpp>     // for MoveInfoV
+#include <cstdint>                 // for u8
+#include <gsl/span>                // for span
+#include <py2cpp/range.hpp>        // for _iterator
+#include <py2cpp/set.hpp>          // for set
+#include <tuple>                   // for tuple_element<>::type
+#include <tuple>                   // for get
+#include <Vec>                  // for Vec
+
+// using node_t = typename SimpleNetlist::node_t;
+// using namespace std;
+
+/**
+ * @brief
+ *
+ * @tparam Gnl
+ * @tparam GainMgr
+ * @tparam ConstrMgr
+ * @param[in] part
+ */
+template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+void PartMgrBase<Gnl, GainMgr, ConstrMgr>::init(gsl::span<u8> part) {
+    self.totalcost = self.gainMgr.init(part);
+    self.validator.init(part);
+}
+
+/**
+ * @brief
+ *
+ * @tparam Gnl
+ * @tparam GainMgr
+ * @tparam ConstrMgr
+ * @param[in] part
+ * @return LegalCheck
+ */
+template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+pub fn PartMgrBase<Gnl, GainMgr, ConstrMgr>::legalize(gsl::span<u8> part) -> LegalCheck {
+    self.init(part);
+
+    // Zero-weighted modules does not contribute legalization
+    for v in self.H.iter() {
+        if (self.H.get_module_weight(v) != 0U) {
+            continue;
+        }
+        if (!self.H.module_fixed.contains(v)) {
+            continue;
+        }
+        self.gainMgr.lock_all(part[v], v);
+    }
+
+    let mut legalcheck = LegalCheck::notsatisfied;
+    while legalcheck != LegalCheck::allsatisfied {
+        let toPart = self.validator.select_togo();
+        if (self.gainMgr.is_empty_togo(toPart)) {
+            break;
+        }
+        let rslt = self.gainMgr.select_togo(toPart);
+        let mut v = std::get<0>(rslt);
+        let mut gainmax = std::get<1>(rslt);
+        let fromPart = part[v];
+        // assert!(v == v);
+        assert!(fromPart != toPart);
+        let move_info_v = MoveInfoV<typename Gnl::node_t>{v, fromPart, toPart};
+        // Check if the move of v can notsatisfied, makebetter, or satisfied
+        legalcheck = self.validator.check_legal(move_info_v);
+        if legalcheck == LegalCheck::notsatisfied {  // notsatisfied
+            continue;
+        }
+        // Update v and its neigbours (even they are in waitinglist);
+        // Put neigbours to bucket
+        self.gainMgr.update_move(part, move_info_v);
+        self.gainMgr.update_move_v(move_info_v, gainmax);
+        self.validator.update_move(move_info_v);
+        part[v] = toPart;
+        // totalgain += gainmax;
+        self.totalcost -= gainmax;
+        assert!(self.totalcost >= 0);
+    }
+    return legalcheck;
+}
+
+/**
+ * @brief
+ *
+ * @tparam Gnl
+ * @tparam GainMgr
+ * @tparam ConstrMgr
+ * @param[in] part
+ */
+template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+void PartMgrBase<Gnl, GainMgr, ConstrMgr>::_optimize_1pass(gsl::span<u8> part) {
+    // using SS_t = decltype(self.take_snapshot(part));
+    using SS_t = Vec<u8>;
+
+    let mut snapshot = SS_t{};
+    let mut totalgain = 0;
+    let mut deferredsnapshot = false;
+    let mut besttotalgain = 0;
+
+    while (!self.gainMgr.is_empty()) {
+        // Take the gainmax with v from gainbucket
+        // let mut [move_info_v, gainmax] = self.gainMgr.select(part);
+        let mut result = self.gainMgr.select(part);
+        let mut move_info_v = std::get<0>(result);
+        let mut gainmax = std::get<1>(result);
+
+        // Check if the move of v can satisfied or notsatisfied
+        let satisfiedOK = self.validator.check_constraints(move_info_v);
+        if !satisfiedOK {
+            continue;
+        }
+        if gainmax < 0 {
+            // become down turn
+            if !deferredsnapshot || totalgain > besttotalgain {
+                // Take a snapshot before move
+                // snapshot = part;
+                snapshot = self.take_snapshot(part);
+                besttotalgain = totalgain;
+            }
+            deferredsnapshot = true;
+        } else if totalgain + gainmax >= besttotalgain {
+            besttotalgain = totalgain + gainmax;
+            deferredsnapshot = false;
+        }
+        // Update v and its neigbours (even they are in waitinglist);
+        // Put neigbours to bucket
+        // let & [v, _, toPart] = move_info_v;
+        self.gainMgr.lock(move_info_v.toPart, move_info_v.v);
+        self.gainMgr.update_move(part, move_info_v);
+        self.gainMgr.update_move_v(move_info_v, gainmax);
+        self.validator.update_move(move_info_v);
+        totalgain += gainmax;
+        part[move_info_v.v] = move_info_v.toPart;
+    }
+    if deferredsnapshot {
+        // restore the previous best solution
+        // part = snapshot;
+        self.restore_part(snapshot, part);
+        totalgain = besttotalgain;
+    }
+    self.totalcost -= totalgain;
+}
+
+/**
+ * @brief
+ *
+ * @tparam Gnl
+ * @tparam GainMgr
+ * @tparam ConstrMgr
+ * @tparam Derived
+ * @param[in] part
+ */
+template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+void PartMgrBase<Gnl, GainMgr, ConstrMgr>::optimize(gsl::span<u8> part) {
+    // self.init(part);
+    // let mut totalcostafter = self.totalcost;
+    while true {
+        self.init(part);
+        let mut totalcostbefore = self.totalcost;
+        // assert!(totalcostafter == totalcostbefore);
+        self._optimize_1pass(part);
+        assert!(self.totalcost <= totalcostbefore);
+        if self.totalcost == totalcostbefore {
+            break;
+        }
+        // totalcostafter = self.totalcost;
+    }
+}
+
+#include <ckpttn/FMKWayConstrMgr.hpp>  // for FMKWayConstrMgr
+#include <ckpttn/FMKWayGainMgr.hpp>    // for FMKWayGainMgr
+#include <ckpttn/FMPartMgr.hpp>        // for FMPartMgr
+#include <ckpttn/netlist.hpp>          // for SimpleNetlist, Netlist
+#include <xnetwork/classes/graph.hpp>
+
+template class PartMgrBase<SimpleNetlist, FMKWayGainMgr<SimpleNetlist>,
+                           FMKWayConstrMgr<SimpleNetlist>>;
+
+#include <ckpttn/FMBiConstrMgr.hpp>  // for FMBiConstrMgr
+#include <ckpttn/FMBiGainMgr.hpp>    // for FMBiGainMgr
+
+template class PartMgrBase<SimpleNetlist, FMBiGainMgr<SimpleNetlist>, FMBiConstrMgr<SimpleNetlist>>;
