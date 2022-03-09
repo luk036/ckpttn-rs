@@ -27,11 +27,11 @@
  *
  * @tparam graph_t
  */
-template <typename graph_t> class HierNetlist : public Netlist<graph_t> {
+template <graph_t> class HierNetlist : public Netlist<graph_t> {
   public:
-    using nodeview_t = typename graph_t::nodeview_t;
-    using node_t = typename graph_t::node_t;
-    using index_t = typename nodeview_t::key_type;
+    using nodeview_t = graph_t::nodeview_t;
+    using node_t = graph_t::node_t;
+    using index_t = nodeview_t::key_type;
 
     /* For multi-level algorithms */
     const Netlist<graph_t>* parent;
@@ -76,11 +76,11 @@ template <typename graph_t> class HierNetlist : public Netlist<graph_t> {
     }
 };
 
-template <typename graph_t>
+template <graph_t>
 HierNetlist<graph_t>::HierNetlist(graph_t gr, modules: &nodeview_t, nets: &nodeview_t)
     : Netlist<graph_t>{std::move(gr), modules, nets} {}
 
-// template <typename graph_t>
+// template <graph_t>
 // HierNetlist<graph_t>::HierNetlist(graph_t gr, u32 numModules, u32 numNets)
 //     : Netlist<graph_t> {std::move(gr), py::range<u32>(numModules),
 //           py::range<u32>(numModules, numModules + numNets)}

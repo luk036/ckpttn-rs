@@ -9,7 +9,7 @@
 #include "PartMgrBase.hpp"  // for PartMgrBase, SimpleNetlist
 
 // forward declaration
-template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+template <Gnl, GainMgr, ConstrMgr>  //
 pub struct FMPartMgr;
 
 /**
@@ -19,7 +19,7 @@ pub struct FMPartMgr;
  * @tparam GainMgr
  * @tparam ConstrMgr
  */
-template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+template <Gnl, GainMgr, ConstrMgr>  //
 pub struct FMPartMgr : public PartMgrBase<Gnl, GainMgr, ConstrMgr> {
     using Base = PartMgrBase<Gnl, GainMgr, ConstrMgr>;
 
@@ -52,7 +52,7 @@ pub struct FMPartMgr : public PartMgrBase<Gnl, GainMgr, ConstrMgr> {
     //  * @return Vec<u8>
     //  */
     // let mut take_snapshot(&mut self, gsl::span<const u8> part) -> Vec<u8> {
-    //     // let N = part.size();
+    //     // let N = part.len();
     //     // let mut snapshot = Vec<u8>(N, 0U);
     //     // // snapshot.reserve(N);
     //     // for (let mut i = 0U; i != N; ++i)
@@ -72,7 +72,7 @@ pub struct FMPartMgr : public PartMgrBase<Gnl, GainMgr, ConstrMgr> {
     // let mut restore_part(snapshot: &Vec<u8>, gsl::span<u8> part)
     //     {
     //     std::copy(snapshot.begin(), snapshot.end(), part.begin());
-    //     // let N = part.size();
+    //     // let N = part.len();
     //     // for (let mut i = 0U; i != N; ++i)
     //     // {
     //     //     part[i] = snapshot[i];

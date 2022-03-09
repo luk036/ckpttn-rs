@@ -12,7 +12,7 @@
 // #include <xnetwork/classes/graph.hpp>
 
 // forward declare
-// template <typename graph_t> struct Netlist;
+// template <graph_t> struct Netlist;
 // using SimpleNetlist = Netlist<xnetwork::SimpleGraph>;
 
 enum class LegalCheck;
@@ -43,10 +43,10 @@ enum class LegalCheck;
  *   gr. Ausiello et al., Complexity and Approximation: Combinatorial
  * Optimization Problems and Their Approximability Properties, Section 10.3.2.
  */
-template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+template <Gnl, GainMgr, ConstrMgr>  //
 pub struct PartMgrBase {
   public:
-    using GainCalc_ = typename GainMgr::GainCalc_;
+    using GainCalc_ = GainMgr::GainCalc_;
     using GainMgr_ = GainMgr;
     using ConstrMgr_ = ConstrMgr;
 
@@ -104,7 +104,7 @@ pub struct PartMgrBase {
      *
      * @param[in,out] part
      */
-    pub fn _optimize_1pass(gsl::span<u8> part);
+    fn optimize_1pass(gsl::span<u8> part);
 
     /**
      * @brief
@@ -113,7 +113,7 @@ pub struct PartMgrBase {
      * @return Vec<u8>
      */
     pub fn take_snapshot(&mut self, gsl::span<const u8> part) -> Vec<u8> {
-        // let N = part.size();
+        // let N = part.len();
         // let mut snapshot = Vec<u8>(N, 0U);
         // // snapshot.reserve(N);
         // for (let mut i = 0U; i != N; ++i)
@@ -133,7 +133,7 @@ pub struct PartMgrBase {
     pub fn restore_part(snapshot: &Vec<u8>, gsl::span<u8> part)
         {
         // std::copy(snapshot.begin(), snapshot.end(), part.begin());
-        let N = part.size();
+        let N = part.len();
         for (let mut i = 0U; i != N; ++i) {
             part[i] = snapshot[i];
         }

@@ -12,11 +12,11 @@
 // #include <ckpttn/FMConstrMgr.hpp>   // import LegalCheck
 
 // forward declare
-// template <typename nodeview_t, typename nodemap_t> struct Netlist;
+// template <nodeview_t, nodemap_t> struct Netlist;
 // using RngIter = decltype(py::range(1));
 // using SimpleNetlist = Netlist<RngIter, RngIter>;
 
-// using node_t = typename SimpleNetlist::node_t;
+// using node_t = SimpleNetlist::node_t;
 // extern let mut create_contraction_subgraph(const SimpleNetlist&, const py::set<node_t>&)
 //     -> std::unique_ptr<SimpleHierNetlist>;
 
@@ -61,6 +61,6 @@ pub struct MLPartMgr {
      * @param[in,out] part
      * @return LegalCheck
      */
-    template <typename Gnl, typename PartMgr>
+    template <Gnl, PartMgr>
     pub fn run_FMPartition(&mut self, hgr: &Gnl, gsl::span<u8> part) -> LegalCheck;
 };

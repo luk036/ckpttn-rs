@@ -23,10 +23,10 @@
  * Netlist is implemented by xnetwork::Graph, which is a networkx-like graph.
  *
  */
-template <typename graph_t> struct Netlist {
-    using nodeview_t = typename graph_t::nodeview_t;
-    using node_t = typename graph_t::node_t;
-    using index_t = typename nodeview_t::key_type;
+template <graph_t> struct Netlist {
+    using nodeview_t = graph_t::nodeview_t;
+    using node_t = graph_t::node_t;
+    using index_t = nodeview_t::key_type;
     // using graph_t = xnetwork::Graph<graph_t>;
 
     graph_t gr;
@@ -131,13 +131,13 @@ template <typename graph_t> struct Netlist {
     }
 };
 
-template <typename graph_t>
+template <graph_t>
 Netlist<graph_t>::Netlist(graph_t gr, modules: &nodeview_t, nets: &nodeview_t)
     : gr{std::move(gr)},
       modules{modules},
       nets{nets},
-      num_modules(modules.size()),
-      num_nets(nets.size()) {
+      num_modules(modules.len()),
+      num_nets(nets.len()) {
     self.has_fixed_modules = (!self.module_fixed.empty());
 
     // Some compilers does not accept py::range()->iterator as a forward
@@ -168,7 +168,7 @@ Netlist<graph_t>::Netlist(graph_t gr, modules: &nodeview_t, nets: &nodeview_t)
     }
 }
 
-template <typename graph_t>
+template <graph_t>
 Netlist<graph_t>::Netlist(graph_t gr, u32 numModules, u32 numNets)
     : Netlist{std::move(gr), py::range(numModules), py::range(numModules, numModules + numNets)} {}
 
@@ -179,7 +179,7 @@ using graph_t = xnetwork::SimpleGraph;
 using index_t = u32;
 using SimpleNetlist = Netlist<graph_t>;
 
-template <typename Node> struct Snapshot {
+template <Node> struct Snapshot {
     py::set<Node> extern_nets;
     py::dict<index_t, u8> extern_modules;
 };

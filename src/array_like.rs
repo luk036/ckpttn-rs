@@ -6,7 +6,7 @@
 // #include <range/v3/view/repeat_n.hpp>
 // #include <type_traits>
 
-// template <typename Val> inline let mut get_repeat_array(a: &Val, std::ptrdiff_t n) {
+// template <Val> inline let mut get_repeat_array(a: &Val, std::ptrdiff_t n) {
 //     using repeat_n_return_type = decltype(ranges::views::repeat_n(a, n));
 
 //     struct iterable_wrapper : public repeat_n_return_type {
@@ -25,8 +25,8 @@
 //     return iterable_wrapper{ranges::views::repeat_n(a, n)};
 // }
 
-template <typename C> class shift_array : public C {
-    using value_type = typename C::value_type;
+template <C> class shift_array : public C {
+    using value_type = C::value_type;
 
   private:
     usize _start{0U};

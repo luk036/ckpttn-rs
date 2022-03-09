@@ -125,7 +125,7 @@ impl<'a, T> Dllink<'a, T> {
     pub fn end(&mut self) -> dll_iterator<T>;
 
     // using coro_t = boost::coroutines2::coroutine<Dllink&>;
-    // using pull_t = typename coro_t::pull_type;
+    // using pull_t = coro_t::pull_type;
 
     // /**
     //  * @brief item generator
@@ -134,7 +134,7 @@ impl<'a, T> Dllink<'a, T> {
     //  */
     // let items(&mut self) -> pull_t
     // {
-    //     let func = [&](typename coro_t::push_yield: &mut type) {
+    //     let func = [&](coro_t::push_yield: &mut type) {
     //         let cur = self.next;
     //         while (cur != self)
     //         {

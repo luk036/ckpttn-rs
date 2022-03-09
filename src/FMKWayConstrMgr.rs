@@ -9,15 +9,15 @@
 // #include "moveinfo.hpp"     // for MoveInfo
 
 // forward declare
-template <typename Node> struct MoveInfo;
-template <typename Node> struct MoveInfoV;
+template <Node> struct MoveInfo;
+template <Node> struct MoveInfoV;
 
 /**
  * @brief FM num_parts-Way Partition Constraint Manager
  *
  * @tparam Gnl
  */
-template <typename Gnl> class FMKWayConstrMgr : public FMConstrMgr<Gnl> {
+template <Gnl> class FMKWayConstrMgr : public FMConstrMgr<Gnl> {
   private:
     Vec<i32> illegal;
 
@@ -59,5 +59,5 @@ template <typename Gnl> class FMKWayConstrMgr : public FMConstrMgr<Gnl> {
      * @param[in] move_info_v
      * @return LegalCheck
      */
-    pub fn check_legal(&mut self, move_info_v: &MoveInfoV<typename Gnl::node_t>) -> LegalCheck;
+    pub fn check_legal(&mut self, move_info_v: &MoveInfoV<Gnl::node_t>) -> LegalCheck;
 };

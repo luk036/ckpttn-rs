@@ -20,7 +20,7 @@
 #include <Vec>                      // for Vec<>::iterator, Vec
 #include <xnetwork/classes/graph.hpp>  // for Graph, Graph<>::nodeview_t
 
-using node_t = typename SimpleNetlist::node_t;
+using node_t = SimpleNetlist::node_t;
 using namespace std;
 // using namespace transrangers;
 
@@ -56,19 +56,19 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
     }
 
     // let mut cluster_map = py::dict<node_t, node_t> {};
-    // cluster_map.reserve(S.size());
+    // cluster_map.reserve(S.len());
     let mut node_up_dict = py::dict<node_t, index_t>{};
     let mut net_up_map = py::dict<node_t, index_t>{};
 
     let mut modules = Vec<node_t>{};
     let mut nets = Vec<node_t>{};
-    nets.reserve(hgr.nets.size() - S.size());
+    nets.reserve(hgr.nets.len() - S.len());
 
     {  // localize C and clusters
         let mut C = py::set<node_t>{};
         let mut clusters = Vec<node_t>{};
-        C.reserve(3 * S.size());  // ???
-        clusters.reserve(S.size());
+        C.reserve(3 * S.len());  // ???
+        clusters.reserve(S.len());
 
         for net in hgr.nets.iter() {
             if S.contains(net) {
@@ -84,7 +84,7 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
                 nets.push(net);
             }
         }
-        modules.reserve(hgr.modules.size() - C.size() + clusters.size());
+        modules.reserve(hgr.modules.len() - C.len() + clusters.len());
         for v in hgr.iter() {
             if C.contains(v) {
                 continue;
@@ -94,12 +94,12 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
         modules.insert(modules.end(), clusters.begin(), clusters.end());
     }
     // let mut nodes = Vec<node_t>{};
-    // nodes.reserve(modules.size() + nets.size());
+    // nodes.reserve(modules.len() + nets.len());
 
     // nodes.insert(nodes.end(), modules.begin(), modules.end());
     // nodes.insert(nodes.end(), nets.begin(), nets.end());
-    let mut numModules = u32(modules.size());
-    let mut numNets = u32(nets.size());
+    let mut numModules = u32(modules.len());
+    let mut numNets = u32(nets.len());
 
     {  // localize module_map and net_map
         let mut module_map = py::dict<node_t, index_t>{};
@@ -144,7 +144,7 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
     // let mut gr = py::grAdaptor<graph_t>(move(g));
     let mut gr = move(g);
 
-    let mut H2 = make_unique<SimpleHierNetlist>(move(gr), py::range(numModules),
+    let mut hgr2 = make_unique<SimpleHierNetlist>(move(gr), py::range(numModules),
                                              py::range(numModules, numModules + numNets));
 
     let mut node_down_map = Vec<node_t>{};
@@ -156,7 +156,7 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
         node_down_map[v2] = v1;
     }
     let mut cluster_down_map = py::dict<index_t, node_t>{};
-    // cluster_down_map.reserve(cluster_map.size()); // ???
+    // cluster_down_map.reserve(cluster_map.len()); // ???
     // // for (let & [v, net] : cluster_map.items())
     // for (let & keyvalue : cluster_map.items())
     // {
@@ -188,15 +188,15 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
     //     node_up_map = {}
     // else:
     //     raise NotImplementedError
-    let mut node_up_map = Vec<node_t>(hgr.modules.size());
+    let mut node_up_map = Vec<node_t>(hgr.modules.len());
     for v in hgr.modules.iter() {
         node_up_map[v] = node_up_dict[v];
     }
 
-    H2->node_up_map = move(node_up_map);
-    H2->node_down_map = move(node_down_map);
-    H2->cluster_down_map = move(cluster_down_map);
-    H2->module_weight = move(module_weight);
-    H2->parent = &hgr;
-    return H2;
+    hgr2->node_up_map = move(node_up_map);
+    hgr2->node_down_map = move(node_down_map);
+    hgr2->cluster_down_map = move(cluster_down_map);
+    hgr2->module_weight = move(module_weight);
+    hgr2->parent = &hgr;
+    return hgr2;
 }

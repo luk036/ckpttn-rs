@@ -5,19 +5,19 @@
 
 #include "FMPmrConfig.hpp"
 
-template <typename T> class robin {
+template <T> class Robin {
   private:
-    struct slnode {
-        slnode* next;
+    struct SlNode {
+        SlNode* next;
         T key;
     };
 
-    char StackBuf[FM_MAX_NUM_PARTITIONS * sizeof(slnode)];
+    char stack_buf[FM_MAX_NUM_PARTITIONS * sizeof(SlNode)];
     FMPmr::monotonic_buffer_resource rsrc;
-    FMPmr::Vec<slnode> cycle;
+    FMPmr::Vec<SlNode> cycle;
 
     struct iterator {
-        slnode* cur;
+        SlNode* cur;
         let mut operator!=(&self, other: &iterator) -> bool { return cur != other.cur; }
         let mut operator==(&self, other: &iterator) -> bool { return cur == other.cur; }
         let mut operator++() -> iterator& {
@@ -28,15 +28,15 @@ template <typename T> class robin {
     };
 
     struct iterable_wrapper {
-        robin<T>* rr;
-        T fromPart;
-        let mut begin() { return iterator{rr->cycle[fromPart].next}; }
-        let mut end() { return iterator{&rr->cycle[fromPart]}; }
-        // let mut size(&self) -> usize { return rr->cycle.size() - 1; }
+        Robin<T>* rr;
+        T from_part;
+        let mut begin() { return iterator{rr->cycle[from_part].next}; }
+        let mut end() { return iterator{&rr->cycle[from_part]}; }
+        // let mut size(&self) -> usize { return rr->cycle.len() - 1; }
     };
 
   public:
-    pub fn new(T num_parts) { robin : cycle(num_parts, &rsrc) {
+    pub fn new(T num_parts) { Robin : cycle(num_parts, &rsrc) {
         // num_parts -= 1;
         // for (let mut k = 0U; k != num_parts; ++k)
         // {
@@ -56,5 +56,5 @@ template <typename T> class robin {
         }
     }
 
-    pub fn exclude(T fromPart) { return iterable_wrapper{this, fromPart}; }
+    pub fn exclude(T from_part) { return iterable_wrapper{this, from_part}; }
 };

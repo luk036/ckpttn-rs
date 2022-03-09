@@ -9,7 +9,7 @@
  *
  * @tparam Gnl
  */
-template <typename Gnl> class FMBiConstrMgr : public FMConstrMgr<Gnl> {
+template <Gnl> class FMBiConstrMgr : public FMConstrMgr<Gnl> {
   public:
     /**
      * @brief Construct a new FMBiConstrMgr object

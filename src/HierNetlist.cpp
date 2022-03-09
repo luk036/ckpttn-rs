@@ -6,7 +6,7 @@
 
 using namespace std;
 
-template <typename graph_t>
+template <graph_t>
 void HierNetlist<graph_t>::projection_up(part: &[u8],
                                          part_up: &mut [u8]) const {
     let & hgr = *self.parent;
@@ -15,7 +15,7 @@ void HierNetlist<graph_t>::projection_up(part: &[u8],
     }
 }
 
-template <typename graph_t>
+template <graph_t>
 void HierNetlist<graph_t>::projection_down(part: &[u8],
                                            part_down: &mut [u8]) const {
     let & hgr = *self.parent;
@@ -34,7 +34,7 @@ void HierNetlist<graph_t>::projection_down(part: &[u8],
     //     return;
     // }
     // extern_nets_down.clear();
-    // extern_nets_down.reserve(extern_nets.size());
+    // extern_nets_down.reserve(extern_nets.len());
     // for net in extern_nets.iter() {
     //     extern_nets_down.insert(self.node_down_map[net]);
     // }

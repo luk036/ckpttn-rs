@@ -11,7 +11,7 @@
 #include "ckpttn/netlist.hpp"      // for SimpleNetlist
 // #include <iostream>
 
-using node_t = typename SimpleNetlist::node_t;
+using node_t = SimpleNetlist::node_t;
 extern let mut create_contraction_subgraph(const SimpleNetlist&, const py::set<node_t>&)
     -> std::unique_ptr<SimpleHierNetlist>;
 
@@ -25,10 +25,10 @@ extern let mut create_contraction_subgraph(const SimpleNetlist&, const py::set<n
  * @param[in,out] part
  * @return LegalCheck
  */
-template <typename Gnl, typename PartMgr>
+template <Gnl, PartMgr>
 pub fn MLPartMgr::run_FMPartition(&mut self, hgr: &Gnl, gsl::span<u8> part) -> LegalCheck {
-    using GainMgr = typename PartMgr::GainMgr_;
-    using ConstrMgr = typename PartMgr::ConstrMgr_;
+    using GainMgr = PartMgr::GainMgr_;
+    using ConstrMgr = PartMgr::ConstrMgr_;
 
     let mut legalcheck_fn = [&]() {
         GainMgr gain_mgr(hgr, self.num_parts);
@@ -55,13 +55,13 @@ pub fn MLPartMgr::run_FMPartition(&mut self, hgr: &Gnl, gsl::span<u8> part) -> L
     }
 
     if (hgr.number_of_modules() >= self.limitsize) {  // OK
-        let H2 = create_contraction_subgraph(hgr, py::set<typename Gnl::node_t>{});
-        if (H2->number_of_modules() <= hgr.number_of_modules()) {
-            let mut part2 = Vec<u8>(H2->number_of_modules(), 0);
-            H2->projection_up(part, part2);
-            let mut legalcheck_recur = self.run_FMPartition<Gnl, PartMgr>(*H2, part2);
+        let hgr2 = create_contraction_subgraph(hgr, py::set<Gnl::node_t>{});
+        if (hgr2->number_of_modules() <= hgr.number_of_modules()) {
+            let mut part2 = Vec<u8>(hgr2->number_of_modules(), 0);
+            hgr2->projection_up(part, part2);
+            let mut legalcheck_recur = self.run_FMPartition<Gnl, PartMgr>(*hgr2, part2);
             if legalcheck_recur == LegalCheck::AllStatisfied {
-                H2->projection_down(part2, part);
+                hgr2->projection_down(part2, part);
             }
         }
     }

@@ -10,8 +10,8 @@
 #include "BPQueue.hpp"  // for BPQueue
 #include "dllist.hpp"   // for Dllink
 
-template <typename Node> struct MoveInfo;
-template <typename Node> struct MoveInfoV;
+template <Node> struct MoveInfo;
+template <Node> struct MoveInfoV;
 
 /**
  * @brief
@@ -20,9 +20,9 @@ template <typename Node> struct MoveInfoV;
  * @tparam GainCalc
  * @tparam Derived
  */
-template <typename Gnl, typename GainCalc, class Derived> class FMGainMgr {
+template <Gnl, GainCalc, class Derived> class FMGainMgr {
     self: &mut Derived = *static_cast<Derived*>(this);
-    using node_t = typename Gnl::node_t;
+    using node_t = Gnl::node_t;
     // friend Derived;
     using Item = Dllink<std::pair<node_t, u32>>;
 
@@ -58,12 +58,12 @@ template <typename Gnl, typename GainCalc, class Derived> class FMGainMgr {
     /**
      * @brief
      *
-     * @param[in] toPart
+     * @param[in] to_part
      * @return true
      * @return false
      */
-    pub fn is_empty_togo(&self, u8 toPart) -> bool {
-        return self.gainbucket[toPart].is_empty();
+    pub fn is_empty_togo(&self, u8 to_part) -> bool {
+        return self.gainbucket[to_part].is_empty();
     }
 
     /**
@@ -88,10 +88,10 @@ template <typename Gnl, typename GainCalc, class Derived> class FMGainMgr {
     /**
      * @brief
      *
-     * @param[in] toPart
+     * @param[in] to_part
      * @return std::tuple<node_t, i32>
      */
-    pub fn select_togo(&mut self, u8 toPart) -> std::tuple<node_t, i32>;
+    pub fn select_togo(&mut self, u8 to_part) -> std::tuple<node_t, i32>;
 
     /**
      * @brief
@@ -109,7 +109,7 @@ template <typename Gnl, typename GainCalc, class Derived> class FMGainMgr {
      * @param[in] part
      * @param[in] move_info
      */
-    pub fn _update_move_2pin_net(gsl::span<const u8> part,
+    fn update_move_2pin_net(gsl::span<const u8> part,
                                move_info: &MoveInfo<node_t>) -> void;
 
     /**
@@ -118,7 +118,7 @@ template <typename Gnl, typename GainCalc, class Derived> class FMGainMgr {
      * @param[in] part
      * @param[in] move_info
      */
-    pub fn _update_move_3pin_net(gsl::span<const u8> part,
+    fn update_move_3pin_net(gsl::span<const u8> part,
                                move_info: &MoveInfo<node_t>) -> void;
 
     /**
@@ -127,6 +127,6 @@ template <typename Gnl, typename GainCalc, class Derived> class FMGainMgr {
      * @param[in] part
      * @param[in] move_info
      */
-    pub fn _update_move_general_net(gsl::span<const u8> part,
+    fn update_move_general_net(gsl::span<const u8> part,
                                   move_info: &MoveInfo<node_t>) -> void;
 };

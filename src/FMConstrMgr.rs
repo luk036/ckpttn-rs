@@ -7,8 +7,8 @@
 // #include "moveinfo.hpp"  // for MoveInfo
 
 // forward declare
-template <typename Node> struct MoveInfo;
-template <typename Node> struct MoveInfoV;
+template <Node> struct MoveInfo;
+template <Node> struct MoveInfoV;
 
 /**
  * @brief Check if the move of v can satisfied, GetBetter, or NotStatisfied
@@ -21,7 +21,7 @@ enum class LegalCheck { NotStatisfied, GetBetter, AllStatisfied };
  *
  * @tparam Gnl
  */
-template <typename Gnl> class FMConstrMgr {
+template <Gnl> class FMConstrMgr {
   private:
     hgr: &Gnl
     f64 bal_tol;
@@ -33,7 +33,7 @@ template <typename Gnl> class FMConstrMgr {
     u32 lowerbound{};
     u8 num_parts;
 
-    using node_t = typename Gnl::node_t;
+    using node_t = Gnl::node_t;
 
     /**
      * @brief Construct a new FMConstrMgr object

@@ -11,32 +11,32 @@
 // #include "moveinfo.hpp"  // for MoveInfo
 
 // forward declare
-template <typename Gnl> class FMBiGainMgr;
-template <typename Node> struct MoveInfo;
-template <typename Node> struct MoveInfoV;
+template <Gnl> class FMBiGainMgr;
+template <Node> struct MoveInfo;
+template <Node> struct MoveInfoV;
 
 /**
  * @brief FMBiGainCalc
  *
  * @tparam Gnl
  */
-template <typename Gnl> class FMBiGainCalc {
+template <Gnl> class FMBiGainCalc {
     friend class FMBiGainMgr<Gnl>;
 
   public:
-    using node_t = typename Gnl::node_t;
+    using node_t = Gnl::node_t;
     using Item = Dllink<std::pair<node_t, u32>>;
 
   private:
     hgr: &Gnl
     Vec<Item> vertex_list;
     i32 totalcost{0};
-    u8 StackBuf[8192];  // ???
+    u8 stack_buf[8192];  // ???
     FMPmr::monotonic_buffer_resource rsrc;
 
   public:
-    i32 deltaGainW{};
-    FMPmr::Vec<node_t> IdVec;
+    i32 delta_gain_w{};
+    FMPmr::Vec<node_t> idx_vec;
     bool special_handle_2pin_nets{true};
 
     /**
@@ -45,7 +45,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @param[in] hgr
      */
     pub fn new(hgr: &Gnl, u8 /*num_parts*/) { FMBiGainCalc
-        : hgr{hgr}, vertex_list(hgr.number_of_modules()), rsrc(StackBuf, sizeof StackBuf), IdVec(&rsrc) {
+        : hgr{hgr}, vertex_list(hgr.number_of_modules()), rsrc(stack_buf, sizeof stack_buf), idx_vec(&rsrc) {
         for v in self.hgr.iter() {
             self.vertex_list[v].data = std::make_pair(v, i32(0));
         }
@@ -81,7 +81,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @param v
      * @param net
      */
-    pub fn init_IdVec(v: &node_t, net: &node_t);
+    pub fn init_idx_vec(v: &node_t, net: &node_t);
 
     /**
      * @brief
@@ -131,7 +131,7 @@ template <typename Gnl> class FMBiGainCalc {
     //  * @param[in] weight
     //  * @param[in] w
     //  */
-    // template <typename... Ts> pub fn _modify_gain_va(u32 weight, Ts... w) {
+    // template <typename... Ts> fn modify_gain_va(u32 weight, Ts... w) {
     //     ((self.vertex_list[w].data.second += weight), ...);
     // }
 

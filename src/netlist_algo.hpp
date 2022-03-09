@@ -17,9 +17,9 @@
  * @param[in,out] coverset in: pre-covered vetrices, out: sol'n set
  * @return C1::mapped_type
  */
-template <typename Gnl, typename C1, typename C2>
-pub fn min_vertex_cover(&mut self, hgr: &Gnl, weight: &C1, coverset: &mut C2) -> typename C1::mapped_type {
-    using T = typename C1::mapped_type;
+template <Gnl, C1, C2>
+pub fn min_vertex_cover(&mut self, hgr: &Gnl, weight: &C1, coverset: &mut C2) -> C1::mapped_type {
+    using T = C1::mapped_type;
     let mut in_coverset = [&](let & v) { return coverset.contains(v); };
     let mut total_dual_cost = T(0);
     static_assert!(sizeof total_dual_cost >= 0, "maybe unused");
@@ -61,9 +61,9 @@ pub fn min_vertex_cover(&mut self, hgr: &Gnl, weight: &C1, coverset: &mut C2) ->
  * @param[in,out] dep
  * @return C1::value_type
  */
-template <typename Gnl, typename C1, typename C2>
+template <Gnl, C1, C2>
 pub fn min_maximal_matching(&mut self, hgr: &Gnl, weight: &C1, matchset: &mut C2, dep: &mut C2) ->
-    typename C1::mapped_type {
+    C1::mapped_type {
     let mut cover = [&](let & net) {
         for v in hgr.gr[net].iter() {
             dep.insert(v);
@@ -77,7 +77,7 @@ pub fn min_maximal_matching(&mut self, hgr: &Gnl, weight: &C1, matchset: &mut C2
     //         hgr.gr[net], [&](let & v) { return dep.contains(v); });
     // };
 
-    using T = typename C1::mapped_type;
+    using T = C1::mapped_type;
 
     let mut gap = weight;
     let mut total_dual_cost = T(0);

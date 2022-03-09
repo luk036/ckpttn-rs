@@ -144,7 +144,7 @@ impl<T> Dllink<T> {
  * List iterator. Traverse the list from the first item. Usually it is
  * safe to attach/detach list items during the iterator is active.
  */
-template <typename T> class dll_iterator {
+template <T> class dll_iterator {
   private:
     Dllink<T>* cur; /**< pointer to the current item */
 
@@ -203,7 +203,7 @@ template <typename T> class dll_iterator {
  *
  * @return dll_iterator
  */
-template <typename T> inline pub fn Dllink<T>::begin(&mut self) -> dll_iterator<T> {
+template <T> inline pub fn Dllink<T>::begin(&mut self) -> dll_iterator<T> {
     return dll_iterator<T>{self.next};
 }
 
@@ -212,6 +212,6 @@ template <typename T> inline pub fn Dllink<T>::begin(&mut self) -> dll_iterator<
  *
  * @return dll_iterator
  */
-template <typename T> inline pub fn Dllink<T>::end(&mut self) -> dll_iterator<T> {
+template <T> inline pub fn Dllink<T>::end(&mut self) -> dll_iterator<T> {
     return dll_iterator<T>{this};
 }

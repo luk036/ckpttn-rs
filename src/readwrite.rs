@@ -17,8 +17,8 @@
 
 // using graph_t =
 //     boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS>;
-// using node_t = typename boost::graph_traits<graph_t>::vertex_descriptor;
-// using edge_t = typename boost::graph_traits<graph_t>::edge_iterator;
+// using node_t = boost::graph_traits<graph_t>::vertex_descriptor;
+// using edge_t = boost::graph_traits<graph_t>::edge_iterator;
 
 using namespace std;
 
@@ -149,7 +149,7 @@ pub fn readNetD(&mut self, boost::string_view netDFileName) -> SimpleNetlist {
     }
 
     // using IndexMap =
-    //     typename boost::property_map<graph_t, boost::vertex_index_t>::type;
+    //     boost::property_map<graph_t, boost::vertex_index_t>::type;
     // let mut index = boost::get(boost::vertex_index, g);
     // let mut gr = py::grAdaptor<graph_t>{move(g)};
     let mut hgr = SimpleNetlist{move(g), numModules, numNets};

@@ -17,7 +17,7 @@ using namespace std;
  *
  * @param[in] part
  */
-template <typename Gnl> pub fn FMBiGainMgr<Gnl>::init(&mut self, part: &[u8]) -> i32 {
+template <Gnl> pub fn FMBiGainMgr<Gnl>::init(&mut self, part: &[u8]) -> i32 {
     let mut totalcost = Base::init(part);
     for bckt in self.gainbucket.iter_mut() {
         bckt.clear();
@@ -25,7 +25,7 @@ template <typename Gnl> pub fn FMBiGainMgr<Gnl>::init(&mut self, part: &[u8]) ->
 
     for v in self.hgr.iter() {
         vlink: &mut auto = self.gain_calc.vertex_list[v];
-        // let mut toPart = 1 - part[v];
+        // let mut to_part = 1 - part[v];
         self.gainbucket[1 - part[v]].append_direct(vlink);
     }
     for v in self.hgr.module_fixed.iter() {

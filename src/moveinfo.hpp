@@ -7,11 +7,11 @@
  *
  * @tparam Node
  */
-template <typename Node> struct MoveInfo {
+template <Node> struct MoveInfo {
     Node net;
     Node v;
-    u8 fromPart;
-    u8 toPart;
+    u8 from_part;
+    u8 to_part;
 };
 
 /**
@@ -19,9 +19,9 @@ template <typename Node> struct MoveInfo {
  *
  * @tparam Node
  */
-template <typename Node> struct MoveInfoV {
+template <Node> struct MoveInfoV {
     Node v;
-    u8 fromPart;
-    u8 toPart;
+    u8 from_part;
+    u8 to_part;
     // node_t v;
 };

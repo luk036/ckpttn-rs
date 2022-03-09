@@ -10,7 +10,7 @@
 #include "ckpttn/BPQueue.hpp"   // for BPQueue
 #include "ckpttn/dllist.hpp"    // for Dllink
 #include "ckpttn/moveinfo.hpp"  // for MoveInfoV
-#include "ckpttn/robin.hpp"     // for robin<>::iterable_wrapper
+#include "ckpttn/robin.hpp"     // for Robin<>::iterable_wrapper
 
 using namespace std;
 
@@ -20,7 +20,7 @@ using namespace std;
  * @param[in] part
  * @return i32
  */
-template <typename Gnl> pub fn FMKWayGainMgr<Gnl>::init(&mut self, part: &[u8]) -> i32 {
+template <Gnl> pub fn FMKWayGainMgr<Gnl>::init(&mut self, part: &[u8]) -> i32 {
     let mut totalcost = Base::init(part);
 
     for bckt in self.gainbucket.iter_mut() {
@@ -28,7 +28,7 @@ template <typename Gnl> pub fn FMKWayGainMgr<Gnl>::init(&mut self, part: &[u8]) 
     }
     for v in self.hgr.iter() {
         let pv = part[v];
-        for (let & k : self.RR.exclude(pv)) {
+        for (let & k : self.rr.exclude(pv)) {
             vlink: &mut auto = self.gain_calc.vertex_list[k][v];
             self.gainbucket[k].append_direct(vlink);
         }
@@ -49,20 +49,20 @@ template <typename Gnl> pub fn FMKWayGainMgr<Gnl>::init(&mut self, part: &[u8]) 
  * @param[in] move_info_v
  * @param[in] gain
  */
-template <typename Gnl>
-void FMKWayGainMgr<Gnl>::update_move_v(move_info_v: &MoveInfoV<typename Gnl::node_t>,
+template <Gnl>
+void FMKWayGainMgr<Gnl>::update_move_v(move_info_v: &MoveInfoV<Gnl::node_t>,
                                        i32 gain) {
-    // let & [v, fromPart, toPart] = move_info_v;
+    // let & [v, from_part, to_part] = move_info_v;
 
     for (let mut k = 0U; k != self.num_parts; ++k) {
-        if move_info_v.fromPart == k || move_info_v.toPart == k {
+        if move_info_v.from_part == k || move_info_v.to_part == k {
             continue;
         }
         self.gainbucket[k].modify_key(self.gain_calc.vertex_list[k][move_info_v.v],
-                                       self.gain_calc.deltaGainV[k]);
+                                       self.gain_calc.delta_gain_v[k]);
     }
-    self._set_key(move_info_v.fromPart, move_info_v.v, -gain);
-    // self._set_key(toPart, v, -2*self.pmax);
+    self._set_key(move_info_v.from_part, move_info_v.v, -gain);
+    // self._set_key(to_part, v, -2*self.pmax);
 }
 
 // instantiation

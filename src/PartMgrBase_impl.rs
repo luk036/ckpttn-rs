@@ -10,7 +10,7 @@
 #include <tuple>                   // for get
 #include <Vec>                  // for Vec
 
-// using node_t = typename SimpleNetlist::node_t;
+// using node_t = SimpleNetlist::node_t;
 // using namespace std;
 
 /**
@@ -21,7 +21,7 @@
  * @tparam ConstrMgr
  * @param[in] part
  */
-template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+template <Gnl, GainMgr, ConstrMgr>  //
 void PartMgrBase<Gnl, GainMgr, ConstrMgr>::init(gsl::span<u8> part) {
     self.totalcost = self.gain_mgr.init(part);
     self.validator.init(part);
@@ -36,7 +36,7 @@ void PartMgrBase<Gnl, GainMgr, ConstrMgr>::init(gsl::span<u8> part) {
  * @param[in] part
  * @return LegalCheck
  */
-template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+template <Gnl, GainMgr, ConstrMgr>  //
 pub fn PartMgrBase<Gnl, GainMgr, ConstrMgr>::legalize(&mut self, gsl::span<u8> part) -> LegalCheck {
     self.init(part);
 
@@ -53,17 +53,17 @@ pub fn PartMgrBase<Gnl, GainMgr, ConstrMgr>::legalize(&mut self, gsl::span<u8> p
 
     let mut legalcheck = LegalCheck::NotStatisfied;
     while legalcheck != LegalCheck::AllStatisfied {
-        let toPart = self.validator.select_togo();
-        if self.gain_mgr.is_empty_togo(toPart) {
+        let to_part = self.validator.select_togo();
+        if self.gain_mgr.is_empty_togo(to_part) {
             break;
         }
-        let rslt = self.gain_mgr.select_togo(toPart);
+        let rslt = self.gain_mgr.select_togo(to_part);
         let mut v = std::get<0>(rslt);
         let mut gainmax = std::get<1>(rslt);
-        let fromPart = part[v];
+        let from_part = part[v];
         // assert!(v == v);
-        assert!(fromPart != toPart);
-        let move_info_v = MoveInfoV<typename Gnl::node_t>{v, fromPart, toPart};
+        assert!(from_part != to_part);
+        let move_info_v = MoveInfoV<Gnl::node_t>{v, from_part, to_part};
         // Check if the move of v can NotStatisfied, makebetter, or satisfied
         legalcheck = self.validator.check_legal(move_info_v);
         if legalcheck == LegalCheck::NotStatisfied {  // NotStatisfied
@@ -74,7 +74,7 @@ pub fn PartMgrBase<Gnl, GainMgr, ConstrMgr>::legalize(&mut self, gsl::span<u8> p
         self.gain_mgr.update_move(part, move_info_v);
         self.gain_mgr.update_move_v(move_info_v, gainmax);
         self.validator.update_move(move_info_v);
-        part[v] = toPart;
+        part[v] = to_part;
         // totalgain += gainmax;
         self.totalcost -= gainmax;
         assert!(self.totalcost >= 0);
@@ -90,7 +90,7 @@ pub fn PartMgrBase<Gnl, GainMgr, ConstrMgr>::legalize(&mut self, gsl::span<u8> p
  * @tparam ConstrMgr
  * @param[in] part
  */
-template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+template <Gnl, GainMgr, ConstrMgr>  //
 void PartMgrBase<Gnl, GainMgr, ConstrMgr>::_optimize_1pass(gsl::span<u8> part) {
     // using SS_t = decltype(self.take_snapshot(part));
     using SS_t = Vec<u8>;
@@ -127,13 +127,13 @@ void PartMgrBase<Gnl, GainMgr, ConstrMgr>::_optimize_1pass(gsl::span<u8> part) {
         }
         // Update v and its neigbours (even they are in waitinglist);
         // Put neigbours to bucket
-        // let & [v, _, toPart] = move_info_v;
-        self.gain_mgr.lock(move_info_v.toPart, move_info_v.v);
+        // let & [v, _, to_part] = move_info_v;
+        self.gain_mgr.lock(move_info_v.to_part, move_info_v.v);
         self.gain_mgr.update_move(part, move_info_v);
         self.gain_mgr.update_move_v(move_info_v, gainmax);
         self.validator.update_move(move_info_v);
         totalgain += gainmax;
-        part[move_info_v.v] = move_info_v.toPart;
+        part[move_info_v.v] = move_info_v.to_part;
     }
     if deferredsnapshot {
         // restore the previous best solution
@@ -153,7 +153,7 @@ void PartMgrBase<Gnl, GainMgr, ConstrMgr>::_optimize_1pass(gsl::span<u8> part) {
  * @tparam Derived
  * @param[in] part
  */
-template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
+template <Gnl, GainMgr, ConstrMgr>  //
 void PartMgrBase<Gnl, GainMgr, ConstrMgr>::optimize(gsl::span<u8> part) {
     // self.init(part);
     // let mut totalcostafter = self.totalcost;

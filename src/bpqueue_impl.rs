@@ -6,7 +6,7 @@
  *
  * @tparam T
  */
-// template <typename T, typename Int, class Container>
+// template <T, Int, class Container>
 // Dllink<std::pair<T, Int>> BPQueue<T, Int, Container>::sentinel {};
 
 template class BPQueue<i32, i32>;

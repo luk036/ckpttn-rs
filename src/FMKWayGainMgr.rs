@@ -6,23 +6,23 @@
 #include "FMKWayGainCalc.hpp"
 
 // forward declare
-template <typename Node> struct MoveInfo;
-template <typename Node> struct MoveInfoV;
+template <Node> struct MoveInfo;
+template <Node> struct MoveInfoV;
 
 /**
  * @brief FMKWayGainMgr
  *
  * @tparam Gnl
  */
-template <typename Gnl> class FMKWayGainMgr
+template <Gnl> class FMKWayGainMgr
     : public FMGainMgr<Gnl, FMKWayGainCalc<Gnl>, FMKWayGainMgr<Gnl>> {
   private:
-    robin<u8> RR;
+    Robin<u8> rr;
 
   public:
     using Base = FMGainMgr<Gnl, FMKWayGainCalc<Gnl>, FMKWayGainMgr<Gnl>>;
     using GainCalc_ = FMKWayGainCalc<Gnl>;
-    using node_t = typename Gnl::node_t;
+    using node_t = Gnl::node_t;
 
     /**
      * @brief Construct a new FMKWayGainMgr object
@@ -30,7 +30,7 @@ template <typename Gnl> class FMKWayGainMgr
      * @param[in] hgr
      * @param[in] num_parts
      */
-    FMKWayGainMgr(hgr: &Gnl, u8 num_parts) : Base{hgr, num_parts}, RR{num_parts} {}
+    FMKWayGainMgr(hgr: &Gnl, u8 num_parts) : Base{hgr, num_parts}, rr{num_parts} {}
 
     /**
      * @brief
@@ -47,7 +47,7 @@ template <typename Gnl> class FMKWayGainMgr
      * @param[in] keys
      */
     pub fn modify_key(w: &node_t, u8 part_w, gsl::span<const i32> keys) {
-        for (let mut k : self.RR.exclude(part_w)) {
+        for (let mut k : self.rr.exclude(part_w)) {
             self.gainbucket[k].modify_key(self.gain_calc.vertex_list[k][w], keys[k]);
         }
     }
@@ -77,7 +77,7 @@ template <typename Gnl> class FMKWayGainMgr
      *
      * @param[in] v
      */
-    pub fn lock_all(u8 /*fromPart*/, v: &node_t) {
+    pub fn lock_all(u8 /*from_part*/, v: &node_t) {
         // for (let & [vlist, bckt] :
         //     views::zip(self.gain_calc.vertex_list, self.gainbucket))
         let mut bckt_it = self.gainbucket.begin();
@@ -97,7 +97,7 @@ template <typename Gnl> class FMKWayGainMgr
      * @param[in] v
      * @param[in] key
      */
-    pub fn _set_key(u8 whichPart, v: &node_t, i32 key) {
+    fn set_key(u8 whichPart, v: &node_t, i32 key) {
         self.gainbucket[whichPart].set_key(self.gain_calc.vertex_list[whichPart][v], key);
     }
 };

@@ -15,7 +15,7 @@
  *
  * @return u8
  */
-template <typename Gnl> pub fn FMKWayConstrMgr<Gnl>::select_togo(&self) -> u8 {
+template <Gnl> pub fn FMKWayConstrMgr<Gnl>::select_togo(&self) -> u8 {
     let mut it = std::min_element(self.diff.cbegin(), self.diff.cend());
     return gsl::narrow_cast<u8>(std::distance(self.diff.cbegin(), it));
 }
@@ -26,15 +26,15 @@ template <typename Gnl> pub fn FMKWayConstrMgr<Gnl>::select_togo(&self) -> u8 {
  * @param[in] move_info_v
  * @return LegalCheck
  */
-template <typename Gnl>
-pub fn FMKWayConstrMgr<Gnl>::check_legal(move_info_v: &MoveInfoV<typename Gnl::node_t>)
+template <Gnl>
+pub fn FMKWayConstrMgr<Gnl>::check_legal(move_info_v: &MoveInfoV<Gnl::node_t>)
     -> LegalCheck {
     let status = FMConstrMgr<Gnl>::check_legal(move_info_v);
     if status != LegalCheck::AllStatisfied {
         return status;
     }
-    self.illegal[move_info_v.fromPart] = 0;
-    self.illegal[move_info_v.toPart] = 0;
+    self.illegal[move_info_v.from_part] = 0;
+    self.illegal[move_info_v.to_part] = 0;
     for value in self.illegal.iter() {
         if value == 1 {
             return LegalCheck::GetBetter;  // get better, but still illegal

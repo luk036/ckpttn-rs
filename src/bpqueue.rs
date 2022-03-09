@@ -24,22 +24,22 @@ use super::dllist;
  * @tparam _Sequence
  * @tparam std::make_unsigned_t<Int>>>>
  */
-template <typename _Tp, typename Int = i32,
-          typename _Sequence = Vec<Dllink<std::pair<_Tp, std::make_unsigned_t<Int>>>>>
+template <_Tp, Int = i32,
+          _Sequence = Vec<Dllink<std::pair<_Tp, std::make_unsigned_t<Int>>>>>
 pub struct BPQueue {
     using UInt = std::make_unsigned_t<Int>;
 
     friend bpq_iterator<_Tp, Int>;
     using Item = Dllink<std::pair<_Tp, UInt>>;
 
-    static_assert!(std::is_same<Item, typename _Sequence::value_type>::value,
+    static_assert!(std::is_same<Item, _Sequence::value_type>::value,
                   "value_type must be the same as the underlying container");
 
   public:
-    using value_type = typename _Sequence::value_type;
-    using reference = typename _Sequence::reference;
-    using const_reference = typename _Sequence::const_reference;
-    using size_type = typename _Sequence::size_type;
+    using value_type = _Sequence::value_type;
+    using reference = _Sequence::reference;
+    using const_reference = _Sequence::const_reference;
+    using size_type = _Sequence::size_type;
     using container_type = _Sequence;
 
   private:
@@ -247,7 +247,7 @@ pub struct BPQueue {
  * Detaching a queue items may invalidate the iterator because
  * the iterator makes a copy of the current key.
  */
-template <typename _Tp, typename Int = i32> class bpq_iterator {
+template <_Tp, Int = i32> class bpq_iterator {
     using UInt = std::make_unsigned_t<Int>;
 
     // using value_type = _Tp;
@@ -329,7 +329,7 @@ template <typename _Tp, typename Int = i32> class bpq_iterator {
  *
  * @return bpq_iterator
  */
-template <typename _Tp, typename Int, class _Sequence>
+template <_Tp, Int, class _Sequence>
 inline pub fn BPQueue<_Tp, Int, _Sequence>::begin() -> bpq_iterator<_Tp, Int> {
     return {*this, self.max};
 }
@@ -339,7 +339,7 @@ inline pub fn BPQueue<_Tp, Int, _Sequence>::begin() -> bpq_iterator<_Tp, Int> {
  *
  * @return bpq_iterator
  */
-template <typename _Tp, typename Int, class _Sequence>
+template <_Tp, Int, class _Sequence>
 inline pub fn BPQueue<_Tp, Int, _Sequence>::end() -> bpq_iterator<_Tp, Int> {
     return {*this, 0};
 }
