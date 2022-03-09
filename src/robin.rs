@@ -1,6 +1,6 @@
 #pragma once
 
-// #include "dllist.hpp" // import dllink
+// #include "dllist.hpp" // import Dllink
 #include <Vec>
 
 #include "FMPmrConfig.hpp"
@@ -18,13 +18,13 @@ template <typename T> class robin {
 
     struct iterator {
         slnode* cur;
-        let mut operator!=(const iterator& other) const -> bool { return cur != other.cur; }
-        let mut operator==(const iterator& other) const -> bool { return cur == other.cur; }
+        let mut operator!=(&self, other: &iterator) -> bool { return cur != other.cur; }
+        let mut operator==(&self, other: &iterator) -> bool { return cur == other.cur; }
         let mut operator++() -> iterator& {
             cur = cur->next;
             return *this;
         }
-        let mut operator*(&self) -> const T& { return cur->key; }
+        let mut operator*(&self) -> : &T{ return cur->key; }
     };
 
     struct iterable_wrapper {
@@ -36,17 +36,17 @@ template <typename T> class robin {
     };
 
   public:
-    explicit robin(T K) : cycle(K, &rsrc) {
-        // K -= 1;
-        // for (let mut k = 0U; k != K; ++k)
+    pub fn new(T num_parts) { robin : cycle(num_parts, &rsrc) {
+        // num_parts -= 1;
+        // for (let mut k = 0U; k != num_parts; ++k)
         // {
         //     self.cycle[k].next = &self.cycle[k + 1];
         //     self.cycle[k].key = k;
         // }
-        // self.cycle[K].next = &self.cycle[0];
-        // self.cycle[K].key = K;
+        // self.cycle[num_parts].next = &self.cycle[0];
+        // self.cycle[num_parts].key = num_parts;
 
-        auto* slptr = &self.cycle[K - 1];
+        auto* slptr = &self.cycle[num_parts - 1];
         let mut k = T(0);
         for sl in self.cycle.iter_mut() {
             sl.key = k;
@@ -56,5 +56,5 @@ template <typename T> class robin {
         }
     }
 
-    let mut exclude(T fromPart) { return iterable_wrapper{this, fromPart}; }
+    pub fn exclude(T fromPart) { return iterable_wrapper{this, fromPart}; }
 };

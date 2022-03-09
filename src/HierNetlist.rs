@@ -43,11 +43,11 @@ template <typename graph_t> class HierNetlist : public Netlist<graph_t> {
     /**
      * @brief Construct a new Hier Netlist object
      *
-     * @param[in] G
+     * @param[in] gr
      * @param[in] modules
      * @param[in] nets
      */
-    HierNetlist(graph_t G, const nodeview_t& modules, const nodeview_t& nets);
+    HierNetlist(graph_t gr, modules: &nodeview_t, nets: &nodeview_t);
 
     /**
      * @brief projection down
@@ -55,7 +55,7 @@ template <typename graph_t> class HierNetlist : public Netlist<graph_t> {
      * @param[in] part
      * @param[out] part_down
      */
-    void projection_down(gsl::span<const u8> part,
+    pub fn projection_down(gsl::span<const u8> part,
                          gsl::span<u8> part_down) const;
 
     /**
@@ -64,25 +64,25 @@ template <typename graph_t> class HierNetlist : public Netlist<graph_t> {
      * @param[in] part
      * @param[out] part_up
      */
-    void projection_up(gsl::span<const u8> part, gsl::span<u8> part_up) const;
+    pub fn projection_up(gsl::span<const u8> part, gsl::span<u8> part_up) const;
 
     /**
      * @brief Get the net weight
      *
      * @return i32
      */
-    let mut get_net_weight(const node_t& net) const -> i32 {
+    pub fn get_net_weight(&self, net: &node_t) -> i32 {
         return self.net_weight.empty() ? 1 : self.net_weight[net];
     }
 };
 
 template <typename graph_t>
-HierNetlist<graph_t>::HierNetlist(graph_t G, const nodeview_t& modules, const nodeview_t& nets)
-    : Netlist<graph_t>{std::move(G), modules, nets} {}
+HierNetlist<graph_t>::HierNetlist(graph_t gr, modules: &nodeview_t, nets: &nodeview_t)
+    : Netlist<graph_t>{std::move(gr), modules, nets} {}
 
 // template <typename graph_t>
-// HierNetlist<graph_t>::HierNetlist(graph_t G, u32 numModules, u32 numNets)
-//     : Netlist<graph_t> {std::move(G), py::range<u32>(numModules),
+// HierNetlist<graph_t>::HierNetlist(graph_t gr, u32 numModules, u32 numNets)
+//     : Netlist<graph_t> {std::move(gr), py::range<u32>(numModules),
 //           py::range<u32>(numModules, numModules + numNets)}
 // {
 // }

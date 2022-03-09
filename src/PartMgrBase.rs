@@ -40,7 +40,7 @@ enum class LegalCheck;
  * each iteration.
  *
  * Reference:
- *   G. Ausiello et al., Complexity and Approximation: Combinatorial
+ *   gr. Ausiello et al., Complexity and Approximation: Combinatorial
  * Optimization Problems and Their Approximability Properties, Section 10.3.2.
  */
 template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
@@ -53,12 +53,12 @@ pub struct PartMgrBase {
     // using Der = Derived<Gnl, GainMgr, ConstrMgr>;
 
   protected:
-    // Der& self = *static_cast<Der*>(this);
+    // self: &mut Der = *static_cast<Der*>(this);
 
-    const Gnl& H;
-    GainMgr& gainMgr;
-    ConstrMgr& validator;
-    usize K;
+    hgr: &Gnl
+    gain_mgr: &mut GainMgr
+    validator: &mut ConstrMgr
+    usize num_parts;
     // Vec<u8> snapshot;
     // Vec<u8> part;
 
@@ -68,20 +68,20 @@ pub struct PartMgrBase {
     /**
      * @brief Construct a new Part Mgr Base object
      *
-     * @param[in] H
-     * @param[in,out] gainMgr
-     * @param[in,out] constrMgr
-     * @param[in] K
+     * @param[in] hgr
+     * @param[in,out] gain_mgr
+     * @param[in,out] constr_mgr
+     * @param[in] num_parts
      */
-    PartMgrBase(const Gnl& H, GainMgr& gainMgr, ConstrMgr& constrMgr, usize K)
-        : H{H}, gainMgr{gainMgr}, validator{constrMgr}, K{K} {}
+    PartMgrBase(hgr: &Gnl, gain_mgr: &mut GainMgr, constr_mgr: &mut ConstrMgr, usize num_parts)
+        : hgr{hgr}, gain_mgr{gain_mgr}, validator{constr_mgr}, num_parts{num_parts} {}
 
     /**
      * @brief
      *
      * @param[in,out] part
      */
-    void init(gsl::span<u8> part);
+    pub fn init(gsl::span<u8> part);
 
     /**
      * @brief
@@ -89,14 +89,14 @@ pub struct PartMgrBase {
      * @param[in,out] part
      * @return LegalCheck
      */
-    let mut legalize(gsl::span<u8> part) -> LegalCheck;
+    pub fn legalize(&mut self, gsl::span<u8> part) -> LegalCheck;
 
     /**
      * @brief
      *
      * @param[in,out] part
      */
-    void optimize(gsl::span<u8> part);
+    pub fn optimize(gsl::span<u8> part);
 
   private:
     /**
@@ -104,7 +104,7 @@ pub struct PartMgrBase {
      *
      * @param[in,out] part
      */
-    void _optimize_1pass(gsl::span<u8> part);
+    pub fn _optimize_1pass(gsl::span<u8> part);
 
     /**
      * @brief
@@ -112,7 +112,7 @@ pub struct PartMgrBase {
      * @param[in] part
      * @return Vec<u8>
      */
-    let mut take_snapshot(gsl::span<const u8> part) -> Vec<u8> {
+    pub fn take_snapshot(&mut self, gsl::span<const u8> part) -> Vec<u8> {
         // let N = part.size();
         // let mut snapshot = Vec<u8>(N, 0U);
         // // snapshot.reserve(N);
@@ -130,7 +130,7 @@ pub struct PartMgrBase {
      * @param[in] snapshot
      * @param[in,out] part
      */
-    let mut restore_part(const Vec<u8>& snapshot, gsl::span<u8> part)
+    pub fn restore_part(snapshot: &Vec<u8>, gsl::span<u8> part)
         {
         // std::copy(snapshot.begin(), snapshot.end(), part.begin());
         let N = part.size();

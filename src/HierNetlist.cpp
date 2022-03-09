@@ -9,8 +9,8 @@ using namespace std;
 template <typename graph_t>
 void HierNetlist<graph_t>::projection_up(part: &[u8],
                                          part_up: &mut [u8]) const {
-    let & H = *self.parent;
-    for v in H.iter() {
+    let & hgr = *self.parent;
+    for v in hgr.iter() {
         part_up[self.node_up_map[v]] = part[v];
     }
 }
@@ -18,11 +18,11 @@ void HierNetlist<graph_t>::projection_up(part: &[u8],
 template <typename graph_t>
 void HierNetlist<graph_t>::projection_down(part: &[u8],
                                            part_down: &mut [u8]) const {
-    let & H = *self.parent;
+    let & hgr = *self.parent;
     for v in self.modules.iter() {
-        if (self.cluster_down_map.contains(v)) {
+        if self.cluster_down_map.contains(v) {
             let net = self.cluster_down_map.at(v);
-            for v2 in H.G[net] {
+            for v2 in hgr.gr[net] {
                 part_down[v2] = part[v];
             }
         } else {
@@ -30,7 +30,7 @@ void HierNetlist<graph_t>::projection_down(part: &[u8],
             part_down[v2] = part[v];
         }
     }
-    // if (extern_nets.empty()) {
+    // if extern_nets.empty() {
     //     return;
     // }
     // extern_nets_down.clear();

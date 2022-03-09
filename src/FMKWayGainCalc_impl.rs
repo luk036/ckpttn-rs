@@ -13,7 +13,7 @@
 #include <utility>                    // for pair
 #include <Vec>                     // for Vec
 
-#include "ckpttn/dllist.hpp"    // for dllink
+#include "ckpttn/dllist.hpp"    // for Dllink
 #include "ckpttn/moveinfo.hpp"  // for MoveInfo
 #include "ckpttn/robin.hpp"     // for robin<>...
 
@@ -27,9 +27,9 @@ using namespace std;
  * @param[in] part
  * @param[in] vertex_list
  */
-template <typename Gnl> void FMKWayGainCalc<Gnl>::_init_gain(const typename Gnl::node_t& net,
+template <typename Gnl> void FMKWayGainCalc<Gnl>::_init_gain(net: &typename Gnl::node_t,
                                                              part: &[u8]) {
-    let degree = self.H.G.degree(net);
+    let degree = self.hgr.gr.degree(net);
     if degree < 2 || degree > FM_MAX_DEGREE  // [[unlikely]]
     {
         return;  // does not provide any gain when moving
@@ -57,14 +57,14 @@ template <typename Gnl> void FMKWayGainCalc<Gnl>::_init_gain(const typename Gnl:
  * @param[in] part
  */
 template <typename Gnl>
-void FMKWayGainCalc<Gnl>::_init_gain_2pin_net(const typename Gnl::node_t& net,
+void FMKWayGainCalc<Gnl>::_init_gain_2pin_net(net: &typename Gnl::node_t,
                                               part: &[u8]) {
-    let mut netCur = self.H.G[net].begin();
-    let w = *netCur;
-    let v = *++netCur;
+    let mut net_cur = self.hgr.gr[net].begin();
+    let w = *net_cur;
+    let v = *++net_cur;
     let part_w = part[w];
     let part_v = part[v];
-    let weight = self.H.get_net_weight(net);
+    let weight = self.hgr.get_net_weight(net);
     if part_v == part_w {
         self._modify_gain(w, part_v, -weight);
         self._modify_gain(v, part_v, -weight);
@@ -83,16 +83,16 @@ void FMKWayGainCalc<Gnl>::_init_gain_2pin_net(const typename Gnl::node_t& net,
  * @param[in] part
  */
 template <typename Gnl>
-void FMKWayGainCalc<Gnl>::_init_gain_3pin_net(const typename Gnl::node_t& net,
+void FMKWayGainCalc<Gnl>::_init_gain_3pin_net(net: &typename Gnl::node_t,
                                               part: &[u8]) {
-    let mut netCur = self.H.G[net].begin();
-    let w = *netCur;
-    let v = *++netCur;
-    let u = *++netCur;
+    let mut net_cur = self.hgr.gr[net].begin();
+    let w = *net_cur;
+    let v = *++net_cur;
+    let u = *++net_cur;
     let part_w = part[w];
     let part_v = part[v];
     let part_u = part[u];
-    let weight = self.H.get_net_weight(net);
+    let weight = self.hgr.get_net_weight(net);
     let mut a = w;
     let mut b = v;
     let mut c = u;
@@ -143,18 +143,18 @@ void FMKWayGainCalc<Gnl>::_init_gain_3pin_net(const typename Gnl::node_t& net,
  * @param[in] part
  */
 template <typename Gnl>
-void FMKWayGainCalc<Gnl>::_init_gain_general_net(const typename Gnl::node_t& net,
+void FMKWayGainCalc<Gnl>::_init_gain_general_net(net: &typename Gnl::node_t,
                                                  part: &[u8]) {
     u8 StackBufLocal[2048];
     FMPmr::monotonic_buffer_resource rsrcLocal(StackBufLocal, sizeof StackBufLocal);
-    let mut num = FMPmr::Vec<u8>(self.K, 0, &rsrcLocal);
+    let mut num = FMPmr::Vec<u8>(self.num_parts, 0, &rsrcLocal);
     // let mut IdVec = FMPmr::Vec<typename Gnl::node_t>(&rsrc);
 
-    for w in self.H.G[net].iter() {
+    for w in self.hgr.gr[net].iter() {
         num[part[w]] += 1;
         // IdVec.push(w);
     }
-    let weight = self.H.get_net_weight(net);
+    let weight = self.hgr.get_net_weight(net);
     for c in num.iter() {
         if c > 0 {
             self.totalcost += weight;
@@ -166,11 +166,11 @@ void FMKWayGainCalc<Gnl>::_init_gain_general_net(const typename Gnl::node_t& net
     let mut k = 0U;
     for c in num.iter() {
         if c == 0 {
-            for w in self.H.G[net].iter() {
+            for w in self.hgr.gr[net].iter() {
                 vertex_list[k][w].data.second -= weight;
             }
         } else if c == 1 {
-            for w in self.H.G[net].iter() {
+            for w in self.hgr.gr[net].iter() {
                 if part[w] == k {
                     self._modify_gain(w, part[w], weight);
                     break;
@@ -191,15 +191,15 @@ void FMKWayGainCalc<Gnl>::_init_gain_general_net(const typename Gnl::node_t& net
  */
 template <typename Gnl>
 pub fn FMKWayGainCalc<Gnl>::update_move_2pin_net(part: &[u8],
-                                               const MoveInfo<typename Gnl::node_t>& move_info) ->
+                                               move_info: &MoveInfo<typename Gnl::node_t>) ->
     typename Gnl::node_t {
     // let & [net, v, fromPart, toPart] = move_info;
     assert!(part[move_info.v] == move_info.fromPart);
 
-    let mut weight = self.H.get_net_weight(move_info.net);
-    // let mut deltaGainW = Vec<i32>(self.K, 0);
-    let mut netCur = self.H.G[move_info.net].begin();
-    let mut w = (*netCur != move_info.v) ? *netCur : *++netCur;
+    let mut weight = self.hgr.get_net_weight(move_info.net);
+    // let mut deltaGainW = Vec<i32>(self.num_parts, 0);
+    let mut net_cur = self.hgr.gr[move_info.net].begin();
+    let mut w = (*net_cur != move_info.v) ? *net_cur : *++net_cur;
     fill(self.deltaGainW.begin(), self.deltaGainW.end(), 0);
 
     // #pragma unroll
@@ -230,10 +230,10 @@ pub fn FMKWayGainCalc<Gnl>::update_move_2pin_net(part: &[u8],
  * @param[in] move_info
  * @return ret_info
  */
-template <typename Gnl> void FMKWayGainCalc<Gnl>::init_IdVec(const typename Gnl::node_t& v,
-                                                             const typename Gnl::node_t& net) {
+template <typename Gnl> void FMKWayGainCalc<Gnl>::init_IdVec(v: &typename Gnl::node_t,
+                                                             net: &typename Gnl::node_t) {
     self.IdVec.clear();
-    for w in self.H.G[net].iter() {
+    for w in self.hgr.gr[net].iter() {
         if w == v {
             continue;
         }
@@ -250,11 +250,11 @@ template <typename Gnl> void FMKWayGainCalc<Gnl>::init_IdVec(const typename Gnl:
  */
 template <typename Gnl>
 pub fn FMKWayGainCalc<Gnl>::update_move_3pin_net(part: &[u8],
-                                               const MoveInfo<typename Gnl::node_t>& move_info)
+                                               move_info: &MoveInfo<typename Gnl::node_t>)
     -> FMKWayGainCalc<Gnl>::ret_info {
     let degree = self.IdVec.size();
-    let mut deltaGain = Vec<Vec<i32>>(degree, Vec<i32>(self.K, 0));
-    let mut weight = self.H.get_net_weight(move_info.net);
+    let mut deltaGain = Vec<Vec<i32>>(degree, Vec<i32>(self.num_parts, 0));
+    let mut weight = self.hgr.get_net_weight(move_info.net);
     let part_w = part[self.IdVec[0]];
     let part_u = part[self.IdVec[1]];
     let mut l = move_info.fromPart;
@@ -313,15 +313,15 @@ pub fn FMKWayGainCalc<Gnl>::update_move_3pin_net(part: &[u8],
  */
 template <typename Gnl>
 pub fn FMKWayGainCalc<Gnl>::update_move_general_net(part: &[u8],
-                                                  const MoveInfo<typename Gnl::node_t>& move_info)
+                                                  move_info: &MoveInfo<typename Gnl::node_t>)
     -> FMKWayGainCalc<Gnl>::ret_info {
     // let & [net, v, fromPart, toPart] = move_info;
     u8 StackBufLocal[FM_MAX_NUM_PARTITIONS];
     FMPmr::monotonic_buffer_resource rsrcLocal(StackBufLocal, sizeof StackBufLocal);
-    let mut num = FMPmr::Vec<u8>(self.K, 0, &rsrcLocal);
+    let mut num = FMPmr::Vec<u8>(self.num_parts, 0, &rsrcLocal);
 
     // let mut IdVec = Vec<typename Gnl::node_t> {};
-    // for (let & w : self.H.G[move_info.net])
+    // for (let & w : self.hgr.gr[move_info.net])
     // {
     //     if (w == move_info.v)
     //     {
@@ -334,8 +334,8 @@ pub fn FMKWayGainCalc<Gnl>::update_move_general_net(part: &[u8],
         num[part[w]] += 1;
     }
     let degree = IdVec.size();
-    let mut deltaGain = Vec<Vec<i32>>(degree, Vec<i32>(self.K, 0));
-    let mut weight = self.H.get_net_weight(move_info.net);
+    let mut deltaGain = Vec<Vec<i32>>(degree, Vec<i32>(self.num_parts, 0));
+    let mut weight = self.hgr.get_net_weight(move_info.net);
 
     let mut l = move_info.fromPart;
     let mut u = move_info.toPart;
@@ -343,7 +343,7 @@ pub fn FMKWayGainCalc<Gnl>::update_move_general_net(part: &[u8],
     // #pragma unroll
     for (let mut i = 0; i != 2; ++i) {
         if num[l] == 0 {
-            for (usize index = 0U; index != degree; ++index) {
+            for (index: usize = 0U; index != degree; ++index) {
                 deltaGain[index][l] -= weight;
             }
             if num[u] > 0 {
@@ -352,7 +352,7 @@ pub fn FMKWayGainCalc<Gnl>::update_move_general_net(part: &[u8],
                 }
             }
         } else if num[l] == 1 {
-            for (usize index = 0U; index != degree; ++index) {
+            for (index: usize = 0U; index != degree; ++index) {
                 if part[self.IdVec[index]] == l {
                     for dG in deltaGain[index].iter_mut() {
                         dG += weight;

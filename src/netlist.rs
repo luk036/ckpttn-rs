@@ -29,16 +29,16 @@ template <typename graph_t> struct Netlist {
     using index_t = typename nodeview_t::key_type;
     // using graph_t = xnetwork::Graph<graph_t>;
 
-    graph_t G;
+    graph_t gr;
     nodeview_t modules;
     nodeview_t nets;
-    usize num_modules{};
-    usize num_nets{};
-    usize num_pads = 0U;
-    usize max_degree{};
-    usize max_net_degree{};
+    num_modules: usize{};
+    num_nets: usize{};
+    num_pads: usize = 0U;
+    max_degree: usize{};
+    max_net_degree: usize{};
     // u8 cost_model = 0;
-    Vec<unsigned i32> module_weight;
+    Vec<u32> module_weight;
     bool has_fixed_modules{};
     py::set<node_t> module_fixed;
 
@@ -46,24 +46,24 @@ template <typename graph_t> struct Netlist {
     /**
      * @brief Construct a new Netlist object
      *
-     * @param[in] G
+     * @param[in] gr
      * @param[in] modules
      * @param[in] nets
      */
-    Netlist(graph_t G, const nodeview_t& modules, const nodeview_t& nets);
+    Netlist(graph_t gr, modules: &nodeview_t, nets: &nodeview_t);
 
     /**
      * @brief Construct a new Netlist object
      *
-     * @param[in] G
+     * @param[in] gr
      * @param[in] numModules
      * @param[in] numNets
      */
-    Netlist(graph_t G, u32 numModules, u32 numNets);
+    Netlist(graph_t gr, u32 numModules, u32 numNets);
 
-    let mut begin() const { return self.modules.begin(); }
+    pub fn begin() const { return self.modules.begin(); }
 
-    let mut end() const { return self.modules.end(); }
+    pub fn end() const { return self.modules.end(); }
 
     /**
      * @brief Get the number of modules
@@ -84,7 +84,7 @@ template <typename graph_t> struct Netlist {
      *
      * @return usize
      */
-    pub fn number_of_nodes(&self) -> usize { return self.G.number_of_nodes(); }
+    pub fn number_of_nodes(&self) -> usize { return self.gr.number_of_nodes(); }
 
     // /**
     //  * @brief
@@ -92,7 +92,7 @@ template <typename graph_t> struct Netlist {
     //  * @return index_t
     //  */
     // let mut number_of_pins(&self) -> index_t { return
-    // self.G.number_of_edges(); }
+    // self.gr.number_of_edges(); }
 
     /**
      * @brief Get the max degree
@@ -114,7 +114,7 @@ template <typename graph_t> struct Netlist {
      * @param[in] v
      * @return i32
      */
-    let mut get_module_weight(const node_t& v) const -> unsigned i32 {
+    pub fn get_module_weight(&self, v: &node_t) -> u32 {
         return self.module_weight.empty() ? 1U : self.module_weight[v];
     }
 
@@ -123,7 +123,7 @@ template <typename graph_t> struct Netlist {
      *
      * @return i32
      */
-    let mut get_net_weight(const node_t& /*net*/) const -> i32 {
+    pub fn get_net_weight(&self, /*net*/: &node_t) -> i32 {
         // return self.net_weight.is_empty() ? 1
         //                                 :
         //                                 self.net_weight[self.net_map[net]];
@@ -132,8 +132,8 @@ template <typename graph_t> struct Netlist {
 };
 
 template <typename graph_t>
-Netlist<graph_t>::Netlist(graph_t G, const nodeview_t& modules, const nodeview_t& nets)
-    : G{std::move(G)},
+Netlist<graph_t>::Netlist(graph_t gr, modules: &nodeview_t, nets: &nodeview_t)
+    : gr{std::move(gr)},
       modules{modules},
       nets{nets},
       num_modules(modules.size()),
@@ -141,36 +141,36 @@ Netlist<graph_t>::Netlist(graph_t G, const nodeview_t& modules, const nodeview_t
     self.has_fixed_modules = (!self.module_fixed.empty());
 
     // Some compilers does not accept py::range()->iterator as a forward
-    // iterator let mut deg_cmp = [this](const node_t& v, const node_t& w) ->
+    // iterator let mut deg_cmp = [this](v: &node_t, w: &node_t) ->
     // index_t {
-    //     return self.G.degree(v) < self.G.degree(w);
+    //     return self.gr.degree(v) < self.gr.degree(w);
     // };
     // let result1 =
     //     std::max_element(self.modules.begin(), self.modules.end(),
     //     deg_cmp);
-    // self.max_degree = self.G.degree(*result1);
+    // self.max_degree = self.gr.degree(*result1);
     // let result2 =
     //     std::max_element(self.nets.begin(), self.nets.end(), deg_cmp);
-    // self.max_net_degree = self.G.degree(*result2);
+    // self.max_net_degree = self.gr.degree(*result2);
 
     self.max_degree = 0U;
     for v in self.modules.iter() {
-        if (self.max_degree < self.G.degree(v)) {
-            self.max_degree = self.G.degree(v);
+        if self.max_degree < self.gr.degree(v) {
+            self.max_degree = self.gr.degree(v);
         }
     }
 
     self.max_net_degree = 0U;
     for net in self.nets.iter() {
-        if (self.max_net_degree < self.G.degree(net)) {
-            self.max_net_degree = self.G.degree(net);
+        if self.max_net_degree < self.gr.degree(net) {
+            self.max_net_degree = self.gr.degree(net);
         }
     }
 }
 
 template <typename graph_t>
-Netlist<graph_t>::Netlist(graph_t G, u32 numModules, u32 numNets)
-    : Netlist{std::move(G), py::range(numModules), py::range(numModules, numModules + numNets)} {}
+Netlist<graph_t>::Netlist(graph_t gr, u32 numModules, u32 numNets)
+    : Netlist{std::move(gr), py::range(numModules), py::range(numModules, numModules + numNets)} {}
 
 #include <xnetwork/classes/graph.hpp>  // for Graph, Graph<>::nodeview_t
 

@@ -20,14 +20,14 @@ template <typename Gnl> class FMBiGainMgr
     using GainCalc_ = FMBiGainCalc<Gnl>;
     using node_t = typename Gnl::node_t;
 
-    explicit FMBiGainMgr(const Gnl& H) : Base{H, 2} {}
+    pub fn new(hgr: &Gnl) { FMBiGainMgr : Base{hgr, 2} {}
 
     /**
      * @brief Construct a new FMBiGainMgr object
      *
-     * @param[in] H
+     * @param[in] hgr
      */
-    FMBiGainMgr(const Gnl& H, u8 /* K */) : Base{H, 2} {}
+    FMBiGainMgr(hgr: &Gnl, u8 /* num_parts */) : Base{hgr, 2} {}
 
     /**
      * @brief
@@ -35,7 +35,7 @@ template <typename Gnl> class FMBiGainMgr
      * @param[in] part
      * @return i32
      */
-    let mut init(gsl::span<const u8> part) -> i32;
+    pub fn init(&mut self, gsl::span<const u8> part) -> i32;
 
     /**
      * @brief (needed by base class)
@@ -44,8 +44,8 @@ template <typename Gnl> class FMBiGainMgr
      * @param[in] part_w
      * @param[in] key
      */
-    let mut modify_key(const node_t& w, u8 part_w, i32 key) {
-        self.gainbucket[1 - part_w].modify_key(self.gainCalc.vertex_list[w], key);
+    pub fn modify_key(w: &node_t, u8 part_w, i32 key) {
+        self.gainbucket[1 - part_w].modify_key(self.gain_calc.vertex_list[w], key);
     }
 
     /**
@@ -54,7 +54,7 @@ template <typename Gnl> class FMBiGainMgr
      * @param[in] move_info_v
      * @param[in] gain
      */
-    let mut update_move_v(const MoveInfoV<node_t>& move_info_v, i32 gain) {
+    pub fn update_move_v(move_info_v: &MoveInfoV<node_t>, i32 gain) {
         // self.vertex_list[v].data.second -= 2 * gain;
         // let mut [fromPart, _ = move_info_v;
         self._set_key(move_info_v.fromPart, move_info_v.v, -gain);
@@ -66,8 +66,8 @@ template <typename Gnl> class FMBiGainMgr
      * @param[in] whichPart
      * @param[in] v
      */
-    let mut lock(u8 whichPart, const node_t& v) {
-        auto& vlink = self.gainCalc.vertex_list[v];
+    pub fn lock(u8 whichPart, v: &node_t) {
+        vlink: &mut auto = self.gain_calc.vertex_list[v];
         self.gainbucket[whichPart].detach(vlink);
         vlink.lock();
     }
@@ -78,7 +78,7 @@ template <typename Gnl> class FMBiGainMgr
      * @param[in] fromPart
      * @param[in] v
      */
-    let mut lock_all(u8 fromPart, const node_t& v) { self.lock(1 - fromPart, v); }
+    pub fn lock_all(u8 fromPart, v: &node_t) { self.lock(1 - fromPart, v); }
 
   private:
     /**
@@ -88,7 +88,7 @@ template <typename Gnl> class FMBiGainMgr
      * @param[in] v
      * @param[in] key
      */
-    let mut _set_key(u8 whichPart, const node_t& v, i32 key) {
-        self.gainbucket[whichPart].set_key(self.gainCalc.vertex_list[v], key);
+    pub fn _set_key(u8 whichPart, v: &node_t, i32 key) {
+        self.gainbucket[whichPart].set_key(self.gain_calc.vertex_list[v], key);
     }
 };

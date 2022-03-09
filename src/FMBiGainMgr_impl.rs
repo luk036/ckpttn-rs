@@ -17,18 +17,18 @@ using namespace std;
  *
  * @param[in] part
  */
-template <typename Gnl> pub fn FMBiGainMgr<Gnl>::init(part: &[u8]) -> i32 {
+template <typename Gnl> pub fn FMBiGainMgr<Gnl>::init(&mut self, part: &[u8]) -> i32 {
     let mut totalcost = Base::init(part);
     for bckt in self.gainbucket.iter_mut() {
         bckt.clear();
     }
 
-    for v in self.H.iter() {
-        auto& vlink = self.gainCalc.vertex_list[v];
+    for v in self.hgr.iter() {
+        vlink: &mut auto = self.gain_calc.vertex_list[v];
         // let mut toPart = 1 - part[v];
         self.gainbucket[1 - part[v]].append_direct(vlink);
     }
-    for v in self.H.module_fixed.iter() {
+    for v in self.hgr.module_fixed.iter() {
         self.lock_all(part[v], v);
     }
     return totalcost;

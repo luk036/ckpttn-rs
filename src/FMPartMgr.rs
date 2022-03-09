@@ -27,23 +27,23 @@ pub struct FMPartMgr : public PartMgrBase<Gnl, GainMgr, ConstrMgr> {
     /**
      * @brief Construct a new FMPartMgr object
      *
-     * @param[in] H
-     * @param[in,out] gainMgr
-     * @param[in,out] constrMgr
-     * @param[in] K
+     * @param[in] hgr
+     * @param[in,out] gain_mgr
+     * @param[in,out] constr_mgr
+     * @param[in] num_parts
      */
-    FMPartMgr(const Gnl& H, GainMgr& gainMgr, ConstrMgr& constrMgr, usize K)
-        : Base{H, gainMgr, constrMgr, K} {}
+    FMPartMgr(hgr: &Gnl, gain_mgr: &mut GainMgr, constr_mgr: &mut ConstrMgr, usize num_parts)
+        : Base{hgr, gain_mgr, constr_mgr, num_parts} {}
 
     /**
      * @brief Construct a new FMPartMgr object
      *
-     * @param[in] H
-     * @param[in,out] gainMgr
-     * @param[in,out] constrMgr
+     * @param[in] hgr
+     * @param[in,out] gain_mgr
+     * @param[in,out] constr_mgr
      */
-    FMPartMgr(const Gnl& H, GainMgr& gainMgr, ConstrMgr& constrMgr)
-        : Base{H, gainMgr, constrMgr, 2} {}
+    FMPartMgr(hgr: &Gnl, gain_mgr: &mut GainMgr, constr_mgr: &mut ConstrMgr)
+        : Base{hgr, gain_mgr, constr_mgr, 2} {}
 
     // /**
     //  * @brief
@@ -51,7 +51,7 @@ pub struct FMPartMgr : public PartMgrBase<Gnl, GainMgr, ConstrMgr> {
     //  * @param[in] part
     //  * @return Vec<u8>
     //  */
-    // let mut take_snapshot(gsl::span<const u8> part) -> Vec<u8> {
+    // let mut take_snapshot(&mut self, gsl::span<const u8> part) -> Vec<u8> {
     //     // let N = part.size();
     //     // let mut snapshot = Vec<u8>(N, 0U);
     //     // // snapshot.reserve(N);
@@ -69,7 +69,7 @@ pub struct FMPartMgr : public PartMgrBase<Gnl, GainMgr, ConstrMgr> {
     //  * @param[in] snapshot
     //  * @param[in,out] part
     //  */
-    // let mut restore_part(const Vec<u8>& snapshot, gsl::span<u8> part)
+    // let mut restore_part(snapshot: &Vec<u8>, gsl::span<u8> part)
     //     {
     //     std::copy(snapshot.begin(), snapshot.end(), part.begin());
     //     // let N = part.size();

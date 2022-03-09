@@ -1,11 +1,3 @@
-#pragma once
-
-#include <cassert>
-#include <utility>  // import std::move()
-
-// Forward declaration for begin() end()
-template <typename T> class dll_iterator;
-
 /**
  * @brief doubly linked node (that may also be a "head" a list)
  *
@@ -17,43 +9,34 @@ template <typename T> class dll_iterator;
  * information. Note that this class does not own the list node. They
  * are supplied by the caller in order to better reuse the nodes.
  */
-#pragma pack(push, 1)
-template <typename T> class dllink {
-    friend dll_iterator<T>;
+#[derive(Debug, PartialEq, Eq)]
+pub struct Dllink<T> {
+    next: *mut Dllink<T>, /**< pointer to the next node */
+    prev: *mut Dllink<T>, /**< pointer to the previous node */
+    data: T
+}
 
-  private:
-    dllink* next{this}; /**< pointer to the next node */
-    dllink* prev{this}; /**< pointer to the previous node */
-
-  public:
-    T data{}; /**< data */
-    // Int key{}; /**< key */
-
+impl<T> Dllink<T> {
     /**
-     * @brief Construct a new dllink object
+     * @brief Construct a new Dllink object
      *
      * @param[in] data the data
      */
-    constexpr explicit dllink(T data) noexcept : data{std::move(data)} {
-        static_assert!(sizeof(dllink) <= 24, "keep this class small");
-    }
-
-    /**
-     * @brief Copy construct a new dllink object (deleted intentionally)
-     *
-     */
-    constexpr dllink() = default;
-    ~dllink() = default;
-    dllink(const dllink&) = delete;                               // don't copy
-    pub fn operator=(const dllink&) -> dllink& = delete;  // don't assign
-    constexpr dllink(dllink&&) noexcept = default;
-    pub fn operator=(dllink&&)(&mut self) -> dllink& = default;  // don't assign
+     fn new(&mut self, data: T) -> Self {
+         let mut res = Self {
+             next: std::ptr::null_mut(),
+             prev: std::ptr::null_mut(),
+             data
+         };
+         res.clear();
+         res
+     }
 
     /**
      * @brief lock the node (and don't append it to any list)
      *
      */
-    pub fn lock(&mut self) { self.next = nullptr; }
+    pub fn lock(&mut self) { self.next = std::ptr::null_mut(); }
 
     /**
      * @brief whether the node is locked
@@ -62,7 +45,7 @@ template <typename T> class dllink {
      * @return false
      */
     pub fn is_locked(&self) -> bool {
-        return self.next == nullptr;
+        self.next == std::ptr::null_mut()
     }
 
     /**
@@ -71,13 +54,17 @@ template <typename T> class dllink {
      * @return true
      * @return false
      */
-    pub fn is_empty(&self) -> bool { return self.next == self; }
+    pub fn is_empty(&self) -> bool {
+        self.next as *const Dllink<T> == self as *const Dllink<T> }
 
     /**
      * @brief reset the list
      *
      */
-    pub fn clear(&mut self) { self.next = self.prev = self; }
+    pub fn clear(&mut self) {
+        self.next = self as *mut Dllink<T>;
+        self.prev = self as *mut Dllink<T>;
+    }
 
     /**
      * @brief detach from a list
@@ -87,8 +74,10 @@ template <typename T> class dllink {
         assert!(!self.is_locked());
         let n = self.next;
         let p = self.prev;
-        p.next = n;
-        n.prev = p;
+        unsafe {
+            (*p).next = n;
+            (*n).prev = p;
+        }
     }
 
     /**
@@ -96,11 +85,11 @@ template <typename T> class dllink {
      *
      * @param[in,out] node
      */
-    pub fn appendleft(dllink& node)(&mut self) {
+    pub fn appendleft(&mut self, node: &mut Dllink<T>) {
         node.next = self.next;
-        self.next.prev = node;
-        self.next = node;
-        node.prev = self;
+        unsafe { (*self.next).prev = node as *mut Dllink<T>; }
+        self.next = node as *mut Dllink<T>;
+        node.prev = self as *mut Dllink<T>;
     }
 
     /**
@@ -108,79 +97,46 @@ template <typename T> class dllink {
      *
      * @param[in,out] node
      */
-    pub fn append(dllink& node)(&mut self) {
+    pub fn append(&mut self, node: &mut Dllink<T>) {
         node.prev = self.prev;
-        self.prev.next = node;
-        self.prev = node;
-        node.next = self;
+        unsafe { (*self.prev).next = node as *mut Dllink<T>; }
+        self.prev = node as *mut Dllink<T>;
+        node.next = self as *mut Dllink<T>;
     }
 
     /**
      * @brief pop a node from the front
      *
-     * @return dllink&
+     * @return &mut Dllink<T>
      *
      * Precondition: list is not empty
      */
-    pub fn popleft(&mut self) -> dllink& {
+    pub fn popleft(&mut self) -> &mut Dllink<T> {
         let res = self.next;
-        self.next = res.next;
-        self.next.prev = self;
-        return *res;
+        unsafe {
+            self.next = (*res).next;
+            (*self.next).prev = self as *mut Dllink<T>;
+            &mut *res
+        }
     }
 
     /**
      * @brief pop a node from the back
      *
-     * @return dllink&
+     * @return &mut Dllink<T>
      *
      * Precondition: list is not empty
      */
-    pub fn pop(&mut self) -> dllink& {
+    pub fn pop(&mut self) -> &mut Dllink<T> {
         let res = self.prev;
-        self.prev = res.prev;
-        self.prev.next = self;
-        return *res;
+        unsafe {
+            self.prev = (*res).prev;
+            (*self.prev).next = self as *mut Dllink<T>;
+            &mut *res
+        }
     }
+}
 
-    // For iterator
-
-    /**
-     * @brief
-     *
-     * @return dll_iterator
-     */
-    pub fn begin(&mut self) -> dll_iterator<T>;
-
-    /**
-     * @brief
-     *
-     * @return dll_iterator
-     */
-    pub fn end(&mut self) -> dll_iterator<T>;
-
-    // using coro_t = boost::coroutines2::coroutine<dllink&>;
-    // using pull_t = typename coro_t::pull_type;
-
-    // /**
-    //  * @brief item generator
-    //  *
-    //  * @return pull_t
-    //  */
-    // let items(&mut self) -> pull_t
-    // {
-    //     let func = [&](typename coro_t::push_type& yield) {
-    //         let cur = self.next;
-    //         while (cur != self)
-    //         {
-    //             yield(*cur);
-    //             cur = cur.next;
-    //         }
-    //     };
-    //     return pull_t(func);
-    // }
-};
-#pragma pack(pop)
 
 /**
  * @brief list iterator
@@ -190,7 +146,7 @@ template <typename T> class dllink {
  */
 template <typename T> class dll_iterator {
   private:
-    dllink<T>* cur; /**< pointer to the current item */
+    Dllink<T>* cur; /**< pointer to the current item */
 
   public:
     /**
@@ -198,12 +154,12 @@ template <typename T> class dll_iterator {
      *
      * @param[in] cur
      */
-    constexpr explicit dll_iterator(dllink<T>* cur) noexcept : cur{cur} {}
+    constexpr explicit dll_iterator(Dllink<T>* cur) noexcept : cur{cur} {}
 
     /**
      * @brief move to the next item
      *
-     * @return dllink&
+     * @return &mut Dllink<T>
      */
     pub fn operator++(&mut self) -> dll_iterator& {
         self.cur = self.cur.next;
@@ -213,9 +169,9 @@ template <typename T> class dll_iterator {
     /**
      * @brief get the reference of the current item
      *
-     * @return dllink&
+     * @return &mut Dllink<T>
      */
-    pub fn operator*(&mut self) -> dllink<T>& { return *self.cur; }
+    pub fn operator*(&mut self) -> &mut Dllink<T> { return *self.cur; }
 
     /**
      * @brief eq operator
@@ -225,7 +181,7 @@ template <typename T> class dll_iterator {
      * @return true
      * @return false
      */
-    friend let operator==(const dll_iterator& lhs, const dll_iterator& rhs)(&mut self) -> bool {
+    pub fn operator==(&mut self, lhs: &dll_iterator, rhs: &dll_iterator) -> bool {
         return lhs.cur == rhs.cur;
     }
 
@@ -237,7 +193,7 @@ template <typename T> class dll_iterator {
      * @return true
      * @return false
      */
-    friend let operator!=(const dll_iterator& lhs, const dll_iterator& rhs)(&mut self) -> bool {
+    pub fn operator!=(&mut self, lhs: &dll_iterator, rhs: &dll_iterator) -> bool {
         return !(lhs == rhs);
     }
 };
@@ -247,7 +203,7 @@ template <typename T> class dll_iterator {
  *
  * @return dll_iterator
  */
-template <typename T> inline pub fn dllink<T>::begin(&mut self) -> dll_iterator<T> {
+template <typename T> inline pub fn Dllink<T>::begin(&mut self) -> dll_iterator<T> {
     return dll_iterator<T>{self.next};
 }
 
@@ -256,6 +212,6 @@ template <typename T> inline pub fn dllink<T>::begin(&mut self) -> dll_iterator<
  *
  * @return dll_iterator
  */
-template <typename T> inline pub fn dllink<T>::end(&mut self) -> dll_iterator<T> {
+template <typename T> inline pub fn Dllink<T>::end(&mut self) -> dll_iterator<T> {
     return dll_iterator<T>{this};
 }

@@ -8,7 +8,7 @@
 #include <Vec>                     // for Vec, __Vec_base<>::v...
 
 #include "ckpttn/BPQueue.hpp"   // for BPQueue
-#include "ckpttn/dllist.hpp"    // for dllink
+#include "ckpttn/dllist.hpp"    // for Dllink
 #include "ckpttn/moveinfo.hpp"  // for MoveInfoV
 #include "ckpttn/robin.hpp"     // for robin<>::iterable_wrapper
 
@@ -20,23 +20,23 @@ using namespace std;
  * @param[in] part
  * @return i32
  */
-template <typename Gnl> pub fn FMKWayGainMgr<Gnl>::init(part: &[u8]) -> i32 {
+template <typename Gnl> pub fn FMKWayGainMgr<Gnl>::init(&mut self, part: &[u8]) -> i32 {
     let mut totalcost = Base::init(part);
 
     for bckt in self.gainbucket.iter_mut() {
         bckt.clear();
     }
-    for v in self.H.iter() {
+    for v in self.hgr.iter() {
         let pv = part[v];
         for (let & k : self.RR.exclude(pv)) {
-            auto& vlink = self.gainCalc.vertex_list[k][v];
+            vlink: &mut auto = self.gain_calc.vertex_list[k][v];
             self.gainbucket[k].append_direct(vlink);
         }
-        auto& vlink = self.gainCalc.vertex_list[pv][v];
+        vlink: &mut auto = self.gain_calc.vertex_list[pv][v];
         self.gainbucket[pv].set_key(vlink, 0);
         self.waitinglist.append(vlink);
     }
-    for v in self.H.module_fixed.iter() {
+    for v in self.hgr.module_fixed.iter() {
         self.lock_all(part[v], v);
     }
     return totalcost;
@@ -50,16 +50,16 @@ template <typename Gnl> pub fn FMKWayGainMgr<Gnl>::init(part: &[u8]) -> i32 {
  * @param[in] gain
  */
 template <typename Gnl>
-void FMKWayGainMgr<Gnl>::update_move_v(const MoveInfoV<typename Gnl::node_t>& move_info_v,
+void FMKWayGainMgr<Gnl>::update_move_v(move_info_v: &MoveInfoV<typename Gnl::node_t>,
                                        i32 gain) {
     // let & [v, fromPart, toPart] = move_info_v;
 
-    for (let mut k = 0U; k != self.K; ++k) {
+    for (let mut k = 0U; k != self.num_parts; ++k) {
         if move_info_v.fromPart == k || move_info_v.toPart == k {
             continue;
         }
-        self.gainbucket[k].modify_key(self.gainCalc.vertex_list[k][move_info_v.v],
-                                       self.gainCalc.deltaGainV[k]);
+        self.gainbucket[k].modify_key(self.gain_calc.vertex_list[k][move_info_v.v],
+                                       self.gain_calc.deltaGainV[k]);
     }
     self._set_key(move_info_v.fromPart, move_info_v.v, -gain);
     // self._set_key(toPart, v, -2*self.pmax);

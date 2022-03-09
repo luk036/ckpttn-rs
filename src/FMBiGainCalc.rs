@@ -7,7 +7,7 @@
 #include <Vec>    // for Vec
 
 #include "FMPmrConfig.hpp"
-#include "dllist.hpp"  // for dllink
+#include "dllist.hpp"  // for Dllink
 // #include "moveinfo.hpp"  // for MoveInfo
 
 // forward declare
@@ -25,10 +25,10 @@ template <typename Gnl> class FMBiGainCalc {
 
   public:
     using node_t = typename Gnl::node_t;
-    using Item = dllink<std::pair<node_t, u32>>;
+    using Item = Dllink<std::pair<node_t, u32>>;
 
   private:
-    const Gnl& H;
+    hgr: &Gnl
     Vec<Item> vertex_list;
     i32 totalcost{0};
     u8 StackBuf[8192];  // ???
@@ -42,11 +42,11 @@ template <typename Gnl> class FMBiGainCalc {
     /**
      * @brief Construct a new FMBiGainCalc object
      *
-     * @param[in] H
+     * @param[in] hgr
      */
-    explicit FMBiGainCalc(const Gnl& H, u8 /*K*/)
-        : H{H}, vertex_list(H.number_of_modules()), rsrc(StackBuf, sizeof StackBuf), IdVec(&rsrc) {
-        for v in self.H.iter() {
+    pub fn new(hgr: &Gnl, u8 /*num_parts*/) { FMBiGainCalc
+        : hgr{hgr}, vertex_list(hgr.number_of_modules()), rsrc(StackBuf, sizeof StackBuf), IdVec(&rsrc) {
+        for v in self.hgr.iter() {
             self.vertex_list[v].data = std::make_pair(v, i32(0));
         }
     }
@@ -56,12 +56,12 @@ template <typename Gnl> class FMBiGainCalc {
      *
      * @param[in] part
      */
-    let mut init(gsl::span<const u8> part) -> i32 {
+    let mut init(&mut self, gsl::span<const u8> part) -> i32 {
         self.totalcost = 0;
         for vlink in self.vertex_list.iter_mut() {
             vlink.data.second = 0;
         }
-        for net in self.H.nets.iter() {
+        for net in self.hgr.nets.iter() {
             self._init_gain(net, part);
         }
         return self.totalcost;
@@ -81,7 +81,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @param v
      * @param net
      */
-    void init_IdVec(const node_t& v, const node_t& net);
+    pub fn init_IdVec(v: &node_t, net: &node_t);
 
     /**
      * @brief
@@ -90,7 +90,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @param[in] move_info
      * @return node_t
      */
-    let mut update_move_2pin_net(gsl::span<const u8> part, const MoveInfo<node_t>& move_info)
+    let mut update_move_2pin_net(gsl::span<move_info: &u8> part, const MoveInfo<node_t>)
         -> node_t;
 
     /**
@@ -100,7 +100,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @param[in] move_info
      * @return Vec<i32>
      */
-    let mut update_move_3pin_net(gsl::span<const u8> part, const MoveInfo<node_t>& move_info)
+    let mut update_move_3pin_net(gsl::span<move_info: &u8> part, const MoveInfo<node_t>)
         -> Vec<i32>;
 
     /**
@@ -111,7 +111,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @return Vec<i32>
      */
     let mut update_move_general_net(gsl::span<const u8> part,
-                                 const MoveInfo<node_t>& move_info) -> Vec<i32>;
+                                 move_info: &MoveInfo<node_t>) -> Vec<i32>;
 
   private:
     /**
@@ -120,7 +120,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @param[in] w
      * @param[in] weight
      */
-    let mut _modify_gain(const node_t& w, unsigned i32 weight) {
+    let mut _modify_gain(w: &node_t, u32 weight) {
         self.vertex_list[w].data.second += weight;
     }
 
@@ -131,7 +131,7 @@ template <typename Gnl> class FMBiGainCalc {
     //  * @param[in] weight
     //  * @param[in] w
     //  */
-    // template <typename... Ts> pub fn _modify_gain_va(unsigned i32 weight, Ts... w) {
+    // template <typename... Ts> pub fn _modify_gain_va(u32 weight, Ts... w) {
     //     ((self.vertex_list[w].data.second += weight), ...);
     // }
 
@@ -142,7 +142,7 @@ template <typename Gnl> class FMBiGainCalc {
     //  * @param[in] weight
     //  * @param[in] w
     //  */
-    // let mut _modify_gain_va(unsigned i32 weight, const node_t& w1) -> void
+    // let mut _modify_gain_va(&mut self, u32 weight, w1: &node_t) -> void
     // {
     //     self.vertex_list[w1].data.second += weight;
     // }
@@ -154,7 +154,7 @@ template <typename Gnl> class FMBiGainCalc {
     //  * @param[in] weight
     //  * @param[in] w
     //  */
-    // let mut _modify_gain_va(unsigned i32 weight, const node_t& w1, const node_t& w2) ->
+    // let mut _modify_gain_va(u32 weight, w1: &node_t, w2: &node_t) ->
     // void
     // {
     //     self.vertex_list[w1].data.second += weight;
@@ -168,8 +168,8 @@ template <typename Gnl> class FMBiGainCalc {
     //  * @param[in] weight
     //  * @param[in] w
     //  */
-    // let mut _modify_gain_va(unsigned i32 weight, const node_t& w1, const node_t& w2,
-    //     const node_t& w3) -> void
+    // let mut _modify_gain_va(u32 weight, w1: &node_t, w2: &node_t,
+    //     w3: &node_t) -> void
     // {
     //     self.vertex_list[w1].data.second += weight;
     //     self.vertex_list[w2].data.second += weight;
@@ -182,7 +182,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @param[in] net
      * @param[in] part
      */
-    let mut _init_gain(const node_t& net, gsl::span<const u8> part) -> void;
+    let mut _init_gain(&mut self, net: &node_t, gsl::span<const u8> part) -> void;
 
     /**
      * @brief
@@ -190,7 +190,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @param[in] net
      * @param[in] part
      */
-    let mut _init_gain_2pin_net(const node_t& net, gsl::span<const u8> part) -> void;
+    let mut _init_gain_2pin_net(&mut self, net: &node_t, gsl::span<const u8> part) -> void;
 
     /**
      * @brief
@@ -198,7 +198,7 @@ template <typename Gnl> class FMBiGainCalc {
      * @param[in] net
      * @param[in] part
      */
-    let mut _init_gain_3pin_net(const node_t& net, gsl::span<const u8> part) -> void;
+    let mut _init_gain_3pin_net(&mut self, net: &node_t, gsl::span<const u8> part) -> void;
 
     /**
      * @brief
@@ -206,5 +206,5 @@ template <typename Gnl> class FMBiGainCalc {
      * @param[in] net
      * @param[in] part
      */
-    let mut _init_gain_general_net(const node_t& net, gsl::span<const u8> part) -> void;
+    let mut _init_gain_general_net(&mut self, net: &node_t, gsl::span<const u8> part) -> void;
 };

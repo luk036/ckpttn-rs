@@ -12,18 +12,18 @@
 
 using namespace std;
 
-template <typename Gnl> FMConstrMgr<Gnl>::FMConstrMgr(const Gnl& H, f64 BalTol, u8 K)
-    : H{H}, BalTol{BalTol}, diff(K, 0), K{K} {
+template <typename Gnl> FMConstrMgr<Gnl>::FMConstrMgr(hgr: &Gnl, f64 bal_tol, u8 num_parts)
+    : hgr{hgr}, bal_tol{bal_tol}, diff(num_parts, 0), num_parts{num_parts} {
     // using namespace transrangers;
     // self.totalweight
-    //     = accumulate(transform([&](let & v) { return H.get_module_weight(v); }, all(H)),
+    //     = accumulate(transform([&](let & v) { return hgr.get_module_weight(v); }, all(hgr)),
     //     0U);
     // self.totalweight = 0U;
-    for v in H.iter() {
-        self.totalweight += H.get_module_weight(v);
+    for v in hgr.iter() {
+        self.totalweight += hgr.get_module_weight(v);
     }
-    let totalweightK = self.totalweight * (2.0 / self.K);
-    self.lowerbound = u32(round(totalweightK * self.BalTol));
+    let totalweightK = self.totalweight * (2.0 / self.num_parts);
+    self.lowerbound = u32(round(totalweightK * self.bal_tol));
 }
 
 /**
@@ -33,9 +33,9 @@ template <typename Gnl> FMConstrMgr<Gnl>::FMConstrMgr(const Gnl& H, f64 BalTol, 
  */
 template <typename Gnl> void FMConstrMgr<Gnl>::init(part: &[u8]) {
     fill(self.diff.begin(), self.diff.end(), 0);
-    for v in self.H.iter() {
-        // let mut weight_v = self.H.get_module_weight(v);
-        self.diff[part[v]] += self.H.get_module_weight(v);
+    for v in self.hgr.iter() {
+        // let mut weight_v = self.hgr.get_module_weight(v);
+        self.diff[part[v]] += self.hgr.get_module_weight(v);
     }
 }
 
@@ -46,18 +46,18 @@ template <typename Gnl> void FMConstrMgr<Gnl>::init(part: &[u8]) {
  * @return LegalCheck
  */
 template <typename Gnl>
-pub fn FMConstrMgr<Gnl>::check_legal(const MoveInfoV<typename Gnl::node_t>& move_info_v)
+pub fn FMConstrMgr<Gnl>::check_legal(move_info_v: &MoveInfoV<typename Gnl::node_t>)
     -> LegalCheck {
-    self.weight = self.H.get_module_weight(move_info_v.v);
+    self.weight = self.hgr.get_module_weight(move_info_v.v);
     let diffFrom = self.diff[move_info_v.fromPart];
     if diffFrom < self.lowerbound + self.weight {
-        return LegalCheck::notsatisfied;  // not ok, don't move
+        return LegalCheck::NotStatisfied;  // not ok, don't move
     }
     let diffTo = self.diff[move_info_v.toPart];
     if diffTo + self.weight < self.lowerbound {
-        return LegalCheck::getbetter;  // get better, but still illegal
+        return LegalCheck::GetBetter;  // get better, but still illegal
     }
-    return LegalCheck::allsatisfied;  // all satisfied
+    return LegalCheck::AllStatisfied;  // all satisfied
 }
 
 /**
@@ -68,11 +68,11 @@ pub fn FMConstrMgr<Gnl>::check_legal(const MoveInfoV<typename Gnl::node_t>& move
  * @return false
  */
 template <typename Gnl>
-pub fn FMConstrMgr<Gnl>::check_constraints(const MoveInfoV<typename Gnl::node_t>& move_info_v)
+pub fn FMConstrMgr<Gnl>::check_constraints(move_info_v: &MoveInfoV<typename Gnl::node_t>)
     -> bool {
     // let & [v, fromPart, toPart] = move_info_v;
 
-    self.weight = self.H.get_module_weight(move_info_v.v);
+    self.weight = self.hgr.get_module_weight(move_info_v.v);
     // let mut diffTo = self.diff[toPart] + self.weight;
     let diffFrom = self.diff[move_info_v.fromPart];
     return diffFrom >= self.lowerbound + self.weight;
@@ -84,7 +84,7 @@ pub fn FMConstrMgr<Gnl>::check_constraints(const MoveInfoV<typename Gnl::node_t>
  * @param[in] move_info_v
  */
 template <typename Gnl>
-void FMConstrMgr<Gnl>::update_move(const MoveInfoV<typename Gnl::node_t>& move_info_v) {
+void FMConstrMgr<Gnl>::update_move(move_info_v: &MoveInfoV<typename Gnl::node_t>) {
     // let mut [v, fromPart, toPart] = move_info_v;
     self.diff[move_info_v.toPart] += self.weight;
     self.diff[move_info_v.fromPart] -= self.weight;

@@ -25,12 +25,12 @@ use super::dllist;
  * @tparam std::make_unsigned_t<Int>>>>
  */
 template <typename _Tp, typename Int = i32,
-          typename _Sequence = Vec<dllink<std::pair<_Tp, std::make_unsigned_t<Int>>>>>
+          typename _Sequence = Vec<Dllink<std::pair<_Tp, std::make_unsigned_t<Int>>>>>
 pub struct BPQueue {
     using UInt = std::make_unsigned_t<Int>;
 
     friend bpq_iterator<_Tp, Int>;
-    using Item = dllink<std::pair<_Tp, UInt>>;
+    using Item = Dllink<std::pair<_Tp, UInt>>;
 
     static_assert!(std::is_same<Item, typename _Sequence::value_type>::value,
                   "value_type must be the same as the underlying container");
@@ -67,9 +67,9 @@ pub struct BPQueue {
 
     BPQueue(const BPQueue&) = delete;  // don't copy
     ~BPQueue() = default;
-    pub fn operator=(const BPQueue&) -> BPQueue& = delete;  // don't assign
+    pub fn operator=(&mut self, const BPQueue&) -> BPQueue& = delete;  // don't assign
     constexpr BPQueue(BPQueue&&) noexcept = default;
-    pub fn operator=(BPQueue&&)(&mut self) -> BPQueue& = default;  // don't assign
+    pub fn operator=(&mut self, BPQueue&&) -> BPQueue& = default;  // don't assign
 
     /**
      * @brief Whether the %BPQueue is empty.
@@ -85,7 +85,7 @@ pub struct BPQueue {
      * @param[out] it the item
      * @param[in] gain the key of it
      */
-    pub fn set_key(Item& it, Int gain)(&mut self) {
+    pub fn set_key(&mut self, it: &mut Item, Int gain)
         it.data.second = static_cast<UInt>(gain - self.offset);
     }
 
@@ -113,7 +113,7 @@ pub struct BPQueue {
      *
      * @param[in,out] it the item
      */
-    pub fn append_direct(Item& it)(&mut self) {
+    pub fn append_direct(&mut self, it: &mut Item)
         assert!(static_cast<Int>(it.data.second) > self.offset);
         self.append(it, Int(it.data.second));
     }
@@ -124,7 +124,7 @@ pub struct BPQueue {
      * @param[in,out] it the item
      * @param[in] k  the key
      */
-    pub fn append(Item& it, Int k)(&mut self) {
+    pub fn append(&mut self, it: &mut Item, Int k)
         assert!(k > self.offset);
         it.data.second = UInt(k - self.offset);
         if self.max < it.data.second {
@@ -136,10 +136,10 @@ pub struct BPQueue {
     /**
      * @brief Pop node with the highest key
      *
-     * @return dllink&
+     * @return Dllink&
      */
     pub fn popleft(&mut self) -> Item& {
-        auto& res = self.bucket[self.max].popleft();
+        res: &mut auto = self.bucket[self.max].popleft();
         while (self.bucket[self.max].is_empty()) {
             self.max -= 1;
         }
@@ -155,7 +155,7 @@ pub struct BPQueue {
      * Note that the order of items with same key will not be preserved.
      * For the FM algorithm, this is a prefered behavior.
      */
-    pub fn decrease_key(Item& it, UInt delta)(&mut self) {
+    pub fn decrease_key(&mut self, it: &mut Item, UInt delta)
         // self.bucket[it.data.second].detach(it)
         it.detach();
         it.data.second -= delta;
@@ -180,7 +180,7 @@ pub struct BPQueue {
      * Note that the order of items with same key will not be preserved.
      * For the FM algorithm, this is a prefered behavior.
      */
-    pub fn increase_key(Item& it, UInt delta)(&mut self) {
+    pub fn increase_key(&mut self, it: &mut Item, UInt delta)
         // self.bucket[it.data.second].detach(it)
         it.detach();
         it.data.second += delta;
@@ -201,8 +201,8 @@ pub struct BPQueue {
      * Note that the order of items with same key will not be preserved.
      * For FM algorithm, this is a prefered behavior.
      */
-    pub fn modify_key(Item& it, Int delta)(&mut self) {
-        if (it.is_locked()) {
+    pub fn modify_key(&mut self, it: &mut Item, Int delta)
+        if it.is_locked() {
             return;
         }
         if delta > 0 {
@@ -217,7 +217,7 @@ pub struct BPQueue {
      *
      * @param[in,out] it the item
      */
-    pub fn detach(Item& it)(&mut self) {
+    pub fn detach(&mut self, it: &mut Item)
         // self.bucket[it.data.second].detach(it)
         it.detach();
         while (self.bucket[self.max].is_empty()) {
@@ -252,7 +252,7 @@ template <typename _Tp, typename Int = i32> class bpq_iterator {
 
     // using value_type = _Tp;
     // using key_type = Int;
-    using Item = dllink<std::pair<_Tp, UInt>>;
+    using Item = Dllink<std::pair<_Tp, UInt>>;
 
   private:
     BPQueue<_Tp, Int>& bpq;                      //!< the priority queue
@@ -307,7 +307,7 @@ template <typename _Tp, typename Int = i32> class bpq_iterator {
      * @return true
      * @return false
      */
-    friend pub fn operator==(const bpq_iterator& lhs, const bpq_iterator& rhs) -> bool {
+    friend pub fn operator==(&mut self, lhs: &bpq_iterator, rhs: &bpq_iterator) -> bool {
         return lhs.curitem == rhs.curitem;
     }
 
@@ -319,7 +319,7 @@ template <typename _Tp, typename Int = i32> class bpq_iterator {
      * @return true
      * @return false
      */
-    friend pub fn operator!=(const bpq_iterator& lhs, const bpq_iterator& rhs) -> bool {
+    friend pub fn operator!=(&mut self, lhs: &bpq_iterator, rhs: &bpq_iterator) -> bool {
         return !(lhs == rhs);
     }
 };

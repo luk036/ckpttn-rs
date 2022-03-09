@@ -23,9 +23,9 @@
 using namespace std;
 
 // Read the IBM .netD/.net format. Precondition: Netlist is empty.
-void writeJSON(boost::string_view jsonFileName, const SimpleNetlist& H) {
+void writeJSON(boost::string_view jsonFileName, hgr: &SimpleNetlist) {
     let mut json = ofstream{jsonFileName.data()};
-    if (json.fail()) {
+    if json.fail() {
         cerr << "Error: Can't open file " << jsonFileName << ".\n";
         exit(1);
     }
@@ -35,22 +35,22 @@ void writeJSON(boost::string_view jsonFileName, const SimpleNetlist& H) {
  "graph": {
 )";
 
-    json << R"( "num_modules": )" << H.number_of_modules() << ",\n";
-    json << R"( "num_nets": )" << H.number_of_nets() << ",\n";
-    json << R"( "num_pads": )" << H.num_pads << "\n";
+    json << R"( "num_modules": )" << hgr.number_of_modules() << ",\n";
+    json << R"( "num_nets": )" << hgr.number_of_nets() << ",\n";
+    json << R"( "num_pads": )" << hgr.num_pads << "\n";
     json << " },\n";
 
     json << R"( "nodes": [)"
          << "\n";
-    for node in H.G.iter() {
+    for node in hgr.gr.iter() {
         json << "  { \"id\": " << node << " },\n";
     }
     json << " ],\n";
 
     json << R"( "links": [)"
          << "\n";
-    for v in H.iter() {
-        for net in H.G[v].iter() {
+    for v in hgr.iter() {
+        for net in hgr.gr[v].iter() {
             json << "  {\n";
             json << "   \"source\": " << v << ",\n";
             json << "   \"target\": " << net << "\n";
@@ -63,9 +63,9 @@ void writeJSON(boost::string_view jsonFileName, const SimpleNetlist& H) {
 }
 
 // Read the IBM .netD/.net format. Precondition: Netlist is empty.
-pub fn readNetD(boost::string_view netDFileName) -> SimpleNetlist {
+pub fn readNetD(&mut self, boost::string_view netDFileName) -> SimpleNetlist {
     let mut netD = ifstream{netDFileName.data()};
-    if (netD.fail()) {
+    if netD.fail() {
         cerr << "Error: Can't open file " << netDFileName << ".\n";
         exit(1);
     }
@@ -96,7 +96,7 @@ pub fn readNetD(boost::string_view netDFileName) -> SimpleNetlist {
     char c;
     u32 i = 0;
     for (; i < numPins; ++i) {
-        if (netD.eof()) {
+        if netD.eof() {
             cerr << "Warning: Unexpected end of file.\n";
             break;
         }
@@ -151,16 +151,16 @@ pub fn readNetD(boost::string_view netDFileName) -> SimpleNetlist {
     // using IndexMap =
     //     typename boost::property_map<graph_t, boost::vertex_index_t>::type;
     // let mut index = boost::get(boost::vertex_index, g);
-    // let mut G = py::grAdaptor<graph_t>{move(g)};
-    let mut H = SimpleNetlist{move(g), numModules, numNets};
-    H.num_pads = numModules - padOffset - 1;
-    return H;
+    // let mut gr = py::grAdaptor<graph_t>{move(g)};
+    let mut hgr = SimpleNetlist{move(g), numModules, numNets};
+    hgr.num_pads = numModules - padOffset - 1;
+    return hgr;
 }
 
 // Read the IBM .are format
-void readAre(SimpleNetlist& H, boost::string_view areFileName) {
+void readAre(hgr: &mut SimpleNetlist, boost::string_view areFileName) {
     let mut are = ifstream{areFileName.data()};
-    if (are.fail()) {
+    if are.fail() {
         cerr << " Could not open " << areFileName << endl;
         exit(1);
     }
@@ -171,16 +171,16 @@ void readAre(SimpleNetlist& H, boost::string_view areFileName) {
 
     char c;
     node_t w;
-    unsigned i32 weight;
+    u32 weight;
     // let mut totalWeight = 0;
     // xxx index_t smallestWeight = UINT_MAX;
-    let mut numModules = H.number_of_modules();
-    let mut padOffset = numModules - H.num_pads - 1;
-    let mut module_weight = Vec<unsigned i32>(numModules);
+    let mut numModules = hgr.number_of_modules();
+    let mut padOffset = numModules - hgr.num_pads - 1;
+    let mut module_weight = Vec<u32>(numModules);
 
-    usize lineno = 1;
-    for (usize i = 0; i < numModules; i++) {
-        if (are.eof()) {
+    lineno: usize = 1;
+    for (i: usize = 0; i < numModules; i++) {
+        if are.eof() {
             break;
         }
         do {
@@ -213,5 +213,5 @@ void readAre(SimpleNetlist& H, boost::string_view areFileName) {
         lineno++;
     }
 
-    H.module_weight = move(module_weight);
+    hgr.module_weight = move(module_weight);
 }

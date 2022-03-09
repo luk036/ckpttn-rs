@@ -26,8 +26,8 @@
  * @param[in] part
  */
 template <typename Gnl>
-void FMBiGainCalc<Gnl>::_init_gain(const typename Gnl::node_t& net, part: &[u8]) {
-    let degree = self.H.G.degree(net);
+void FMBiGainCalc<Gnl>::_init_gain(net: &typename Gnl::node_t, part: &[u8]) {
+    let degree = self.hgr.gr.degree(net);
     if degree < 2 || degree > FM_MAX_DEGREE  // [[unlikely]]
     {
         return;  // does not provide any gain when moving
@@ -54,13 +54,13 @@ void FMBiGainCalc<Gnl>::_init_gain(const typename Gnl::node_t& net, part: &[u8])
  * @param[in] net
  * @param[in] part
  */
-template <typename Gnl> void FMBiGainCalc<Gnl>::_init_gain_2pin_net(const typename Gnl::node_t& net,
+template <typename Gnl> void FMBiGainCalc<Gnl>::_init_gain_2pin_net(net: &typename Gnl::node_t,
                                                                     part: &[u8]) {
-    let mut netCur = self.H.G[net].begin();
-    let w = *netCur;
-    let v = *++netCur;
+    let mut net_cur = self.hgr.gr[net].begin();
+    let w = *net_cur;
+    let v = *++net_cur;
 
-    let weight = self.H.get_net_weight(net);
+    let weight = self.hgr.get_net_weight(net);
     if part[w] != part[v] {
         self.totalcost += weight;
         // self._modify_gain_va(weight, w, v);
@@ -79,14 +79,14 @@ template <typename Gnl> void FMBiGainCalc<Gnl>::_init_gain_2pin_net(const typena
  * @param[in] net
  * @param[in] part
  */
-template <typename Gnl> void FMBiGainCalc<Gnl>::_init_gain_3pin_net(const typename Gnl::node_t& net,
+template <typename Gnl> void FMBiGainCalc<Gnl>::_init_gain_3pin_net(net: &typename Gnl::node_t,
                                                                     part: &[u8]) {
-    let mut netCur = self.H.G[net].begin();
-    let w = *netCur;
-    let v = *++netCur;
-    let u = *++netCur;
+    let mut net_cur = self.hgr.gr[net].begin();
+    let w = *net_cur;
+    let v = *++net_cur;
+    let u = *++net_cur;
 
-    let weight = self.H.get_net_weight(net);
+    let weight = self.hgr.get_net_weight(net);
     if part[u] == part[v] {
         if part[w] == part[v] {
             // self._modify_gain_va(-weight, u, v, w);
@@ -112,22 +112,22 @@ template <typename Gnl> void FMBiGainCalc<Gnl>::_init_gain_3pin_net(const typena
  * @param[in] part
  */
 template <typename Gnl>
-void FMBiGainCalc<Gnl>::_init_gain_general_net(const typename Gnl::node_t& net,
+void FMBiGainCalc<Gnl>::_init_gain_general_net(net: &typename Gnl::node_t,
                                                part: &[u8]) {
     let mut num = array<usize, 2>{0U, 0U};
-    for w in self.H.G[net].iter() {
+    for w in self.hgr.gr[net].iter() {
         num[part[w]] += 1;
     }
-    let weight = self.H.get_net_weight(net);
+    let weight = self.hgr.get_net_weight(net);
 
     // #pragma unroll
     for k in {0U, 1U}.iter() {
         if num[k] == 0 {
-            for w in self.H.G[net].iter() {
+            for w in self.hgr.gr[net].iter() {
                 self._modify_gain(w, -weight);
             }
         } else if num[k] == 1 {
-            for w in self.H.G[net].iter() {
+            for w in self.hgr.gr[net].iter() {
                 if part[w] == k {
                     self._modify_gain(w, weight);
                     break;
@@ -151,11 +151,11 @@ void FMBiGainCalc<Gnl>::_init_gain_general_net(const typename Gnl::node_t& net,
  */
 template <typename Gnl>
 pub fn FMBiGainCalc<Gnl>::update_move_2pin_net(part: &[u8],
-                                             const MoveInfo<typename Gnl::node_t>& move_info) ->
+                                             move_info: &MoveInfo<typename Gnl::node_t>) ->
     typename Gnl::node_t {
-    let mut netCur = self.H.G[move_info.net].begin();
-    let mut w = (*netCur != move_info.v) ? *netCur : *++netCur;
-    let weight = self.H.get_net_weight(move_info.net);
+    let mut net_cur = self.hgr.gr[move_info.net].begin();
+    let mut w = (*net_cur != move_info.v) ? *net_cur : *++net_cur;
+    let weight = self.hgr.get_net_weight(move_info.net);
     const i32 delta = (part[w] == move_info.fromPart) ? weight : -weight;
     self.deltaGainW = 2 * delta;
     return w;
@@ -169,15 +169,15 @@ pub fn FMBiGainCalc<Gnl>::update_move_2pin_net(part: &[u8],
  * @return ret_info
  */
 template <typename Gnl>
-void FMBiGainCalc<Gnl>::init_IdVec(const typename Gnl::node_t& v, const typename Gnl::node_t& net) {
-    // let mut rng = self.H.G[net] |
+void FMBiGainCalc<Gnl>::init_IdVec(v: &typename Gnl::node_t, net: &typename Gnl::node_t) {
+    // let mut rng = self.hgr.gr[net] |
     //         ranges::views::remove_if([&](let mut w) { return w == v; });
     // using namespace transrangers;
-    // let mut rng = filter([&](let & w) { return w != v; }, all(self.H.G[net]));
+    // let mut rng = filter([&](let & w) { return w != v; }, all(self.hgr.gr[net]));
     // self.IdVec = FMPmr::Vec<typename Gnl::node_t>(rng.begin(), rng.end(), &self.rsrc);
 
     self.IdVec.clear();
-    let mut rng = self.H.G[net];
+    let mut rng = self.hgr.gr[net];
     self.IdVec.reserve(rng.size() - 1);
     for w in rng.iter() {
         if w == v {
@@ -196,14 +196,14 @@ void FMBiGainCalc<Gnl>::init_IdVec(const typename Gnl::node_t& v, const typename
  */
 template <typename Gnl>
 pub fn FMBiGainCalc<Gnl>::update_move_3pin_net(part: &[u8],
-                                             const MoveInfo<typename Gnl::node_t>& move_info)
+                                             move_info: &MoveInfo<typename Gnl::node_t>)
     -> Vec<i32> {
     // let & [net, v, fromPart, _] = move_info;
     let mut num = array<usize, 2>{0U, 0U};
     for w in self.IdVec.iter() {
         num[part[w]] += 1;
     }
-    // for (let & w : self.H.G[move_info.net])
+    // for (let & w : self.hgr.gr[move_info.net])
     // {
     //     if (w == move_info.v)
     //     {
@@ -213,7 +213,7 @@ pub fn FMBiGainCalc<Gnl>::update_move_3pin_net(part: &[u8],
     //     IdVec.push(w);
     // }
     let mut deltaGain = Vec<i32>{0, 0};
-    let mut weight = self.H.get_net_weight(move_info.net);
+    let mut weight = self.hgr.get_net_weight(move_info.net);
     let part_w = part[self.IdVec[0]];
 
     if part_w != move_info.fromPart {
@@ -238,7 +238,7 @@ pub fn FMBiGainCalc<Gnl>::update_move_3pin_net(part: &[u8],
  */
 template <typename Gnl>
 pub fn FMBiGainCalc<Gnl>::update_move_general_net(part: &[u8],
-                                                const MoveInfo<typename Gnl::node_t>& move_info)
+                                                move_info: &MoveInfo<typename Gnl::node_t>)
     -> Vec<i32> {
     // let & [net, v, fromPart, toPart] = move_info;
     let mut num = array<u8, 2>{0, 0};
@@ -247,7 +247,7 @@ pub fn FMBiGainCalc<Gnl>::update_move_general_net(part: &[u8],
         num[part[w]] += 1;
     }
 
-    // for (let & w : self.H.G[move_info.net])
+    // for (let & w : self.hgr.gr[move_info.net])
     // {
     //     if (w == move_info.v)
     //     {
@@ -258,16 +258,16 @@ pub fn FMBiGainCalc<Gnl>::update_move_general_net(part: &[u8],
     // }
     let degree = self.IdVec.size();
     let mut deltaGain = Vec<i32>(degree, 0);
-    let mut weight = self.H.get_net_weight(move_info.net);
+    let mut weight = self.hgr.get_net_weight(move_info.net);
 
     // #pragma unroll
     for l in {move_info.fromPart, move_info.toPart}.iter() {
         if num[l] == 0 {
-            for (usize index = 0U; index != degree; ++index) {
+            for (index: usize = 0U; index != degree; ++index) {
                 deltaGain[index] -= weight;
             }
         } else if num[l] == 1 {
-            for (usize index = 0U; index != degree; ++index) {
+            for (index: usize = 0U; index != degree; ++index) {
                 let mut part_w = part[self.IdVec[index]];
                 if part_w == l {
                     deltaGain[index] += weight;

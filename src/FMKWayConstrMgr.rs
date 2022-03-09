@@ -13,7 +13,7 @@ template <typename Node> struct MoveInfo;
 template <typename Node> struct MoveInfoV;
 
 /**
- * @brief FM K-Way Partition Constraint Manager
+ * @brief FM num_parts-Way Partition Constraint Manager
  *
  * @tparam Gnl
  */
@@ -25,12 +25,12 @@ template <typename Gnl> class FMKWayConstrMgr : public FMConstrMgr<Gnl> {
     /**
      * @brief Construct a new FMKWayConstrMgr object
      *
-     * @param[in] H
-     * @param[in] BalTol
-     * @param[in] K
+     * @param[in] hgr
+     * @param[in] bal_tol
+     * @param[in] num_parts
      */
-    FMKWayConstrMgr(const Gnl& H, f64 BalTol, u8 K)
-        : FMConstrMgr<Gnl>{H, BalTol, K}, illegal(K, 1) {}
+    FMKWayConstrMgr(hgr: &Gnl, f64 bal_tol, u8 num_parts)
+        : FMConstrMgr<Gnl>{hgr, bal_tol, num_parts}, illegal(num_parts, 1) {}
 
     /**
      * @brief
@@ -44,7 +44,7 @@ template <typename Gnl> class FMKWayConstrMgr : public FMConstrMgr<Gnl> {
      *
      * @param[in] part
      */
-    let mut init(gsl::span<const u8> part) {
+    pub fn init(gsl::span<const u8> part) {
         FMConstrMgr<Gnl>::init(part);
         let mut it = self.diff.begin();
         for il in self.illegal.iter_mut() {
@@ -59,5 +59,5 @@ template <typename Gnl> class FMKWayConstrMgr : public FMConstrMgr<Gnl> {
      * @param[in] move_info_v
      * @return LegalCheck
      */
-    let mut check_legal(const MoveInfoV<typename Gnl::node_t>& move_info_v) -> LegalCheck;
+    pub fn check_legal(&mut self, move_info_v: &MoveInfoV<typename Gnl::node_t>) -> LegalCheck;
 };

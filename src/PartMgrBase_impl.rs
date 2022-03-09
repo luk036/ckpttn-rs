@@ -23,7 +23,7 @@
  */
 template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
 void PartMgrBase<Gnl, GainMgr, ConstrMgr>::init(gsl::span<u8> part) {
-    self.totalcost = self.gainMgr.init(part);
+    self.totalcost = self.gain_mgr.init(part);
     self.validator.init(part);
 }
 
@@ -37,42 +37,42 @@ void PartMgrBase<Gnl, GainMgr, ConstrMgr>::init(gsl::span<u8> part) {
  * @return LegalCheck
  */
 template <typename Gnl, typename GainMgr, typename ConstrMgr>  //
-pub fn PartMgrBase<Gnl, GainMgr, ConstrMgr>::legalize(gsl::span<u8> part) -> LegalCheck {
+pub fn PartMgrBase<Gnl, GainMgr, ConstrMgr>::legalize(&mut self, gsl::span<u8> part) -> LegalCheck {
     self.init(part);
 
     // Zero-weighted modules does not contribute legalization
-    for v in self.H.iter() {
-        if (self.H.get_module_weight(v) != 0U) {
+    for v in self.hgr.iter() {
+        if (self.hgr.get_module_weight(v) != 0U) {
             continue;
         }
-        if (!self.H.module_fixed.contains(v)) {
+        if !self.hgr.module_fixed.contains(v) {
             continue;
         }
-        self.gainMgr.lock_all(part[v], v);
+        self.gain_mgr.lock_all(part[v], v);
     }
 
-    let mut legalcheck = LegalCheck::notsatisfied;
-    while legalcheck != LegalCheck::allsatisfied {
+    let mut legalcheck = LegalCheck::NotStatisfied;
+    while legalcheck != LegalCheck::AllStatisfied {
         let toPart = self.validator.select_togo();
-        if (self.gainMgr.is_empty_togo(toPart)) {
+        if self.gain_mgr.is_empty_togo(toPart) {
             break;
         }
-        let rslt = self.gainMgr.select_togo(toPart);
+        let rslt = self.gain_mgr.select_togo(toPart);
         let mut v = std::get<0>(rslt);
         let mut gainmax = std::get<1>(rslt);
         let fromPart = part[v];
         // assert!(v == v);
         assert!(fromPart != toPart);
         let move_info_v = MoveInfoV<typename Gnl::node_t>{v, fromPart, toPart};
-        // Check if the move of v can notsatisfied, makebetter, or satisfied
+        // Check if the move of v can NotStatisfied, makebetter, or satisfied
         legalcheck = self.validator.check_legal(move_info_v);
-        if legalcheck == LegalCheck::notsatisfied {  // notsatisfied
+        if legalcheck == LegalCheck::NotStatisfied {  // NotStatisfied
             continue;
         }
         // Update v and its neigbours (even they are in waitinglist);
         // Put neigbours to bucket
-        self.gainMgr.update_move(part, move_info_v);
-        self.gainMgr.update_move_v(move_info_v, gainmax);
+        self.gain_mgr.update_move(part, move_info_v);
+        self.gain_mgr.update_move_v(move_info_v, gainmax);
         self.validator.update_move(move_info_v);
         part[v] = toPart;
         // totalgain += gainmax;
@@ -100,14 +100,14 @@ void PartMgrBase<Gnl, GainMgr, ConstrMgr>::_optimize_1pass(gsl::span<u8> part) {
     let mut deferredsnapshot = false;
     let mut besttotalgain = 0;
 
-    while (!self.gainMgr.is_empty()) {
+    while (!self.gain_mgr.is_empty()) {
         // Take the gainmax with v from gainbucket
-        // let mut [move_info_v, gainmax] = self.gainMgr.select(part);
-        let mut result = self.gainMgr.select(part);
+        // let mut [move_info_v, gainmax] = self.gain_mgr.select(part);
+        let mut result = self.gain_mgr.select(part);
         let mut move_info_v = std::get<0>(result);
         let mut gainmax = std::get<1>(result);
 
-        // Check if the move of v can satisfied or notsatisfied
+        // Check if the move of v can satisfied or NotStatisfied
         let satisfiedOK = self.validator.check_constraints(move_info_v);
         if !satisfiedOK {
             continue;
@@ -128,9 +128,9 @@ void PartMgrBase<Gnl, GainMgr, ConstrMgr>::_optimize_1pass(gsl::span<u8> part) {
         // Update v and its neigbours (even they are in waitinglist);
         // Put neigbours to bucket
         // let & [v, _, toPart] = move_info_v;
-        self.gainMgr.lock(move_info_v.toPart, move_info_v.v);
-        self.gainMgr.update_move(part, move_info_v);
-        self.gainMgr.update_move_v(move_info_v, gainmax);
+        self.gain_mgr.lock(move_info_v.toPart, move_info_v.v);
+        self.gain_mgr.update_move(part, move_info_v);
+        self.gain_mgr.update_move_v(move_info_v, gainmax);
         self.validator.update_move(move_info_v);
         totalgain += gainmax;
         part[move_info_v.v] = move_info_v.toPart;

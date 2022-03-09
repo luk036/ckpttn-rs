@@ -28,9 +28,9 @@ enum class LegalCheck;
  */
 pub struct MLPartMgr {
   private:
-    f64 BalTol;
-    u8 K;
-    usize limitsize{7U};
+    f64 bal_tol;
+    u8 num_parts;
+    limitsize: usize{7U};
 
   public:
     i32 totalcost{};
@@ -38,29 +38,29 @@ pub struct MLPartMgr {
     /**
      * @brief Construct a new MLPartMgr object
      *
-     * @param[in] BalTol
+     * @param[in] bal_tol
      */
-    explicit MLPartMgr(f64 BalTol) : MLPartMgr(BalTol, 2) {}
+    pub fn new(f64 bal_tol) { MLPartMgr : MLPartMgr(bal_tol, 2) {}
 
     /**
      * @brief Construct a new MLPartMgr object
      *
-     * @param[in] BalTol
-     * @param[in] K
+     * @param[in] bal_tol
+     * @param[in] num_parts
      */
-    MLPartMgr(f64 BalTol, u8 K) : BalTol{BalTol}, K{K} {}
+    MLPartMgr(f64 bal_tol, u8 num_parts) : bal_tol{bal_tol}, num_parts{num_parts} {}
 
-    void set_limitsize(usize limit) { self.limitsize = limit; }
+    pub fn set_limitsize(limit: usize) { self.limitsize = limit; }
 
     /**
      * @brief run_Partition
      *
      * @tparam Gnl
      * @tparam PartMgr
-     * @param[in] H
+     * @param[in] hgr
      * @param[in,out] part
      * @return LegalCheck
      */
     template <typename Gnl, typename PartMgr>
-    let mut run_FMPartition(const Gnl& H, gsl::span<u8> part) -> LegalCheck;
+    pub fn run_FMPartition(&mut self, hgr: &Gnl, gsl::span<u8> part) -> LegalCheck;
 };

@@ -27,20 +27,20 @@ template <typename Gnl> pub fn FMKWayConstrMgr<Gnl>::select_togo(&self) -> u8 {
  * @return LegalCheck
  */
 template <typename Gnl>
-pub fn FMKWayConstrMgr<Gnl>::check_legal(const MoveInfoV<typename Gnl::node_t>& move_info_v)
+pub fn FMKWayConstrMgr<Gnl>::check_legal(move_info_v: &MoveInfoV<typename Gnl::node_t>)
     -> LegalCheck {
     let status = FMConstrMgr<Gnl>::check_legal(move_info_v);
-    if status != LegalCheck::allsatisfied {
+    if status != LegalCheck::AllStatisfied {
         return status;
     }
     self.illegal[move_info_v.fromPart] = 0;
     self.illegal[move_info_v.toPart] = 0;
     for value in self.illegal.iter() {
         if value == 1 {
-            return LegalCheck::getbetter;  // get better, but still illegal
+            return LegalCheck::GetBetter;  // get better, but still illegal
         }
     }
-    return LegalCheck::allsatisfied;  // all satisfied
+    return LegalCheck::AllStatisfied;  // all satisfied
 }
 
 // Instantiation
