@@ -11,9 +11,11 @@
  */
 #[derive(Debug, PartialEq, Eq)]
 pub struct Dllink<T> {
-    next: *mut Dllink<T>, /**< pointer to the next node */
-    prev: *mut Dllink<T>, /**< pointer to the previous node */
-    data: T
+    next: *mut Dllink<T>,
+    /**< pointer to the next node */
+    prev: *mut Dllink<T>,
+    /**< pointer to the previous node */
+    data: T,
 }
 
 impl<T> Dllink<T> {
@@ -22,21 +24,23 @@ impl<T> Dllink<T> {
      *
      * @param[in] data the data
      */
-     fn new(&mut self, data: T) -> Self {
-         let mut res = Self {
-             next: std::ptr::null_mut(),
-             prev: std::ptr::null_mut(),
-             data
-         };
-         res.clear();
-         res
-     }
+    pub fn new(&mut self, data: T) -> Self {
+        let mut res = Self {
+            next: std::ptr::null_mut(),
+            prev: std::ptr::null_mut(),
+            data,
+        };
+        res.clear();
+        res
+    }
 
     /**
      * @brief lock the node (and don't append it to any list)
      *
      */
-    pub fn lock(&mut self) { self.next = std::ptr::null_mut(); }
+    pub fn lock(&mut self) {
+        self.next = std::ptr::null_mut();
+    }
 
     /**
      * @brief whether the node is locked
@@ -55,7 +59,8 @@ impl<T> Dllink<T> {
      * @return false
      */
     pub fn is_empty(&self) -> bool {
-        self.next as *const Dllink<T> == self as *const Dllink<T> }
+        self.next as *const Dllink<T> == self as *const Dllink<T>
+    }
 
     /**
      * @brief reset the list
@@ -87,7 +92,9 @@ impl<T> Dllink<T> {
      */
     pub fn appendleft(&mut self, node: &mut Dllink<T>) {
         node.next = self.next;
-        unsafe { (*self.next).prev = node as *mut Dllink<T>; }
+        unsafe {
+            (*self.next).prev = node as *mut Dllink<T>;
+        }
         self.next = node as *mut Dllink<T>;
         node.prev = self as *mut Dllink<T>;
     }
@@ -99,7 +106,9 @@ impl<T> Dllink<T> {
      */
     pub fn append(&mut self, node: &mut Dllink<T>) {
         node.prev = self.prev;
-        unsafe { (*self.prev).next = node as *mut Dllink<T>; }
+        unsafe {
+            (*self.prev).next = node as *mut Dllink<T>;
+        }
         self.prev = node as *mut Dllink<T>;
         node.next = self as *mut Dllink<T>;
     }
@@ -135,83 +144,4 @@ impl<T> Dllink<T> {
             &mut *res
         }
     }
-}
-
-
-/**
- * @brief list iterator
- *
- * List iterator. Traverse the list from the first item. Usually it is
- * safe to attach/detach list items during the iterator is active.
- */
-template <T> class dll_iterator {
-  private:
-    Dllink<T>* cur; /**< pointer to the current item */
-
-  public:
-    /**
-     * @brief Construct a new dll iterator object
-     *
-     * @param[in] cur
-     */
-    constexpr explicit dll_iterator(Dllink<T>* cur) noexcept : cur{cur} {}
-
-    /**
-     * @brief move to the next item
-     *
-     * @return &mut Dllink<T>
-     */
-    pub fn operator++(&mut self) -> dll_iterator& {
-        self.cur = self.cur.next;
-        return *this;
-    }
-
-    /**
-     * @brief get the reference of the current item
-     *
-     * @return &mut Dllink<T>
-     */
-    pub fn operator*(&mut self) -> &mut Dllink<T> { return *self.cur; }
-
-    /**
-     * @brief eq operator
-     *
-     * @param[in] lhs
-     * @param[in] rhs
-     * @return true
-     * @return false
-     */
-    pub fn operator==(&mut self, lhs: &dll_iterator, rhs: &dll_iterator) -> bool {
-        return lhs.cur == rhs.cur;
-    }
-
-    /**
-     * @brief neq operator
-     *
-     * @param[in] lhs
-     * @param[in] rhs
-     * @return true
-     * @return false
-     */
-    pub fn operator!=(&mut self, lhs: &dll_iterator, rhs: &dll_iterator) -> bool {
-        return !(lhs == rhs);
-    }
-};
-
-/**
- * @brief begin
- *
- * @return dll_iterator
- */
-template <T> inline pub fn Dllink<T>::begin(&mut self) -> dll_iterator<T> {
-    return dll_iterator<T>{self.next};
-}
-
-/**
- * @brief end
- *
- * @return dll_iterator
- */
-template <T> inline pub fn Dllink<T>::end(&mut self) -> dll_iterator<T> {
-    return dll_iterator<T>{this};
 }
