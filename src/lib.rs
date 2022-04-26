@@ -1,3 +1,3 @@
 pub mod dllist;
 
-use dllist::Dllink;
+use dllist::{Dllink, Dllist};

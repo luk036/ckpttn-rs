@@ -1,30 +1,29 @@
-/**
- * @brief doubly linked node (that may also be a "head" a list)
- *
- * A Doubly-linked List class. This class simply contains a link of
- * node's. By adding a "head" node (sentinel), deleting a node is
- * extremely fast (see "Introduction to Algorithm"). This class does
- * not keep the length information as it is not necessary for the FM
- * algorithm. This saves memory and run-time to update the length
- * information. Note that this class does not own the list node. They
- * are supplied by the caller in order to better reuse the nodes.
- */
+/// doubly linked node
+///
+/// Don't copy, don't move!
 #[derive(Debug, PartialEq, Eq)]
 pub struct Dllink<T> {
-    next: *mut Dllink<T>,
-    /**< pointer to the next node */
-    prev: *mut Dllink<T>,
-    /**< pointer to the previous node */
-    data: T,
+    /// pointer to the next node
+    pub next: *mut Dllink<T>,
+    /// pointer to the previous node
+    pub prev: *mut Dllink<T>,
+    pub data: T,
 }
 
 impl<T> Dllink<T> {
     /**
-     * @brief Construct a new Dllink object
-     *
-     * @param[in] data the data
-     */
-    pub fn new(&mut self, data: T) -> Self {
+     Construct a new Dllink object
+
+     # Examples
+
+     ```rust
+     use ckpttn_rs::dllist::Dllink;
+     let a = Dllink::new(3);
+
+     assert_eq!(a.data, 3);
+     ```
+    */
+    pub fn new(data: T) -> Self {
         let mut res = Self {
             next: std::ptr::null_mut(),
             prev: std::ptr::null_mut(),
@@ -35,61 +34,92 @@ impl<T> Dllink<T> {
     }
 
     /**
-     * @brief lock the node (and don't append it to any list)
-     *
-     */
+     Lock the node (and don't append it to any list)
+
+     # Examples
+
+     ```rust
+     use ckpttn_rs::dllist::Dllink;
+     let mut a = Dllink::new(3);
+     a.lock();
+
+     assert_eq!(a.next, std::ptr::null_mut());
+     ```
+    */
+    #[inline]
     pub fn lock(&mut self) {
         self.next = std::ptr::null_mut();
     }
 
     /**
-     * @brief whether the node is locked
-     *
-     * @return true
-     * @return false
-     */
+    whether the node is locked
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let mut a = Dllink::new(3);
+    a.lock();
+
+    assert!(a.is_locked());
+    ```
+    */
+    #[inline]
     pub fn is_locked(&self) -> bool {
         self.next == std::ptr::null_mut()
     }
 
     /**
-     * @brief whether the list is empty
-     *
-     * @return true
-     * @return false
-     */
+    Whether the list is empty
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let a = Dllink::new(3);
+
+    assert!(a.is_empty());
+    ```
+    */
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.next as *const Dllink<T> == self as *const Dllink<T>
     }
 
     /**
-     * @brief reset the list
-     *
-     */
+    Reset the list
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let mut a = Dllink::new(3);
+    a.clear();
+
+    assert!(a.is_empty());
+    ```
+    */
+    #[inline]
     pub fn clear(&mut self) {
         self.next = self as *mut Dllink<T>;
         self.prev = self as *mut Dllink<T>;
     }
 
     /**
-     * @brief detach from a list
-     *
-     */
-    pub fn detach(&mut self) {
-        assert!(!self.is_locked());
-        let n = self.next;
-        let p = self.prev;
-        unsafe {
-            (*p).next = n;
-            (*n).prev = p;
-        }
-    }
+    Append the node to the front
 
-    /**
-     * @brief append the node to the front
-     *
-     * @param[in,out] node
-     */
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let mut a = Dllink::new(3);
+    let mut b = Dllink::new(3);
+    a.appendleft(&mut b);
+
+    assert!(!a.is_empty());
+    ```
+    */
+    #[inline]
     pub fn appendleft(&mut self, node: &mut Dllink<T>) {
         node.next = self.next;
         unsafe {
@@ -100,10 +130,20 @@ impl<T> Dllink<T> {
     }
 
     /**
-     * @brief append the node to the back
-     *
-     * @param[in,out] node
-     */
+    Append the node to the back
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let mut a = Dllink::new(3);
+    let mut b = Dllink::new(3);
+    a.append(&mut b);
+
+    assert!(!a.is_empty());
+    ```
+    */
+    #[inline]
     pub fn append(&mut self, node: &mut Dllink<T>) {
         node.prev = self.prev;
         unsafe {
@@ -114,12 +154,23 @@ impl<T> Dllink<T> {
     }
 
     /**
-     * @brief pop a node from the front
-     *
-     * @return &mut Dllink<T>
-     *
-     * Precondition: list is not empty
-     */
+    Pop a node from the front
+
+    Precondition: list is not empty
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let mut a = Dllink::new(3);
+    let mut b = Dllink::new(3);
+    a.appendleft(&mut b);
+    let d = a.popleft();
+
+    assert_eq!(b, *d);
+    ```
+    */
+    #[inline]
     pub fn popleft(&mut self) -> &mut Dllink<T> {
         let res = self.next;
         unsafe {
@@ -130,12 +181,22 @@ impl<T> Dllink<T> {
     }
 
     /**
-     * @brief pop a node from the back
-     *
-     * @return &mut Dllink<T>
-     *
-     * Precondition: list is not empty
-     */
+    Pop a node from the back
+
+    Precondition: list is not empty
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let mut a = Dllink::new(3);
+    let mut b = Dllink::new(3);
+    a.append(&mut b);
+    let d = a.pop();
+
+    assert_eq!(b, *d);
+    ```
+    */
     pub fn pop(&mut self) -> &mut Dllink<T> {
         let res = self.prev;
         unsafe {
@@ -143,5 +204,269 @@ impl<T> Dllink<T> {
             (*self.prev).next = self as *mut Dllink<T>;
             &mut *res
         }
+    }
+
+    /**
+    Detach from a list
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let mut a = Dllink::new(3);
+    let mut b = Dllink::new(3);
+    a.append(&mut b);
+    b.detach();
+
+    assert!(a.is_empty());
+    ```
+    */
+    #[inline]
+    pub fn detach(&mut self) {
+        assert!(!self.is_locked());
+        let n = self.next;
+        let p = self.prev;
+        unsafe {
+            (*p).next = n;
+            (*n).prev = p;
+        }
+    }
+}
+
+/**
+Doubly linked list
+
+A Doubly-linked List class. This class simply contains a link of
+node's. By adding a "head" node (sentinel), deleting a node is
+extremely fast (see "Introduction to Algorithm"). This class does
+not keep the length information as it is not necessary for the FM
+algorithm. This saves memory and run-time to update the length
+information. Note that this class does not own the list node. They
+are supplied by the caller in order to better reuse the nodes.
+*/
+#[derive(Debug, PartialEq, Eq)]
+pub struct Dllist<T> {
+    pub head: Dllink<T>,
+}
+
+impl<T> Dllist<T> {
+    /**
+     * Construct a new Dllist object
+
+     # Examples
+
+     ```rust
+     use ckpttn_rs::dllist::Dllist;
+     let a = Dllist::new(3);
+
+     assert_eq!(a.head.data, 3);
+     ```
+    */
+    #[inline]
+    pub fn new(data: T) -> Self {
+        let mut res = Self {
+            head: Dllink::new(data), // move occurred!
+        };
+        res.clear(); // need to reset the pointers
+        res
+    }
+
+    /**
+     Whether the list is empty
+
+     # Examples
+
+     ```rust
+     use ckpttn_rs::dllist::Dllist;
+     let a = Dllist::new(3);
+
+     assert!(a.is_empty());
+     ```
+    */
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.head.is_empty()
+    }
+
+    /**
+     Reset the list
+
+     # Examples
+
+     ```rust
+     use ckpttn_rs::dllist::Dllist;
+     let mut a = Dllist::new(3);
+     a.clear();
+
+     assert!(a.is_empty());
+     ```
+    */
+    #[inline]
+    pub fn clear(&mut self) {
+        self.head.clear()
+    }
+
+    /**
+     Append the node to the front
+
+     # Examples
+
+     ```rust
+     use ckpttn_rs::dllist::{Dllist, Dllink};
+     let mut a = Dllist::new(3);
+     let mut b = Dllink::new(3);
+     a.appendleft(&mut b);
+
+     assert!(!a.is_empty());
+     ```
+    */
+    #[inline]
+    pub fn appendleft(&mut self, node: &mut Dllink<T>) {
+        self.head.appendleft(node);
+    }
+
+    /**
+     Append the node to the back
+
+     # Examples
+
+     ```rust
+     use ckpttn_rs::dllist::{Dllist, Dllink};
+     let mut a = Dllist::new(3);
+     let mut b = Dllink::new(3);
+     a.appendleft(&mut b);
+
+     assert!(!a.is_empty());
+     ```
+    */
+    #[inline]
+    pub fn append(&mut self, node: &mut Dllink<T>) {
+        self.head.append(node);
+    }
+
+    /**
+    Pop a node from the front
+
+    Precondition: list is not empty
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::{Dllist, Dllink};
+    let mut a = Dllist::new(0);
+    let mut b = Dllink::new(3);
+    a.appendleft(&mut b);
+    let d = a.popleft();
+
+    assert_eq!(b, *d);
+    ```
+    */
+    #[inline]
+    pub fn popleft(&mut self) -> &mut Dllink<T> {
+        self.head.popleft()
+    }
+
+    /**
+    Pop a node from the back
+
+    Precondition: list is not empty
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::{Dllist, Dllink};
+    let mut a = Dllist::new(0);
+    let mut b = Dllink::new(3);
+    a.append(&mut b);
+    let d = a.pop();
+
+    assert_eq!(b, *d);
+    ```
+    */
+    #[inline]
+    pub fn pop(&mut self) -> &mut Dllink<T> {
+        self.head.pop()
+    }
+}
+
+/**
+List iterator
+
+Traverse the list from the first item. Usually it is safe
+to attach/detach list items during the iterator is active.
+*/
+#[derive(Debug, PartialEq, Eq)]
+pub struct DllIterator<'a, T> {
+    cur: *mut Dllink<T>,
+    link: &'a mut Dllink<T>,
+}
+
+impl<'a, T> DllIterator<'a, T> {
+    /**
+    Construct a new DllIterator object
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::{Dllink, DllIterator};
+    let mut b = Dllink::new(3);
+    let it = DllIterator::new(&mut b);
+    ```
+    */
+    #[inline]
+    pub fn new(link: &'a mut Dllink<T>) -> Self {
+        Self {
+            cur: link.next,
+            link,
+        }
+    }
+}
+
+impl<T> Dllist<T> {
+    /**
+    Return a new DllIterator object
+
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllist;
+    let mut a = Dllist::new(3);
+    let it = a.iter_mut();
+    ```
+    */
+    pub fn iter_mut(&mut self) -> DllIterator<T> {
+        DllIterator::new(&mut self.head)
+    }
+}
+
+impl<'a, T> Iterator for DllIterator<'a, T> {
+    type Item = &'a mut Dllink<T>;
+
+    /**
+    Return a next item
+
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::{Dllist, Dllink};
+    let mut a = Dllist::new(3);
+    let mut b = Dllink::new(3);
+    a.appendleft(&mut b);
+    for d in a.iter_mut() {
+        println!("{:#?}", d.data);
+    }
+    ```
+    */
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cur as *const Dllink<T> != self.link as *const Dllink<T> {
+            let res = self.cur;
+            unsafe {
+                self.cur = (*self.cur).next;
+                return Some(&mut *res);
+            }
+        }
+        None
     }
 }
