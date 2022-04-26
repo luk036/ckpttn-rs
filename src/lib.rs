@@ -1,3 +1,5 @@
+pub mod bpqueue;
 pub mod dllist;
 
-use dllist::{Dllink, Dllist};
+use bpqueue::BPQueue;
+use dllist::{DllIterator, Dllink, Dllist};

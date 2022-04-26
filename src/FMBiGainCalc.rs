@@ -25,7 +25,7 @@ template <Gnl> class FMBiGainCalc {
 
   public:
     using node_t = Gnl::node_t;
-    using Item = Dllink<std::pair<node_t, u32>>;
+    using Item = Dllink<(node_t, u32)>;
 
   private:
     hgr: &Gnl

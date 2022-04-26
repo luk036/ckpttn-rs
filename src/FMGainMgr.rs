@@ -24,7 +24,7 @@ template <Gnl, GainCalc, class Derived> class FMGainMgr {
     self: &mut Derived = *static_cast<Derived*>(this);
     using node_t = Gnl::node_t;
     // friend Derived;
-    using Item = Dllink<std::pair<node_t, u32>>;
+    using Item = Dllink<(node_t, u32)>;
 
   protected:
     Item waitinglist{std::make_pair(node_t{}, u32(0))};

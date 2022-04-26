@@ -1,7 +1,7 @@
-use super::dllist;
+use crate::dllist::{Dllink, Dllist};
 
 /**
- * @brief Bounded priority queue
+ * Bounded priority queue
  *
  * Bounded Priority Queue with integer keys in [a..b].
  * Implemented by an array (bucket) of doubly-linked lists.
@@ -19,327 +19,209 @@ use super::dllist;
  *
  * All the member functions assume that the keys are inside the bounds.
  *
- * @tparam _Tp
- * @tparam Int
- * @tparam _Sequence
- * @tparam std::make_unsigned_t<Int>>>>
  */
-template <_Tp, Int = i32,
-          _Sequence = Vec<Dllink<std::pair<_Tp, std::make_unsigned_t<Int>>>>>
-pub struct BPQueue {
-    using UInt = std::make_unsigned_t<Int>;
-
-    friend bpq_iterator<_Tp, Int>;
-    using Item = Dllink<std::pair<_Tp, UInt>>;
-
-    static_assert!(std::is_same<Item, _Sequence::value_type>::value,
-                  "value_type must be the same as the underlying container");
-
-  public:
-    using value_type = _Sequence::value_type;
-    using reference = _Sequence::reference;
-    using const_reference = _Sequence::const_reference;
-    using size_type = _Sequence::size_type;
-    using container_type = _Sequence;
-
-  private:
-    Item sentinel{};   //!< sentinel */
-    _Sequence bucket;  //!< bucket, array of lists
-    UInt max{};        //!< max value
-    Int offset;        //!< a - 1
-    UInt high;         //!< b - a + 1
-
-  public:
-    /**
-     * @brief Construct a new BPQueue object
-     *
-     * @param[in] a lower bound
-     * @param[in] b upper bound
-     */
-    constexpr BPQueue(Int a, Int b)
-        : bucket(static_cast<UInt>(b - a) + 2U),
-          offset(a - 1),
-          high(static_cast<UInt>(b - offset)) {
-        assert!(a <= b);
-        static_assert!(std::is_integral<Int>::value, "bucket's key must be an integer");
-        bucket[0].append(self.sentinel);  // sentinel
-    }
-
-    BPQueue(const BPQueue&) = delete;  // don't copy
-    ~BPQueue() = default;
-    pub fn operator=(&mut self, const BPQueue&) -> BPQueue& = delete;  // don't assign
-    constexpr BPQueue(BPQueue&&) noexcept = default;
-    pub fn operator=(&mut self, BPQueue&&) -> BPQueue& = default;  // don't assign
-
-    /**
-     * @brief Whether the %BPQueue is empty.
-     *
-     * @return true
-     * @return false
-     */
-    pub fn is_empty(&self) -> bool { return self.max == 0U; }
-
-    /**
-     * @brief Set the key object
-     *
-     * @param[out] it the item
-     * @param[in] gain the key of it
-     */
-    pub fn set_key(&mut self, it: &mut Item, Int gain)
-        it.data.second = static_cast<UInt>(gain - self.offset);
-    }
-
-    /**
-     * @brief Get the max value
-     *
-     * @return Int maximum value
-     */
-    pub fn get_max(&self) -> Int {
-        return self.offset + Int(self.max);
-    }
-
-    /**
-     * @brief Clear reset the PQ
-     */
-    pub fn clear(&mut self) {
-        while self.max > 0 {
-            self.bucket[self.max].clear();
-            self.max -= 1;
-        }
-    }
-
-    /**
-     * @brief Append item with internal key
-     *
-     * @param[in,out] it the item
-     */
-    pub fn append_direct(&mut self, it: &mut Item)
-        assert!(static_cast<Int>(it.data.second) > self.offset);
-        self.append(it, Int(it.data.second));
-    }
-
-    /**
-     * @brief Append item with external key
-     *
-     * @param[in,out] it the item
-     * @param[in] k  the key
-     */
-    pub fn append(&mut self, it: &mut Item, Int k)
-        assert!(k > self.offset);
-        it.data.second = UInt(k - self.offset);
-        if self.max < it.data.second {
-            self.max = it.data.second;
-        }
-        self.bucket[it.data.second].append(it);
-    }
-
-    /**
-     * @brief Pop node with the highest key
-     *
-     * @return Dllink&
-     */
-    pub fn popleft(&mut self) -> Item& {
-        res: &mut auto = self.bucket[self.max].popleft();
-        while (self.bucket[self.max].is_empty()) {
-            self.max -= 1;
-        }
-        return res;
-    }
-
-    /**
-     * @brief Decrease key by delta
-     *
-     * @param[in,out] it the item
-     * @param[in] delta the change of the key
-     *
-     * Note that the order of items with same key will not be preserved.
-     * For the FM algorithm, this is a prefered behavior.
-     */
-    pub fn decrease_key(&mut self, it: &mut Item, UInt delta)
-        // self.bucket[it.data.second].detach(it)
-        it.detach();
-        it.data.second -= delta;
-        assert!(it.data.second > 0);
-        assert!(it.data.second <= self.high);
-        self.bucket[it.data.second].append(it);  // FIFO
-        if self.max < it.data.second {
-            self.max = it.data.second;
-            return;
-        }
-        while self.bucket[self.max].is_empty() {
-            self.max -= 1;
-        }
-    }
-
-    /**
-     * @brief Increase key by delta
-     *
-     * @param[in,out] it the item
-     * @param[in] delta the change of the key
-     *
-     * Note that the order of items with same key will not be preserved.
-     * For the FM algorithm, this is a prefered behavior.
-     */
-    pub fn increase_key(&mut self, it: &mut Item, UInt delta)
-        // self.bucket[it.data.second].detach(it)
-        it.detach();
-        it.data.second += delta;
-        assert!(it.data.second > 0);
-        assert!(it.data.second <= self.high);
-        self.bucket[it.data.second].appendleft(it);  // LIFO
-        if self.max < it.data.second {
-            self.max = it.data.second;
-        }
-    }
-
-    /**
-     * @brief Modify key by delta
-     *
-     * @param[in,out] it the item
-     * @param[in] delta the change of the key
-     *
-     * Note that the order of items with same key will not be preserved.
-     * For FM algorithm, this is a prefered behavior.
-     */
-    pub fn modify_key(&mut self, it: &mut Item, Int delta)
-        if it.is_locked() {
-            return;
-        }
-        if delta > 0 {
-            self.increase_key(it, UInt(delta));
-        } else if delta < 0 {
-            self.decrease_key(it, UInt(-delta));
-        }
-    }
-
-    /**
-     * @brief Detach the item from BPQueue
-     *
-     * @param[in,out] it the item
-     */
-    pub fn detach(&mut self, it: &mut Item)
-        // self.bucket[it.data.second].detach(it)
-        it.detach();
-        while (self.bucket[self.max].is_empty()) {
-            self.max -= 1;
-        }
-    }
-
-    /**
-     * @brief Iterator point to the begin
-     *
-     * @return bpq_iterator
-     */
-    pub fn begin() -> bpq_iterator<_Tp, Int>;
-
-    /**
-     * @brief Iterator point to the end
-     *
-     * @return bpq_iterator
-     */
-    pub fn end() -> bpq_iterator<_Tp, Int>;
-};
-
-/**
- * @brief Bounded Priority Queue Iterator
- *
- * Traverse the queue in descending order.
- * Detaching a queue items may invalidate the iterator because
- * the iterator makes a copy of the current key.
- */
-template <_Tp, Int = i32> class bpq_iterator {
-    using UInt = std::make_unsigned_t<Int>;
-
-    // using value_type = _Tp;
-    // using key_type = Int;
-    using Item = Dllink<std::pair<_Tp, UInt>>;
-
-  private:
-    BPQueue<_Tp, Int>& bpq;                      //!< the priority queue
-    UInt curkey;                                 //!< the current key value
-    dll_iterator<std::pair<_Tp, UInt>> curitem;  //!< list iterator pointed to the current item.
-
-    /**
-     * @brief Get the reference of the current list
-     *
-     * @return Item&
-     */
-    pub fn curlist() -> Item& { return self.bpq.bucket[self.curkey]; }
-
-  public:
-    /**
-     * @brief Construct a new bpq iterator object
-     *
-     * @param[in] bpq
-     * @param[in] curkey
-     */
-    constexpr bpq_iterator(BPQueue<_Tp, Int>& bpq, UInt curkey)
-        : bpq{bpq}, curkey{curkey}, curitem{bpq.bucket[curkey].begin()} {}
-
-    /**
-     * @brief Move to the next item
-     *
-     * @return bpq_iterator&
-     */
-    pub fn operator++() -> bpq_iterator& {
-        ++self.curitem;
-        while (self.curitem == self.curlist().end()) {
-            do {
-                self.curkey -= 1;
-            } while (self.curlist().is_empty());
-            self.curitem = self.curlist().begin();
-        }
-        return *this;
-    }
-
-    /**
-     * @brief Get the reference of the current item
-     *
-     * @return Item&
-     */
-    pub fn operator*() -> Item& { return *self.curitem; }
-
-    /**
-     * @brief eq operator
-     *
-     * @param[in] lhs
-     * @param[in] rhs
-     * @return true
-     * @return false
-     */
-    friend pub fn operator==(&mut self, lhs: &bpq_iterator, rhs: &bpq_iterator) -> bool {
-        return lhs.curitem == rhs.curitem;
-    }
-
-    /**
-     * @brief neq operator
-     *
-     * @param[in] lhs
-     * @param[in] rhs
-     * @return true
-     * @return false
-     */
-    friend pub fn operator!=(&mut self, lhs: &bpq_iterator, rhs: &bpq_iterator) -> bool {
-        return !(lhs == rhs);
-    }
-};
-
-/**
- * @brief
- *
- * @return bpq_iterator
- */
-template <_Tp, Int, class _Sequence>
-inline pub fn BPQueue<_Tp, Int, _Sequence>::begin() -> bpq_iterator<_Tp, Int> {
-    return {*this, self.max};
+#[derive(Debug)]
+pub struct BPQueue<T> {
+    max: usize,
+    offset: i32,
+    high: usize,
+    sentinel: Dllink<(u32, T)>,
+    bucket: Vec<Dllist<(u32, T)>>,
 }
 
-/**
- * @brief
- *
- * @return bpq_iterator
- */
-template <_Tp, Int, class _Sequence>
-inline pub fn BPQueue<_Tp, Int, _Sequence>::end() -> bpq_iterator<_Tp, Int> {
-    return {*this, 0};
+impl<T: Default + Clone> BPQueue<T> {
+    /**
+    Construct a new BPQueue object
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    let bpq = BPQueue::<i32>::new(-3, 3);
+    ```
+    */
+    pub fn new(a: i32, b: i32) -> Self {
+        assert!(a <= b);
+        let mut res = Self {
+            max: 0,
+            offset: a - 1,
+            high: (b - a + 1) as usize,
+            sentinel: Dllink::<(u32, T)>::new((1314, T::default())),
+            bucket: vec![Dllist::<(u32, T)>::new((5354, T::default())); (b - a + 2) as usize],
+        };
+        for lst in res.bucket.iter_mut() {
+            lst.clear();
+        }
+        res.sentinel.clear();
+        res.bucket[0].append(&mut res.sentinel);
+        res
+    }
+
+    // /**
+    //  * @brief Whether the %BPQueue is empty.
+    //  *
+    //  * @return true
+    //  * @return false
+    //  */
+    // pub fn is_empty(&self) -> bool { return self.max == 0U; }
+    //
+    // /**
+    //  * @brief Set the key object
+    //  *
+    //  * @param[out] it the item
+    //  * @param[in] gain the key of it
+    //  */
+    // pub fn set_key(&mut self, it: &mut Item, Int gain)
+    //     it.data.second = static_cast<UInt>(gain - self.offset);
+    // }
+    //
+    // /**
+    //  * @brief Get the max value
+    //  *
+    //  * @return Int maximum value
+    //  */
+    // pub fn get_max(&self) -> Int {
+    //     return self.offset + Int(self.max);
+    // }
+    //
+    // /**
+    //  * @brief Clear reset the PQ
+    //  */
+    // pub fn clear(&mut self) {
+    //     while self.max > 0 {
+    //         self.bucket[self.max].clear();
+    //         self.max -= 1;
+    //     }
+    // }
+    //
+    // /**
+    //  * @brief Append item with internal key
+    //  *
+    //  * @param[in,out] it the item
+    //  */
+    // pub fn append_direct(&mut self, it: &mut Item)
+    //     assert!(static_cast<Int>(it.data.second) > self.offset);
+    //     self.append(it, Int(it.data.second));
+    // }
+    //
+    // /**
+    //  * @brief Append item with external key
+    //  *
+    //  * @param[in,out] it the item
+    //  * @param[in] k  the key
+    //  */
+    // pub fn append(&mut self, it: &mut Item, Int k)
+    //     assert!(k > self.offset);
+    //     it.data.second = UInt(k - self.offset);
+    //     if self.max < it.data.second {
+    //         self.max = it.data.second;
+    //     }
+    //     self.bucket[it.data.second].append(it);
+    // }
+    //
+    // /**
+    //  * @brief Pop node with the highest key
+    //  *
+    //  * @return Dllink&
+    //  */
+    // pub fn popleft(&mut self) -> Item& {
+    //     res: &mut auto = self.bucket[self.max].popleft();
+    //     while (self.bucket[self.max].is_empty()) {
+    //         self.max -= 1;
+    //     }
+    //     return res;
+    // }
+    //
+    // /**
+    //  * @brief Decrease key by delta
+    //  *
+    //  * @param[in,out] it the item
+    //  * @param[in] delta the change of the key
+    //  *
+    //  * Note that the order of items with same key will not be preserved.
+    //  * For the FM algorithm, this is a prefered behavior.
+    //  */
+    // pub fn decrease_key(&mut self, it: &mut Item, UInt delta)
+    //     // self.bucket[it.data.second].detach(it)
+    //     it.detach();
+    //     it.data.second -= delta;
+    //     assert!(it.data.second > 0);
+    //     assert!(it.data.second <= self.high);
+    //     self.bucket[it.data.second].append(it);  // FIFO
+    //     if self.max < it.data.second {
+    //         self.max = it.data.second;
+    //         return;
+    //     }
+    //     while self.bucket[self.max].is_empty() {
+    //         self.max -= 1;
+    //     }
+    // }
+    //
+    // /**
+    //  * @brief Increase key by delta
+    //  *
+    //  * @param[in,out] it the item
+    //  * @param[in] delta the change of the key
+    //  *
+    //  * Note that the order of items with same key will not be preserved.
+    //  * For the FM algorithm, this is a prefered behavior.
+    //  */
+    // pub fn increase_key(&mut self, it: &mut Item, UInt delta)
+    //     // self.bucket[it.data.second].detach(it)
+    //     it.detach();
+    //     it.data.second += delta;
+    //     assert!(it.data.second > 0);
+    //     assert!(it.data.second <= self.high);
+    //     self.bucket[it.data.second].appendleft(it);  // LIFO
+    //     if self.max < it.data.second {
+    //         self.max = it.data.second;
+    //     }
+    // }
+    //
+    // /**
+    //  * @brief Modify key by delta
+    //  *
+    //  * @param[in,out] it the item
+    //  * @param[in] delta the change of the key
+    //  *
+    //  * Note that the order of items with same key will not be preserved.
+    //  * For FM algorithm, this is a prefered behavior.
+    //  */
+    // pub fn modify_key(&mut self, it: &mut Item, Int delta)
+    //     if it.is_locked() {
+    //         return;
+    //     }
+    //     if delta > 0 {
+    //         self.increase_key(it, UInt(delta));
+    //     } else if delta < 0 {
+    //         self.decrease_key(it, UInt(-delta));
+    //     }
+    // }
+    //
+    // /**
+    //  * @brief Detach the item from BPQueue
+    //  *
+    //  * @param[in,out] it the item
+    //  */
+    // pub fn detach(&mut self, it: &mut Item)
+    //     // self.bucket[it.data.second].detach(it)
+    //     it.detach();
+    //     while (self.bucket[self.max].is_empty()) {
+    //         self.max -= 1;
+    //     }
+    // }
+    //
+    // /**
+    //  * @brief Iterator point to the begin
+    //  *
+    //  * @return bpq_iterator
+    //  */
+    // pub fn begin() -> bpq_iterator<_Tp, Int>;
+    //
+    // /**
+    //  * @brief Iterator point to the end
+    //  *
+    //  * @return bpq_iterator
+    //  */
+    // pub fn end() -> bpq_iterator<_Tp, Int>;
 }

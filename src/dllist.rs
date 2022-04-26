@@ -1,13 +1,37 @@
 /// doubly linked node
 ///
 /// Don't copy, don't move!
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Dllink<T> {
     /// pointer to the next node
     pub next: *mut Dllink<T>,
     /// pointer to the previous node
     pub prev: *mut Dllink<T>,
     pub data: T,
+}
+
+impl<T: Default> Default for Dllink<T> {
+    /**
+     Construct a default Dllink object
+
+     # Examples
+
+     ```rust
+     use ckpttn_rs::dllist::Dllink;
+     let a = Dllink::<i32>::default();
+
+     assert_eq!(a.data, 0);
+     ```
+    */
+    fn default() -> Self {
+        let mut res = Self {
+            next: std::ptr::null_mut(),
+            prev: std::ptr::null_mut(),
+            data: T::default(),
+        };
+        res.clear();
+        res
+    }
 }
 
 impl<T> Dllink<T> {
@@ -244,9 +268,32 @@ algorithm. This saves memory and run-time to update the length
 information. Note that this class does not own the list node. They
 are supplied by the caller in order to better reuse the nodes.
 */
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Dllist<T> {
     pub head: Dllink<T>,
+}
+
+impl<T: Default> Default for Dllist<T> {
+    /**
+     * Construct a default Dllist object
+
+     # Examples
+
+     ```rust
+     use ckpttn_rs::dllist::Dllist;
+     let a = Dllist::<i32>::default();
+
+     assert_eq!(a.head.data, 0);
+     ```
+    */
+    #[inline]
+    fn default() -> Self {
+        let mut res = Self {
+            head: Dllink::<T>::default(), // move occurred!
+        };
+        res.head.clear(); // need to reset the pointers
+        res
+    }
 }
 
 impl<T> Dllist<T> {

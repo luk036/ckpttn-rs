@@ -25,7 +25,7 @@ template <Node> struct MoveInfoV;
 template <Gnl> class FMKWayGainCalc {
     friend class FMKWayGainMgr<Gnl>;
     using node_t = Gnl::node_t;
-    using Item = Dllink<std::pair<node_t, u32>>;
+    using Item = Dllink<(node_t, u32)>;
 
   private:
     hgr: &Gnl
@@ -74,7 +74,7 @@ template <Gnl> class FMKWayGainCalc {
     //  * @param[in] to_part
     //  * @return Dllink*
     //  */
-    // let mut start_ptr(&mut self, u8 to_part) -> Dllink<std::pair<node_t, i32>>*
+    // let mut start_ptr(&mut self, u8 to_part) -> Dllink<(node_t, i32)>*
     // {
     //     return &self.vertex_list[to_part][0];
     // }
