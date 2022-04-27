@@ -26,7 +26,7 @@ pub struct BPQueue<T> {
     offset: i32,
     high: usize,
     sentinel: Dllink<(u32, T)>,
-    bucket: Vec<Dllist<(u32, T)>>,
+    pub bucket: Vec<Dllist<(u32, T)>>,
 }
 
 impl<T: Default + Clone> BPQueue<T> {
@@ -38,6 +38,9 @@ impl<T: Default + Clone> BPQueue<T> {
     ```rust
     use ckpttn_rs::bpqueue::BPQueue;
     let bpq = BPQueue::<i32>::new(-3, 3);
+
+    assert!(!bpq.bucket[0].is_empty());
+    assert!(bpq.bucket[1].is_empty());
     ```
     */
     pub fn new(a: i32, b: i32) -> Self {
@@ -46,8 +49,8 @@ impl<T: Default + Clone> BPQueue<T> {
             max: 0,
             offset: a - 1,
             high: (b - a + 1) as usize,
-            sentinel: Dllink::<(u32, T)>::new((1314, T::default())),
-            bucket: vec![Dllist::<(u32, T)>::new((5354, T::default())); (b - a + 2) as usize],
+            sentinel: Dllink::new((1314, T::default())),
+            bucket: vec![Dllist::new((5354, T::default())); (b - a + 2) as usize],
         };
         for lst in res.bucket.iter_mut() {
             lst.clear();
@@ -57,43 +60,74 @@ impl<T: Default + Clone> BPQueue<T> {
         res
     }
 
-    // /**
-    //  * @brief Whether the %BPQueue is empty.
-    //  *
-    //  * @return true
-    //  * @return false
-    //  */
-    // pub fn is_empty(&self) -> bool { return self.max == 0U; }
-    //
-    // /**
-    //  * @brief Set the key object
-    //  *
-    //  * @param[out] it the item
-    //  * @param[in] gain the key of it
-    //  */
-    // pub fn set_key(&mut self, it: &mut Item, Int gain)
-    //     it.data.second = static_cast<UInt>(gain - self.offset);
-    // }
-    //
-    // /**
-    //  * @brief Get the max value
-    //  *
-    //  * @return Int maximum value
-    //  */
-    // pub fn get_max(&self) -> Int {
-    //     return self.offset + Int(self.max);
-    // }
-    //
-    // /**
-    //  * @brief Clear reset the PQ
-    //  */
-    // pub fn clear(&mut self) {
-    //     while self.max > 0 {
-    //         self.bucket[self.max].clear();
-    //         self.max -= 1;
-    //     }
-    // }
-    //
+    /**
+    Whether the %BPQueue is empty.
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    let bpq = BPQueue::<i32>::new(-3, 3);
+
+    assert!(bpq.is_empty());
+    ```
+    */
+    pub fn is_empty(&self) -> bool {
+        self.max == 0
+    }
+
+    /**
+    Get the max value
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    let bpq = BPQueue::<i32>::new(-3, 3);
+
+    assert_eq!(bpq.get_max(), -4);
+    ```
+    */
+    pub fn get_max(&self) -> i32 {
+        return self.offset + self.max as i32;
+    }
+
+    /**
+    Clear reset the PQ
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    let mut bpq = BPQueue::<i32>::new(-3, 3);
+    bpq.clear();
+
+    assert!(bpq.is_empty());
+    ```
+    */
+    pub fn clear(&mut self) {
+        while self.max > 0 {
+            self.bucket[self.max].clear();
+            self.max -= 1;
+        }
+    }
+
+    /**
+    Set the key object
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    let mut bpq = BPQueue::<i32>::new(-3, 3);
+
+    assert!(bpq.is_empty());
+    ```
+    */
+    pub fn set_key(&mut self, it: &mut Dllink<(u32, T)>, gain: i32) {
+        it.data.0 = (gain - self.offset) as u32;
+    }
+
     // /**
     //  * @brief Append item with internal key
     //  *
@@ -103,125 +137,182 @@ impl<T: Default + Clone> BPQueue<T> {
     //     assert!(static_cast<Int>(it.data.second) > self.offset);
     //     self.append(it, Int(it.data.second));
     // }
-    //
-    // /**
-    //  * @brief Append item with external key
-    //  *
-    //  * @param[in,out] it the item
-    //  * @param[in] k  the key
-    //  */
-    // pub fn append(&mut self, it: &mut Item, Int k)
-    //     assert!(k > self.offset);
-    //     it.data.second = UInt(k - self.offset);
-    //     if self.max < it.data.second {
-    //         self.max = it.data.second;
-    //     }
-    //     self.bucket[it.data.second].append(it);
-    // }
-    //
-    // /**
-    //  * @brief Pop node with the highest key
-    //  *
-    //  * @return Dllink&
-    //  */
-    // pub fn popleft(&mut self) -> Item& {
-    //     res: &mut auto = self.bucket[self.max].popleft();
-    //     while (self.bucket[self.max].is_empty()) {
-    //         self.max -= 1;
-    //     }
-    //     return res;
-    // }
-    //
-    // /**
-    //  * @brief Decrease key by delta
-    //  *
-    //  * @param[in,out] it the item
-    //  * @param[in] delta the change of the key
-    //  *
-    //  * Note that the order of items with same key will not be preserved.
-    //  * For the FM algorithm, this is a prefered behavior.
-    //  */
-    // pub fn decrease_key(&mut self, it: &mut Item, UInt delta)
-    //     // self.bucket[it.data.second].detach(it)
-    //     it.detach();
-    //     it.data.second -= delta;
-    //     assert!(it.data.second > 0);
-    //     assert!(it.data.second <= self.high);
-    //     self.bucket[it.data.second].append(it);  // FIFO
-    //     if self.max < it.data.second {
-    //         self.max = it.data.second;
-    //         return;
-    //     }
-    //     while self.bucket[self.max].is_empty() {
-    //         self.max -= 1;
-    //     }
-    // }
-    //
-    // /**
-    //  * @brief Increase key by delta
-    //  *
-    //  * @param[in,out] it the item
-    //  * @param[in] delta the change of the key
-    //  *
-    //  * Note that the order of items with same key will not be preserved.
-    //  * For the FM algorithm, this is a prefered behavior.
-    //  */
-    // pub fn increase_key(&mut self, it: &mut Item, UInt delta)
-    //     // self.bucket[it.data.second].detach(it)
-    //     it.detach();
-    //     it.data.second += delta;
-    //     assert!(it.data.second > 0);
-    //     assert!(it.data.second <= self.high);
-    //     self.bucket[it.data.second].appendleft(it);  // LIFO
-    //     if self.max < it.data.second {
-    //         self.max = it.data.second;
-    //     }
-    // }
-    //
-    // /**
-    //  * @brief Modify key by delta
-    //  *
-    //  * @param[in,out] it the item
-    //  * @param[in] delta the change of the key
-    //  *
-    //  * Note that the order of items with same key will not be preserved.
-    //  * For FM algorithm, this is a prefered behavior.
-    //  */
-    // pub fn modify_key(&mut self, it: &mut Item, Int delta)
-    //     if it.is_locked() {
-    //         return;
-    //     }
-    //     if delta > 0 {
-    //         self.increase_key(it, UInt(delta));
-    //     } else if delta < 0 {
-    //         self.decrease_key(it, UInt(-delta));
-    //     }
-    // }
-    //
-    // /**
-    //  * @brief Detach the item from BPQueue
-    //  *
-    //  * @param[in,out] it the item
-    //  */
-    // pub fn detach(&mut self, it: &mut Item)
-    //     // self.bucket[it.data.second].detach(it)
-    //     it.detach();
-    //     while (self.bucket[self.max].is_empty()) {
-    //         self.max -= 1;
-    //     }
-    // }
-    //
-    // /**
-    //  * @brief Iterator point to the begin
-    //  *
-    //  * @return bpq_iterator
-    //  */
-    // pub fn begin() -> bpq_iterator<_Tp, Int>;
-    //
-    // /**
-    //  * @brief Iterator point to the end
-    //  *
-    //  * @return bpq_iterator
-    //  */
-    // pub fn end() -> bpq_iterator<_Tp, Int>;
+
+    /**
+     Append item with external key
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    use ckpttn_rs::dllist::Dllink;
+
+    let mut bpq = BPQueue::<i32>::new(-3, 3);
+    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    bpq.append(&mut a, 0);
+
+    assert!(!bpq.is_empty());
+    ```
+    */
+    pub fn append(&mut self, it: &mut Dllink<(u32, T)>, k: i32) {
+        assert!(k > self.offset);
+        let itdata0 = (k - self.offset) as usize;
+        if self.max < itdata0 {
+            self.max = itdata0;
+        }
+        it.data.0 = itdata0 as u32;
+        self.bucket[itdata0].append(it);
+    }
+
+    /**
+    Pop node with the highest key
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    use ckpttn_rs::dllist::Dllink;
+
+    let mut bpq = BPQueue::<i32>::new(-3, 3);
+    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    bpq.append(&mut a, 0);
+    let (key, v) = bpq.popleft();
+
+    assert_eq!(key, 4);
+    assert_eq!(v, 3);
+    ```
+    */
+    pub fn popleft(&mut self) -> (u32, T) {
+        let res = self.bucket[self.max].popleft().data.clone();
+        while self.bucket[self.max].is_empty() {
+            self.max -= 1;
+        }
+        res
+    }
+
+    /**
+    Detach the item from BPQueue
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    use ckpttn_rs::dllist::Dllink;
+
+    let mut bpq = BPQueue::<i32>::new(-3, 3);
+    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    bpq.append(&mut a, 0);
+    bpq.detach(&mut a);
+
+    assert!(bpq.is_empty());
+    ```
+    */
+    pub fn detach(&mut self, it: &mut Dllink<(u32, T)>) {
+        // self.bucket[it.data.second].detach(it)
+        it.detach();
+        while self.bucket[self.max].is_empty() {
+            self.max -= 1;
+        }
+    }
+
+    /**
+    Decrease key by delta
+    
+    Note that the order of items with same key will not be preserved.
+    For the FM algorithm, this is a desired behavior.
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    use ckpttn_rs::dllist::Dllink;
+
+    let mut bpq = BPQueue::<i32>::new(-3, 3);
+    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    bpq.append(&mut a, 0);
+    bpq.decrease_key(&mut a, 1);
+
+    assert_eq!(bpq.get_max(), -1);
+    ```
+    */
+    pub fn decrease_key(&mut self, it: &mut Dllink<(u32, T)>, delta: u32) {
+        // self.bucket[it.data.second].detach(it)
+        it.detach();
+        it.data.0 -= delta;
+        assert!(it.data.0 > 0);
+        let itdata0 = it.data.0 as usize;
+        assert!(itdata0 <= self.high);
+        self.bucket[itdata0].append(it);  // FIFO
+        if self.max < itdata0 {
+            self.max = itdata0;
+            return;
+        }
+        while self.bucket[self.max].is_empty() {
+            self.max -= 1;
+        }
+    }
+
+    /**
+    Increase key by delta
+    
+    Note that the order of items with same key will not be preserved.
+    For the FM algorithm, this is a desired behavior.
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    use ckpttn_rs::dllist::Dllink;
+
+    let mut bpq = BPQueue::<i32>::new(-3, 3);
+    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    bpq.append(&mut a, 0);
+    bpq.increase_key(&mut a, 1);
+
+    assert_eq!(bpq.get_max(), 1);
+    ```
+    */
+    pub fn increase_key(&mut self, it: &mut Dllink<(u32, T)>, delta: u32) {
+        // self.bucket[it.data.second].detach(it)
+        it.detach();
+        it.data.0 += delta;
+        assert!(it.data.0 > 0);
+        let itdata0 = it.data.0 as usize;
+        assert!(itdata0 <= self.high);
+        self.bucket[itdata0].append(it);  // FIFO
+        if self.max < itdata0 {
+            self.max = itdata0;
+        }
+    }
+
+    /**
+    Modify key by delta
+    
+    Note that the order of items with same key will not be preserved.
+    For the FM algorithm, this is a desired behavior.
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::bpqueue::BPQueue;
+    use ckpttn_rs::dllist::Dllink;
+
+    let mut bpq = BPQueue::<i32>::new(-3, 3);
+    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    bpq.append(&mut a, 0);
+    bpq.modify_key(&mut a, -1);
+
+    assert_eq!(bpq.get_max(), -1);
+    ```
+    */
+    pub fn modify_key(&mut self, it: &mut Dllink<(u32, T)>, delta: i32) {
+        if it.is_locked() {
+            return;
+        }
+        if delta > 0 {
+            self.increase_key(it, delta as u32);
+        } else if delta < 0 {
+            self.decrease_key(it, -delta as u32);
+        }
+    }
 }
