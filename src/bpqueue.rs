@@ -1,32 +1,32 @@
 use crate::dllist::{Dllink, Dllist};
 
 /**
- * Bounded priority queue
- *
- * Bounded Priority Queue with integer keys in [a..b].
- * Implemented by an array (bucket) of doubly-linked lists.
- * Efficient if the keys are bounded by a small integer value.
- *
- * Note that this class does not own PQ nodes. This feature
- * allows these nodes sharable in both doubly linked list class and
- * this class. In the FM algorithm, nodes are either attached to
- * the gain buckets (PQ) or to the waitinglist (doubly-linked list),
- * but cannot be in both at the same time.
- *
- * Another improvement is to increase the size of the array by one
- * element, i.e. (b - a + 2). The extra dummy array element (called
- * sentinel) is used to reduce the boundary checking during updates.
- *
- * All the member functions assume that the keys are inside the bounds.
- *
- */
+Bounded priority queue
+
+Bounded Priority Queue with integer keys in [a..b].
+Implemented by an array (bucket) of doubly-linked lists.
+Efficient if the keys are bounded by a small integer value.
+
+Note that this class does not own PQ nodes. This feature
+allows these nodes sharable in both doubly linked list class and
+this class. In the FM algorithm, nodes are either attached to
+the gain buckets (PQ) or to the waitinglist (doubly-linked list),
+but cannot be in both at the same time.
+
+Another improvement is to increase the size of the array by one
+element, i.e. (b - a + 2). The extra dummy array element (called
+sentinel) is used to reduce the boundary checking during updates.
+
+All the member functions assume that the keys are inside the bounds.
+
+*/
 #[derive(Debug)]
 pub struct BPQueue<T> {
     max: usize,
     offset: i32,
     high: usize,
-    sentinel: Dllink<(u32, T)>,
-    pub bucket: Vec<Dllist<(u32, T)>>,
+    sentinel: Dllink<(usize, T)>,
+    pub bucket: Vec<Dllist<(usize, T)>>,
 }
 
 impl<T: Default + Clone> BPQueue<T> {
@@ -124,8 +124,8 @@ impl<T: Default + Clone> BPQueue<T> {
     assert!(bpq.is_empty());
     ```
     */
-    pub fn set_key(&mut self, it: &mut Dllink<(u32, T)>, gain: i32) {
-        it.data.0 = (gain - self.offset) as u32;
+    pub fn set_key(&mut self, it: &mut Dllink<(usize, T)>, gain: i32) {
+        it.data.0 = (gain - self.offset) as usize;
     }
 
     // /**
@@ -139,7 +139,7 @@ impl<T: Default + Clone> BPQueue<T> {
     // }
 
     /**
-     Append item with external key
+    Append item with external key
 
     # Examples
 
@@ -148,20 +148,19 @@ impl<T: Default + Clone> BPQueue<T> {
     use ckpttn_rs::dllist::Dllink;
 
     let mut bpq = BPQueue::<i32>::new(-3, 3);
-    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    let mut a = Dllink::<(usize, i32)>::new((0, 3));
     bpq.append(&mut a, 0);
 
     assert!(!bpq.is_empty());
     ```
     */
-    pub fn append(&mut self, it: &mut Dllink<(u32, T)>, k: i32) {
+    pub fn append(&mut self, it: &mut Dllink<(usize, T)>, k: i32) {
         assert!(k > self.offset);
-        let itdata0 = (k - self.offset) as usize;
-        if self.max < itdata0 {
-            self.max = itdata0;
+        it.data.0 = (k - self.offset) as usize;
+        if self.max < it.data.0 {
+            self.max = it.data.0;
         }
-        it.data.0 = itdata0 as u32;
-        self.bucket[itdata0].append(it);
+        self.bucket[it.data.0].append(it);
     }
 
     /**
@@ -174,7 +173,7 @@ impl<T: Default + Clone> BPQueue<T> {
     use ckpttn_rs::dllist::Dllink;
 
     let mut bpq = BPQueue::<i32>::new(-3, 3);
-    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    let mut a = Dllink::<(usize, i32)>::new((0, 3));
     bpq.append(&mut a, 0);
     let (key, v) = bpq.popleft();
 
@@ -182,7 +181,7 @@ impl<T: Default + Clone> BPQueue<T> {
     assert_eq!(v, 3);
     ```
     */
-    pub fn popleft(&mut self) -> (u32, T) {
+    pub fn popleft(&mut self) -> (usize, T) {
         let res = self.bucket[self.max].popleft().data.clone();
         while self.bucket[self.max].is_empty() {
             self.max -= 1;
@@ -200,14 +199,14 @@ impl<T: Default + Clone> BPQueue<T> {
     use ckpttn_rs::dllist::Dllink;
 
     let mut bpq = BPQueue::<i32>::new(-3, 3);
-    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    let mut a = Dllink::<(usize, i32)>::new((0, 3));
     bpq.append(&mut a, 0);
     bpq.detach(&mut a);
 
     assert!(bpq.is_empty());
     ```
     */
-    pub fn detach(&mut self, it: &mut Dllink<(u32, T)>) {
+    pub fn detach(&mut self, it: &mut Dllink<(usize, T)>) {
         // self.bucket[it.data.second].detach(it)
         it.detach();
         while self.bucket[self.max].is_empty() {
@@ -217,7 +216,7 @@ impl<T: Default + Clone> BPQueue<T> {
 
     /**
     Decrease key by delta
-    
+
     Note that the order of items with same key will not be preserved.
     For the FM algorithm, this is a desired behavior.
 
@@ -228,23 +227,22 @@ impl<T: Default + Clone> BPQueue<T> {
     use ckpttn_rs::dllist::Dllink;
 
     let mut bpq = BPQueue::<i32>::new(-3, 3);
-    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    let mut a = Dllink::<(usize, i32)>::new((0, 3));
     bpq.append(&mut a, 0);
     bpq.decrease_key(&mut a, 1);
 
     assert_eq!(bpq.get_max(), -1);
     ```
     */
-    pub fn decrease_key(&mut self, it: &mut Dllink<(u32, T)>, delta: u32) {
+    pub fn decrease_key(&mut self, it: &mut Dllink<(usize, T)>, delta: usize) {
         // self.bucket[it.data.second].detach(it)
         it.detach();
         it.data.0 -= delta;
         assert!(it.data.0 > 0);
-        let itdata0 = it.data.0 as usize;
-        assert!(itdata0 <= self.high);
-        self.bucket[itdata0].append(it);  // FIFO
-        if self.max < itdata0 {
-            self.max = itdata0;
+        assert!(it.data.0 <= self.high);
+        self.bucket[it.data.0].append(it); // FIFO
+        if self.max < it.data.0 {
+            self.max = it.data.0;
             return;
         }
         while self.bucket[self.max].is_empty() {
@@ -254,7 +252,7 @@ impl<T: Default + Clone> BPQueue<T> {
 
     /**
     Increase key by delta
-    
+
     Note that the order of items with same key will not be preserved.
     For the FM algorithm, this is a desired behavior.
 
@@ -265,29 +263,28 @@ impl<T: Default + Clone> BPQueue<T> {
     use ckpttn_rs::dllist::Dllink;
 
     let mut bpq = BPQueue::<i32>::new(-3, 3);
-    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    let mut a = Dllink::<(usize, i32)>::new((0, 3));
     bpq.append(&mut a, 0);
     bpq.increase_key(&mut a, 1);
 
     assert_eq!(bpq.get_max(), 1);
     ```
     */
-    pub fn increase_key(&mut self, it: &mut Dllink<(u32, T)>, delta: u32) {
+    pub fn increase_key(&mut self, it: &mut Dllink<(usize, T)>, delta: usize) {
         // self.bucket[it.data.second].detach(it)
         it.detach();
         it.data.0 += delta;
         assert!(it.data.0 > 0);
-        let itdata0 = it.data.0 as usize;
-        assert!(itdata0 <= self.high);
-        self.bucket[itdata0].append(it);  // FIFO
-        if self.max < itdata0 {
-            self.max = itdata0;
+        assert!(it.data.0 <= self.high);
+        self.bucket[it.data.0].append(it); // FIFO
+        if self.max < it.data.0 {
+            self.max = it.data.0;
         }
     }
 
     /**
     Modify key by delta
-    
+
     Note that the order of items with same key will not be preserved.
     For the FM algorithm, this is a desired behavior.
 
@@ -298,21 +295,21 @@ impl<T: Default + Clone> BPQueue<T> {
     use ckpttn_rs::dllist::Dllink;
 
     let mut bpq = BPQueue::<i32>::new(-3, 3);
-    let mut a = Dllink::<(u32, i32)>::new((0, 3));
+    let mut a = Dllink::<(usize, i32)>::new((0, 3));
     bpq.append(&mut a, 0);
     bpq.modify_key(&mut a, -1);
 
     assert_eq!(bpq.get_max(), -1);
     ```
     */
-    pub fn modify_key(&mut self, it: &mut Dllink<(u32, T)>, delta: i32) {
+    pub fn modify_key(&mut self, it: &mut Dllink<(usize, T)>, delta: i32) {
         if it.is_locked() {
             return;
         }
         if delta > 0 {
-            self.increase_key(it, delta as u32);
+            self.increase_key(it, delta as usize);
         } else if delta < 0 {
-            self.decrease_key(it, -delta as u32);
+            self.decrease_key(it, -delta as usize);
         }
     }
 }

@@ -12,16 +12,16 @@ pub struct Dllink<T> {
 
 impl<T: Default> Default for Dllink<T> {
     /**
-     Construct a default Dllink object
+    Construct a default Dllink object
 
-     # Examples
+    # Examples
 
-     ```rust
-     use ckpttn_rs::dllist::Dllink;
-     let a = Dllink::<i32>::default();
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let a = Dllink::<i32>::default();
 
-     assert_eq!(a.data, 0);
-     ```
+    assert_eq!(a.data, 0);
+    ```
     */
     fn default() -> Self {
         let mut res = Self {
@@ -36,16 +36,16 @@ impl<T: Default> Default for Dllink<T> {
 
 impl<T> Dllink<T> {
     /**
-     Construct a new Dllink object
+    Construct a new Dllink object
 
-     # Examples
+    # Examples
 
-     ```rust
-     use ckpttn_rs::dllist::Dllink;
-     let a = Dllink::new(3);
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let a = Dllink::new(3);
 
-     assert_eq!(a.data, 3);
-     ```
+    assert_eq!(a.data, 3);
+    ```
     */
     pub fn new(data: T) -> Self {
         let mut res = Self {
@@ -55,42 +55,6 @@ impl<T> Dllink<T> {
         };
         res.clear();
         res
-    }
-
-    /**
-     Lock the node (and don't append it to any list)
-
-     # Examples
-
-     ```rust
-     use ckpttn_rs::dllist::Dllink;
-     let mut a = Dllink::new(3);
-     a.lock();
-
-     assert_eq!(a.next, std::ptr::null_mut());
-     ```
-    */
-    #[inline]
-    pub fn lock(&mut self) {
-        self.next = std::ptr::null_mut();
-    }
-
-    /**
-    whether the node is locked
-
-    # Examples
-
-    ```rust
-    use ckpttn_rs::dllist::Dllink;
-    let mut a = Dllink::new(3);
-    a.lock();
-
-    assert!(a.is_locked());
-    ```
-    */
-    #[inline]
-    pub fn is_locked(&self) -> bool {
-        self.next == std::ptr::null_mut()
     }
 
     /**
@@ -127,6 +91,42 @@ impl<T> Dllink<T> {
     pub fn clear(&mut self) {
         self.next = self as *mut Dllink<T>;
         self.prev = self as *mut Dllink<T>;
+    }
+
+    /**
+    Lock the node (and don't append it to any list)
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let mut a = Dllink::new(3);
+    a.lock();
+
+    assert_eq!(a.next, std::ptr::null_mut());
+    ```
+    */
+    #[inline]
+    pub fn lock(&mut self) {
+        self.next = std::ptr::null_mut();
+    }
+
+    /**
+    whether the node is locked
+
+    # Examples
+
+    ```rust
+    use ckpttn_rs::dllist::Dllink;
+    let mut a = Dllink::new(3);
+    a.lock();
+
+    assert!(a.is_locked());
+    ```
+    */
+    #[inline]
+    pub fn is_locked(&self) -> bool {
+        self.next == std::ptr::null_mut()
     }
 
     /**
@@ -275,15 +275,15 @@ pub struct Dllist<T> {
 
 impl<T: Default> Default for Dllist<T> {
     /**
-     * Construct a default Dllist object
+    Construct a default Dllist object
 
-     # Examples
+    # Examples
 
-     ```rust
-     use ckpttn_rs::dllist::Dllist;
-     let a = Dllist::<i32>::default();
+    ```rust
+    use ckpttn_rs::dllist::Dllist;
+    let a = Dllist::<i32>::default();
 
-     assert_eq!(a.head.data, 0);
+    assert_eq!(a.head.data, 0);
      ```
     */
     #[inline]
@@ -298,16 +298,16 @@ impl<T: Default> Default for Dllist<T> {
 
 impl<T> Dllist<T> {
     /**
-     * Construct a new Dllist object
+    Construct a new Dllist object
 
-     # Examples
+    # Examples
 
-     ```rust
-     use ckpttn_rs::dllist::Dllist;
-     let a = Dllist::new(3);
+    ```rust
+    use ckpttn_rs::dllist::Dllist;
+    let a = Dllist::new(3);
 
-     assert_eq!(a.head.data, 3);
-     ```
+    assert_eq!(a.head.data, 3);
+    ```
     */
     #[inline]
     pub fn new(data: T) -> Self {
@@ -319,16 +319,16 @@ impl<T> Dllist<T> {
     }
 
     /**
-     Whether the list is empty
+    Whether the list is empty
 
-     # Examples
+    # Examples
 
-     ```rust
-     use ckpttn_rs::dllist::Dllist;
-     let a = Dllist::new(3);
+    ```rust
+    use ckpttn_rs::dllist::Dllist;
+    let a = Dllist::new(3);
 
-     assert!(a.is_empty());
-     ```
+    assert!(a.is_empty());
+    ```
     */
     #[inline]
     pub fn is_empty(&self) -> bool {
@@ -336,17 +336,17 @@ impl<T> Dllist<T> {
     }
 
     /**
-     Reset the list
+    Reset the list
 
-     # Examples
+    # Examples
 
-     ```rust
-     use ckpttn_rs::dllist::Dllist;
-     let mut a = Dllist::new(3);
-     a.clear();
+    ```rust
+    use ckpttn_rs::dllist::Dllist;
+    let mut a = Dllist::new(3);
+    a.clear();
 
-     assert!(a.is_empty());
-     ```
+    assert!(a.is_empty());
+    ```
     */
     #[inline]
     pub fn clear(&mut self) {
@@ -354,18 +354,18 @@ impl<T> Dllist<T> {
     }
 
     /**
-     Append the node to the front
+    Append the node to the front
 
-     # Examples
+    # Examples
 
-     ```rust
-     use ckpttn_rs::dllist::{Dllist, Dllink};
-     let mut a = Dllist::new(3);
-     let mut b = Dllink::new(3);
-     a.appendleft(&mut b);
+    ```rust
+    use ckpttn_rs::dllist::{Dllist, Dllink};
+    let mut a = Dllist::new(3);
+    let mut b = Dllink::new(3);
+    a.appendleft(&mut b);
 
-     assert!(!a.is_empty());
-     ```
+    assert!(!a.is_empty());
+    ```
     */
     #[inline]
     pub fn appendleft(&mut self, node: &mut Dllink<T>) {
@@ -373,18 +373,18 @@ impl<T> Dllist<T> {
     }
 
     /**
-     Append the node to the back
+    Append the node to the back
 
-     # Examples
+    # Examples
 
-     ```rust
-     use ckpttn_rs::dllist::{Dllist, Dllink};
-     let mut a = Dllist::new(3);
-     let mut b = Dllink::new(3);
-     a.appendleft(&mut b);
+    ```rust
+    use ckpttn_rs::dllist::{Dllist, Dllink};
+    let mut a = Dllist::new(3);
+    let mut b = Dllink::new(3);
+    a.appendleft(&mut b);
 
-     assert!(!a.is_empty());
-     ```
+    assert!(!a.is_empty());
+    ```
     */
     #[inline]
     pub fn append(&mut self, node: &mut Dllink<T>) {
@@ -473,7 +473,6 @@ impl<T> Dllist<T> {
     /**
     Return a new DllIterator object
 
-
     # Examples
 
     ```rust
@@ -492,7 +491,6 @@ impl<'a, T> Iterator for DllIterator<'a, T> {
 
     /**
     Return a next item
-
 
     # Examples
 

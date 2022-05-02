@@ -1,25 +1,14 @@
-#pragma once
-
-#include <cinttypes>  // for u8
-#include <gsl/span>   // for span
-#include <Vec>     // for Vec
-
-// #include "moveinfo.hpp"  // for MoveInfo
-
 // forward declare
-template <Node> struct MoveInfo;
-template <Node> struct MoveInfoV;
+use crate::moveinfo::{MoveInfo, MoveInfoV};
 
 /**
- * @brief Check if the move of v can satisfied, GetBetter, or NotStatisfied
+ * Check if the move of v can satisfied, GetBetter, or NotStatisfied
  *
  */
-enum class LegalCheck { NotStatisfied, GetBetter, AllStatisfied };
+enum LegalCheck { NotStatisfied, GetBetter, AllStatisfied }
 
 /**
- * @brief FM Partition Constraint Manager
- *
- * @tparam Gnl
+ * FM Partition Constraint Manager
  */
 template <Gnl> class FMConstrMgr {
   private:
@@ -36,7 +25,7 @@ template <Gnl> class FMConstrMgr {
     using node_t = Gnl::node_t;
 
     /**
-     * @brief Construct a new FMConstrMgr object
+     * Construct a new FMConstrMgr object
      *
      * @param[in] hgr
      * @param[in] bal_tol
@@ -44,7 +33,7 @@ template <Gnl> class FMConstrMgr {
     FMConstrMgr(hgr: &Gnl, f64 bal_tol) : FMConstrMgr(hgr, bal_tol, 2) {}
 
     /**
-     * @brief Construct a new FMConstrMgr object
+     * Construct a new FMConstrMgr object
      *
      * @param[in] hgr
      * @param[in] bal_tol
