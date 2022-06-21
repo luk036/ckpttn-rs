@@ -31,7 +31,7 @@ template <Gnl> class FMBiGainCalc {
     hgr: &Gnl
     Vec<Item> vertex_list;
     i32 totalcost{0};
-    u8 stack_buf[8192];  // ???
+    u8 stack_buf[8192];  // TODO
     FMPmr::monotonic_buffer_resource rsrc;
 
   public:

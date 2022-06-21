@@ -67,7 +67,7 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
     {  // localize C and clusters
         let mut C = py::set<node_t>{};
         let mut clusters = Vec<node_t>{};
-        C.reserve(3 * S.len());  // ???
+        C.reserve(3 * S.len());  // TODO
         clusters.reserve(S.len());
 
         for net in hgr.nets.iter() {
@@ -156,7 +156,7 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
         node_down_map[v2] = v1;
     }
     let mut cluster_down_map = py::dict<index_t, node_t>{};
-    // cluster_down_map.reserve(cluster_map.len()); // ???
+    // cluster_down_map.reserve(cluster_map.len()); // TODO
     // // for (let & [v, net] : cluster_map.items())
     // for (let & keyvalue : cluster_map.items())
     // {
