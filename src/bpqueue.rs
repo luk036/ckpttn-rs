@@ -89,7 +89,7 @@ impl<T: Default + Clone> BPQueue<T> {
     ```
     */
     pub fn get_max(&self) -> i32 {
-        return self.offset + self.max as i32;
+        self.offset + self.max as i32
     }
 
     /**

@@ -71,7 +71,7 @@ impl<T> Dllink<T> {
     */
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.next as *const Dllink<T> == self as *const Dllink<T>
+        std::ptr::eq(self.next, self)
     }
 
     /**
@@ -126,7 +126,7 @@ impl<T> Dllink<T> {
     */
     #[inline]
     pub fn is_locked(&self) -> bool {
-        self.next == std::ptr::null_mut()
+        self.next.is_null()
     }
 
     /**
