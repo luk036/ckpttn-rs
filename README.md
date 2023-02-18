@@ -1,2 +1,5 @@
+[![codecov](https://codecov.io/gh/luk036/ckpttn-rs/branch/master/graph/badge.svg?token=xtq6NxtMhd)](https://codecov.io/gh/luk036/ckpttn-rs)
+
 # ckpttn-rs
-Circuit Partitioning Rust Code
+
+Circuit Partitioning in Rust
