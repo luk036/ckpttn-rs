@@ -103,12 +103,13 @@ impl<T> Dllink<T> {
     let mut a = Dllink::new(3);
     a.lock();
 
-    assert_eq!(a.next, std::ptr::null_mut());
+    assert!(a.is_locked());
     ```
     */
     #[inline]
     pub fn lock(&mut self) {
-        self.next = std::ptr::null_mut();
+        // self.next = std::ptr::null_mut();
+        self.next = self as *mut Dllink<T>;
     }
 
     /**
@@ -126,7 +127,8 @@ impl<T> Dllink<T> {
     */
     #[inline]
     pub fn is_locked(&self) -> bool {
-        self.next.is_null()
+        // self.next.is_null()
+        std::ptr::eq(self.next, self)
     }
 
     /**
