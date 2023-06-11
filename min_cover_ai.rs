@@ -293,3 +293,4 @@ fn reconstruct_graph(
         }
     }
     (gr2, net_weight, nets.len())
+}
