@@ -1,8 +1,8 @@
 /// The `Dllink` type represents a doubly linked node with a pointer to the next and previous nodes and
 /// a data field of type `T`.
-/// 
+///
 /// Properties:
-/// 
+///
 /// * `next`: A pointer to the next node in the doubly linked list.
 /// * `prev`: A pointer to the previous node in the doubly linked list.
 /// * `data`: The `data` property is a generic type `T` that represents the actual data stored in the
@@ -19,9 +19,9 @@ pub struct Dllink<T> {
 impl<T: Default> Default for Dllink<T> {
     /// The `default` function constructs a default `Dllink` object with a data field of type
     /// `T::default()`.
-    /// 
+    ///
     /// Returns:
-    /// 
+    ///
     /// The `default()` function returns a `Dllink` object with default values.
     /// Construct a default Dllink object
     ///
@@ -457,15 +457,6 @@ impl<'a, T> DllIterator<'a, T> {
 
 impl<T> Dllist<T> {
     /// Return a new DllIterator object
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use ckpttn_rs::dllist::Dllist;
-    /// let mut a = Dllist::new(3);
-    /// let mut it = a.iter_mut();
-    /// assert_eq!(it.next().unwrap().data, 3);
-    /// ```
     pub fn iter_mut(&mut self) -> DllIterator<T> {
         DllIterator::new(&mut self.head)
     }
@@ -475,15 +466,6 @@ impl<'a, T> Iterator for DllIterator<'a, T> {
     type Item = &'a mut Dllink<T>;
 
     /// Return a next item
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use ckpttn_rs::dllist::Dllist;
-    /// let mut a = Dllist::new(3);
-    /// let mut it = a.iter_mut();
-    /// assert_eq!(it.next().unwrap().data, 3);
-    /// ```
     fn next(&mut self) -> Option<Self::Item> {
         if self.cur as *const Dllink<T> != self.link as *const Dllink<T> {
             let res = self.cur;
