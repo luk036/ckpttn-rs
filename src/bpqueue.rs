@@ -278,13 +278,20 @@ impl<T: Default + Clone> BPQueue<T> {
     /// assert_eq!(bpq.get_max(), -1);
     /// ```
     pub fn modify_key(&mut self, it: &mut Dllink<(usize, T)>, delta: i32) {
+        use core::cmp::Ordering;
+        
         if it.is_locked() {
             return;
         }
-        if delta > 0 {
-            self.increase_key(it, delta as usize);
-        } else if delta < 0 {
-            self.decrease_key(it, -delta as usize);
+        match delta.cmp(&0) {
+            Ordering::Greater => self.increase_key(it, delta as usize),
+            Ordering::Less => self.decrease_key(it, -delta as usize),
+            Ordering::Equal => (),
         }
+        // if delta > 0 {
+        //     self.increase_key(it, delta as usize);
+        // } else if delta < 0 {
+        //     self.decrease_key(it, -delta as usize);
+        // }
     }
 }
