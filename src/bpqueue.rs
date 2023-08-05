@@ -279,7 +279,7 @@ impl<T: Default + Clone> BPQueue<T> {
     /// ```
     pub fn modify_key(&mut self, it: &mut Dllink<(usize, T)>, delta: i32) {
         use core::cmp::Ordering;
-        
+
         if it.is_locked() {
             return;
         }
