@@ -47,9 +47,6 @@ impl<T: Default> Default for Dllink<T> {
 impl<T> Dllink<T> {
     /// Construct a new Dllink object
     ///
-    /// The `/// # E` is a doc comment in Rust. It is used to document the expected behavior or examples
-    /// of a function, method, or struct. The `E` stands for "Examples" and is used to indicate that the
-    /// following code block is an example of how to use the item being documented.
     /// # Examples
     ///
     /// ```rust
