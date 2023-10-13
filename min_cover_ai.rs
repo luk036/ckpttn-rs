@@ -39,7 +39,7 @@ impl TinyGraph {
 
 #[derive(Clone)]
 struct Netlist {
-    grpy: Graph<usize, usize>,
+    grph: Graph<usize, usize>,
     modules: Vec<usize>,
     nets: Vec<usize>,
     num_modules: usize,
@@ -51,15 +51,15 @@ struct Netlist {
 
 impl Netlist {
     fn new(
-        grpy: Graph<usize, usize>,
+        grph: Graph<usize, usize>,
         modules: Vec<usize>,
         nets: Vec<usize>,
     ) -> Self {
         let num_modules = modules.len();
         let num_nets = nets.len();
-        let max_degree = modules.iter().map(|&cell| grpy.neighbors(cell).count()).max().unwrap_or(0);
+        let max_degree = modules.iter().map(|&cell| grph.neighbors(cell).count()).max().unwrap_or(0);
         Self {
-            grpy,
+            grph,
             modules,
             nets,
             num_modules,
@@ -79,11 +79,11 @@ impl Netlist {
     }
 
     fn number_of_nodes(&self) -> usize {
-        self.grpy.node_count()
+        self.grph.node_count()
     }
 
     fn number_of_pins(&self) -> usize {
-        self.grpy.edge_count()
+        self.grph.edge_count()
     }
 
     fn get_max_degree(&self) -> usize {
@@ -121,8 +121,8 @@ fn min_maximal_matching(
         }
         let mut min_val = gap[&net];
         let mut min_net = net;
-        for &vtx in hyprgraph.grpy.neighbors(net) {
-            for &net2 in hyprgraph.grpy.neighbors(vtx) {
+        for &vtx in hyprgraph.grph.neighbors(net) {
+            for &net2 in hyprgraph.grph.neighbors(vtx) {
                 if dep.contains(&net2) {
                     continue;
                 }
@@ -132,7 +132,7 @@ fn min_maximal_matching(
                 }
             }
         }
-        dep.extend(hyprgraph.grpy.neighbors(net));
+        dep.extend(hyprgraph.grph.neighbors(net));
         matchset.insert(min_net);
         total_primal_cost += weight[&min_net];
         total_dual_cost += min_val;
@@ -140,8 +140,8 @@ fn min_maximal_matching(
             continue;
         }
         gap.entry(net).and_modify(|e| *e -= min_val);
-        for &vtx in hyprgraph.grpy.neighbors(net) {
-            for &net2 in hyprgraph.grpy.neighbors(vtx) {
+        for &vtx in hyprgraph.grph.neighbors(net) {
+            for &net2 in hyprgraph.grph.neighbors(vtx) {
                 gap.entry(net2).and_modify(|e| *e -= min_val);
             }
         }
@@ -155,12 +155,12 @@ fn contract_subgraph(
     module_weight: &mut Vec<usize>,
     forbid: &HashSet<usize>,
 ) -> (HierNetlist, Vec<usize>) {
-    let cluster_weight: Vec<usize> = hyprgraph.nets.iter().map(|&net| hyprgraph.grpy.neighbors(net).map(|cell| module_weight[cell]).sum()).collect();
+    let cluster_weight: Vec<usize> = hyprgraph.nets.iter().map(|&net| hyprgraph.grph.neighbors(net).map(|cell| module_weight[cell]).sum()).collect();
     let (clusters, nets, cell_list) = setup(hyprgraph, &cluster_weight, forbid);
-    let grpy = construct_graph(hyprgraph, &nets, &cell_list, &clusters);
+    let grph = construct_graph(hyprgraph, &nets, &cell_list, &clusters);
     let num_modules = cell_list.len() + clusters.len();
     let num_clusters = clusters.len();
-    let (gr2, net_weight2, num_nets) = reconstruct_graph(hyprgraph, grpy, &nets, num_clusters, num_modules);
+    let (gr2, net_weight2, num_nets) = reconstruct_graph(hyprgraph, grph, &nets, num_clusters, num_modules);
     let mut nets = HashSet::new();
     let mut hgr2 = HierNetlist::new(gr2, (0..num_modules).collect(), (num_modules..num_modules+num_nets).collect());
     let mut module_weight2 = vec![0; num_modules];
@@ -172,7 +172,7 @@ fn contract_subgraph(
         module_weight2[num_cells + i_v] = cluster_weight[net];
     }
     let mut node_down_list = cell_list.clone();
-    node_down_list.extend(clusters.iter().map(|&net| hyprgraph.grpy.neighbors(net).next().unwrap()));
+    node_down_list.extend(clusters.iter().map(|&net| hyprgraph.grph.neighbors(net).next().unwrap()));
     hgr2.clusters = clusters;
     hgr2.node_down_list = node_down_list;
     hgr2.module_weight = Some(module_weight2.clone());
@@ -197,7 +197,7 @@ fn setup(
         }
     }
     for (i, &net) in hyprgraph.nets.iter().enumerate() {
-        if hyprgraph.grpy.neighbors(net).all(|cell| forbid.contains(&cell)) {
+        if hyprgraph.grph.neighbors(net).all(|cell| forbid.contains(&cell)) {
             continue;
         }
         if cluster_weight[i] == 0 {
@@ -214,38 +214,38 @@ fn construct_graph(
     cell_list: &[usize],
     clusters: &[usize],
 ) -> Graph<usize, usize> {
-    let mut grpy = Graph::new();
+    let mut grph = Graph::new();
     let mut node_map = HashMap::new();
     for &cell in cell_list {
-        node_map.insert(cell, grpy.add_node(cell));
+        node_map.insert(cell, grph.add_node(cell));
     }
     for (i, &cluster) in clusters.iter().enumerate() {
-        let node = grpy.add_node(hyprgraph.num_modules + i);
-        for &cell in hyprgraph.grpy.neighbors(cluster) {
+        let node = grph.add_node(hyprgraph.num_modules + i);
+        for &cell in hyprgraph.grph.neighbors(cluster) {
             if let Some(&node2) = node_map.get(&cell) {
-                grpy.add_edge(node, node2, i);
+                grph.add_edge(node, node2, i);
             }
         }
     }
     for &net in nets {
         let mut nodes = Vec::new();
-        for &cell in hyprgraph.grpy.neighbors(net) {
+        for &cell in hyprgraph.grph.neighbors(net) {
             if let Some(&node) = node_map.get(&cell) {
                 nodes.push(node);
             }
         }
         for i in 0..nodes.len() {
             for j in i+1..nodes.len() {
-                grpy.add_edge(nodes[i], nodes[j], net);
+                grph.add_edge(nodes[i], nodes[j], net);
             }
         }
     }
-    grpy
+    grph
 }
 
 fn reconstruct_graph(
     hyprgraph: &Netlist,
-    grpy: Graph<usize, usize>,
+    grph: Graph<usize, usize>,
     nets: &[usize],
     num_clusters: usize,
     num_modules: usize,
@@ -253,7 +253,7 @@ fn reconstruct_graph(
     let mut net_weight = vec![0; hyprgraph.num_nets];
     for &net in nets {
         let mut weight = 0;
-        for &cell in hyprgraph.grpy.neighbors(net) {
+        for &cell in hyprgraph.grph.neighbors(net) {
             if cell < hyprgraph.num_modules {
                 weight += 1;
             }
@@ -268,7 +268,7 @@ fn reconstruct_graph(
     }
     for (i, &net) in nets.iter().enumerate() {
         let mut nodes = Vec::new();
-        for &cell in hyprgraph.grpy.neighbors(net) {
+        for &cell in hyprgraph.grph.neighbors(net) {
             if cell < hyprgraph.num_modules {
                 if let Some(&node) = node_map.get(&cell) {
                     nodes.push(node);
@@ -283,7 +283,7 @@ fn reconstruct_graph(
             }
         }
     }
-    for edge in grpy.edge_references() {
+    for edge in grph.edge_references() {
         let (u, v) = (edge.source(), edge.target());
         let net = *edge.weight();
         if let Some(&u2) = node_map.get(&u) {
