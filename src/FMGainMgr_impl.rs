@@ -23,14 +23,14 @@ using namespace std;
  *
  * @tparam GainCalc
  * @tparam Derived
- * @param[in] hgr
+ * @param[in] hyprgraph
  * @param[in] num_parts
  */
 template <Gnl, GainCalc, class Derived>
-FMGainMgr<Gnl, GainCalc, Derived>::FMGainMgr(hgr: &Gnl, u8 num_parts) : hgr{hgr}, num_parts{num_parts}, gain_calc{hgr, num_parts} {
+FMGainMgr<Gnl, GainCalc, Derived>::FMGainMgr(hyprgraph: &Gnl, u8 num_parts) : hyprgraph{hyprgraph}, num_parts{num_parts}, gain_calc{hyprgraph, num_parts} {
     static_assert!(is_base_of<FMGainMgr<Gnl, GainCalc, Derived>, Derived>::value,
                   "base derived consistence");
-    let pmax = hgr.get_max_degree();
+    let pmax = hyprgraph.get_max_degree();
     for (let mut k = 0U; k != self.num_parts; ++k) {
         self.gainbucket.emplace_back(BPQueue<Gnl::node_t>(-pmax, pmax));
     }
@@ -112,8 +112,8 @@ void FMGainMgr<Gnl, GainCalc, Derived>::update_move(
     part: &[u8], move_info_v: &MoveInfoV<Gnl::node_t>) {
     self.gain_calc.update_move_init();
     let & v = move_info_v.v;
-    for net in self.hgr.gr[move_info_v.v].iter() {
-        let degree = self.hgr.gr.degree(net);
+    for net in self.hyprgraph.gr[move_info_v.v].iter() {
+        let degree = self.hyprgraph.gr.degree(net);
         if degree < 2 || degree > FM_MAX_DEGREE  // [[unlikely]]
         {
             continue;  // does not provide any gain change when

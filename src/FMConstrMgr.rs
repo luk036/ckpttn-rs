@@ -12,7 +12,7 @@ enum LegalCheck { NotStatisfied, GetBetter, AllStatisfied }
  */
 template <Gnl> class FMConstrMgr {
   private:
-    hgr: &Gnl
+    hyprgraph: &Gnl
     f64 bal_tol;
     u32 totalweight{0};
     u32 weight{};  // cache value
@@ -27,19 +27,19 @@ template <Gnl> class FMConstrMgr {
     /**
      * Construct a new FMConstrMgr object
      *
-     * @param[in] hgr
+     * @param[in] hyprgraph
      * @param[in] bal_tol
      */
-    FMConstrMgr(hgr: &Gnl, f64 bal_tol) : FMConstrMgr(hgr, bal_tol, 2) {}
+    FMConstrMgr(hyprgraph: &Gnl, f64 bal_tol) : FMConstrMgr(hyprgraph, bal_tol, 2) {}
 
     /**
      * Construct a new FMConstrMgr object
      *
-     * @param[in] hgr
+     * @param[in] hyprgraph
      * @param[in] bal_tol
      * @param[in] num_parts
      */
-    FMConstrMgr(hgr: &Gnl, f64 bal_tol, u8 num_parts);
+    FMConstrMgr(hyprgraph: &Gnl, f64 bal_tol, u8 num_parts);
 
   public:
     /**

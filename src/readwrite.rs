@@ -23,7 +23,7 @@
 using namespace std;
 
 // Read the IBM .netD/.net format. Precondition: Netlist is empty.
-void writeJSON(boost::string_view jsonFileName, hgr: &SimpleNetlist) {
+void writeJSON(boost::string_view jsonFileName, hyprgraph: &SimpleNetlist) {
     let mut json = ofstream{jsonFileName.data()};
     if json.fail() {
         cerr << "Error: Can't open file " << jsonFileName << ".\n";
@@ -35,22 +35,22 @@ void writeJSON(boost::string_view jsonFileName, hgr: &SimpleNetlist) {
  "graph": {
 )";
 
-    json << R"( "num_modules": )" << hgr.number_of_modules() << ",\n";
-    json << R"( "num_nets": )" << hgr.number_of_nets() << ",\n";
-    json << R"( "num_pads": )" << hgr.num_pads << "\n";
+    json << R"( "num_modules": )" << hyprgraph.number_of_modules() << ",\n";
+    json << R"( "num_nets": )" << hyprgraph.number_of_nets() << ",\n";
+    json << R"( "num_pads": )" << hyprgraph.num_pads << "\n";
     json << " },\n";
 
     json << R"( "nodes": [)"
          << "\n";
-    for node in hgr.gr.iter() {
+    for node in hyprgraph.gr.iter() {
         json << "  { \"id\": " << node << " },\n";
     }
     json << " ],\n";
 
     json << R"( "links": [)"
          << "\n";
-    for v in hgr.iter() {
-        for net in hgr.gr[v].iter() {
+    for v in hyprgraph.iter() {
+        for net in hyprgraph.gr[v].iter() {
             json << "  {\n";
             json << "   \"source\": " << v << ",\n";
             json << "   \"target\": " << net << "\n";
@@ -152,13 +152,13 @@ pub fn readNetD(&mut self, boost::string_view netDFileName) -> SimpleNetlist {
     //     boost::property_map<graph_t, boost::vertex_index_t>::type;
     // let mut index = boost::get(boost::vertex_index, g);
     // let mut gr = py::grAdaptor<graph_t>{move(g)};
-    let mut hgr = SimpleNetlist{move(g), numModules, numNets};
-    hgr.num_pads = numModules - padOffset - 1;
-    return hgr;
+    let mut hyprgraph = SimpleNetlist{move(g), numModules, numNets};
+    hyprgraph.num_pads = numModules - padOffset - 1;
+    return hyprgraph;
 }
 
 // Read the IBM .are format
-void readAre(hgr: &mut SimpleNetlist, boost::string_view areFileName) {
+void readAre(hyprgraph: &mut SimpleNetlist, boost::string_view areFileName) {
     let mut are = ifstream{areFileName.data()};
     if are.fail() {
         cerr << " Could not open " << areFileName << endl;
@@ -174,8 +174,8 @@ void readAre(hgr: &mut SimpleNetlist, boost::string_view areFileName) {
     u32 weight;
     // let mut totalWeight = 0;
     // xxx index_t smallestWeight = UINT_MAX;
-    let mut numModules = hgr.number_of_modules();
-    let mut padOffset = numModules - hgr.num_pads - 1;
+    let mut numModules = hyprgraph.number_of_modules();
+    let mut padOffset = numModules - hyprgraph.num_pads - 1;
     let mut module_weight = Vec<u32>(numModules);
 
     lineno: usize = 1;
@@ -213,5 +213,5 @@ void readAre(hgr: &mut SimpleNetlist, boost::string_view areFileName) {
         lineno++;
     }
 
-    hgr.module_weight = move(module_weight);
+    hyprgraph.module_weight = move(module_weight);
 }

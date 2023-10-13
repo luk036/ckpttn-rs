@@ -27,31 +27,31 @@ using namespace std;
 /**
  * @brief Create a contraction subgraph object
  *
- * @param[in] hgr
+ * @param[in] hyprgraph
  * @param[in] DontSelect
  * @return unique_ptr<SimpleHierNetlist>
  * @todo simplify this function
  */
-pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<node_t>)
+pub fn create_contraction_subgraph(hyprgraph: &SimpleNetlist, DontSelect: &py::set<node_t>)
     -> unique_ptr<SimpleHierNetlist> {
     let mut weight = py::dict<node_t, u32>{};
-    for net in hgr.nets.iter() {
+    for net in hyprgraph.nets.iter() {
         // weight[net] = accumulate(
-        //     transform([&](let & v) { return hgr.get_module_weight(v); }, all(hgr.gr[net])), 0U);
+        //     transform([&](let & v) { return hyprgraph.get_module_weight(v); }, all(hyprgraph.gr[net])), 0U);
         let mut sum = 0U;
-        for v in hgr.gr[net].iter() {
-            sum += hgr.get_module_weight(v);
+        for v in hyprgraph.gr[net].iter() {
+            sum += hyprgraph.get_module_weight(v);
         }
         weight[net] = sum;
     }
 
     let mut S = py::set<node_t>{};
     let mut dep = DontSelect.copy();
-    min_maximal_matching(hgr, weight, S, dep);
+    min_maximal_matching(hyprgraph, weight, S, dep);
 
     let mut module_up_map = py::dict<node_t, node_t>{};
-    module_up_map.reserve(hgr.number_of_modules());
-    for v in hgr.iter() {
+    module_up_map.reserve(hyprgraph.number_of_modules());
+    for v in hyprgraph.iter() {
         module_up_map[v] = v;
     }
 
@@ -62,7 +62,7 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
 
     let mut modules = Vec<node_t>{};
     let mut nets = Vec<node_t>{};
-    nets.reserve(hgr.nets.len() - S.len());
+    nets.reserve(hyprgraph.nets.len() - S.len());
 
     {  // localize C and clusters
         let mut C = py::set<node_t>{};
@@ -70,12 +70,12 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
         C.reserve(3 * S.len());  // TODO
         clusters.reserve(S.len());
 
-        for net in hgr.nets.iter() {
+        for net in hyprgraph.nets.iter() {
             if S.contains(net) {
-                // let mut net_cur = hgr.gr[net].begin();
+                // let mut net_cur = hyprgraph.gr[net].begin();
                 // let mut master = *net_cur;
                 clusters.push(net);
-                for v in hgr.gr[net].iter() {
+                for v in hyprgraph.gr[net].iter() {
                     module_up_map[v] = net;
                     C.insert(v);
                 }
@@ -84,8 +84,8 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
                 nets.push(net);
             }
         }
-        modules.reserve(hgr.modules.len() - C.len() + clusters.len());
-        for v in hgr.iter() {
+        modules.reserve(hyprgraph.modules.len() - C.len() + clusters.len());
+        for v in hyprgraph.iter() {
             if C.contains(v) {
                 continue;
             }
@@ -118,9 +118,9 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
             ++i_net;
         }
 
-        node_up_dict.reserve(hgr.number_of_modules());
+        node_up_dict.reserve(hyprgraph.number_of_modules());
 
-        for v in hgr.iter() {
+        for v in hyprgraph.iter() {
             node_up_dict[v] = module_map[module_up_map[v]];
         }
         // for (let & net : nets)
@@ -133,8 +133,8 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
     // let mut R = py::range<node_t>(0, num_vertices);
     let mut g = graph_t(num_vertices);
     // gr.add_nodes_from(nodes);
-    for v in hgr.iter() {
-        for net in hgr.gr[v].iter() {
+    for v in hyprgraph.iter() {
+        for net in hyprgraph.gr[v].iter() {
             if S.contains(net) {
                 continue;
             }
@@ -165,7 +165,7 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
     //     cluster_down_map[node_up_dict[v]] = net;
     // }
     for net in S.iter() {
-        for v in hgr.gr[net].iter() {
+        for v in hyprgraph.gr[net].iter() {
             cluster_down_map[node_up_dict[v]] = net;
         }
     }
@@ -178,18 +178,18 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
             module_weight.push(weight[net]);
         } else {
             let v2 = node_down_map[i_v];
-            module_weight.push(hgr.get_module_weight(v2));
+            module_weight.push(hyprgraph.get_module_weight(v2));
         }
     }
 
-    // if isinstance(hgr.modules, range):
-    //     node_up_map = [0 for _ in hgr.modules]
-    // elif isinstance(hgr.modules, list):
+    // if isinstance(hyprgraph.modules, range):
+    //     node_up_map = [0 for _ in hyprgraph.modules]
+    // elif isinstance(hyprgraph.modules, list):
     //     node_up_map = {}
     // else:
     //     raise NotImplementedError
-    let mut node_up_map = Vec<node_t>(hgr.modules.len());
-    for v in hgr.modules.iter() {
+    let mut node_up_map = Vec<node_t>(hyprgraph.modules.len());
+    for v in hyprgraph.modules.iter() {
         node_up_map[v] = node_up_dict[v];
     }
 
@@ -197,6 +197,6 @@ pub fn create_contraction_subgraph(hgr: &SimpleNetlist, DontSelect: &py::set<nod
     hgr2->node_down_map = move(node_down_map);
     hgr2->cluster_down_map = move(cluster_down_map);
     hgr2->module_weight = move(module_weight);
-    hgr2->parent = &hgr;
+    hgr2->parent = &hyprgraph;
     return hgr2;
 }

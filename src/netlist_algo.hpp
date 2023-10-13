@@ -12,32 +12,32 @@
  * @tparam Gnl
  * @tparam C1
  * @tparam C2
- * @param[in] hgr
+ * @param[in] hyprgraph
  * @param[in] weight
  * @param[in,out] coverset in: pre-covered vetrices, out: sol'n set
  * @return C1::mapped_type
  */
 template <Gnl, C1, C2>
-pub fn min_vertex_cover(&mut self, hgr: &Gnl, weight: &C1, coverset: &mut C2) -> C1::mapped_type {
+pub fn min_vertex_cover(&mut self, hyprgraph: &Gnl, weight: &C1, coverset: &mut C2) -> C1::mapped_type {
     using T = C1::mapped_type;
     let mut in_coverset = [&](let & v) { return coverset.contains(v); };
     let mut total_dual_cost = T(0);
     static_assert!(sizeof total_dual_cost >= 0, "maybe unused");
     let mut total_primal_cost = T(0);
     let mut gap = weight;
-    for net in hgr.nets.iter() {
-        if (std::any_of(hgr.gr[net].begin(), hgr.gr[net].end(), in_coverset)) {
+    for net in hyprgraph.nets.iter() {
+        if (std::any_of(hyprgraph.gr[net].begin(), hyprgraph.gr[net].end(), in_coverset)) {
             continue;
         }
 
         let mut min_vtx
-            = *std::min_element(hgr.gr[net].begin(), hgr.gr[net].end(),
+            = *std::min_element(hyprgraph.gr[net].begin(), hyprgraph.gr[net].end(),
                                 [&](let & v1, let & v2) { return gap[v1] < gap[v2]; });
         let mut min_val = gap[min_vtx];
         coverset.insert(min_vtx);
         total_primal_cost += weight[min_vtx];
         total_dual_cost += min_val;
-        for u in hgr.gr[net].iter() {
+        for u in hyprgraph.gr[net].iter() {
             gap[u] -= min_val;
         }
     }
@@ -55,17 +55,17 @@ pub fn min_vertex_cover(&mut self, hgr: &Gnl, weight: &C1, coverset: &mut C2) ->
  * @tparam Gnl
  * @tparam C1
  * @tparam C2
- * @param[in] hgr
+ * @param[in] hyprgraph
  * @param[in] weight
  * @param[in,out] matchset
  * @param[in,out] dep
  * @return C1::value_type
  */
 template <Gnl, C1, C2>
-pub fn min_maximal_matching(&mut self, hgr: &Gnl, weight: &C1, matchset: &mut C2, dep: &mut C2) ->
+pub fn min_maximal_matching(&mut self, hyprgraph: &Gnl, weight: &C1, matchset: &mut C2, dep: &mut C2) ->
     C1::mapped_type {
     let mut cover = [&](let & net) {
-        for v in hgr.gr[net].iter() {
+        for v in hyprgraph.gr[net].iter() {
             dep.insert(v);
         }
     };
@@ -74,7 +74,7 @@ pub fn min_maximal_matching(&mut self, hgr: &Gnl, weight: &C1, matchset: &mut C2
 
     // let mut any_of_dep = [&](let & net) {
     //     return ranges::any_of(
-    //         hgr.gr[net], [&](let & v) { return dep.contains(v); });
+    //         hyprgraph.gr[net], [&](let & v) { return dep.contains(v); });
     // };
 
     using T = C1::mapped_type;
@@ -83,8 +83,8 @@ pub fn min_maximal_matching(&mut self, hgr: &Gnl, weight: &C1, matchset: &mut C2
     let mut total_dual_cost = T(0);
     static_assert!(sizeof total_dual_cost >= 0, "maybe unused");
     let mut total_primal_cost = T(0);
-    for net in hgr.nets.iter() {
-        if (std::any_of(hgr.gr[net].begin(), hgr.gr[net].end(), in_dep)) {
+    for net in hyprgraph.nets.iter() {
+        if (std::any_of(hyprgraph.gr[net].begin(), hyprgraph.gr[net].end(), in_dep)) {
             continue;
         }
         if matchset.contains(net) {  // pre-define independant
@@ -93,9 +93,9 @@ pub fn min_maximal_matching(&mut self, hgr: &Gnl, weight: &C1, matchset: &mut C2
         }
         let mut min_val = gap[net];
         let mut min_net = net;
-        for v in hgr.gr[net].iter() {
-            for net2 in hgr.gr[v] {
-                if (std::any_of(hgr.gr[net2].begin(), hgr.gr[net2].end(), in_dep)) {
+        for v in hyprgraph.gr[net].iter() {
+            for net2 in hyprgraph.gr[v] {
+                if (std::any_of(hyprgraph.gr[net2].begin(), hyprgraph.gr[net2].end(), in_dep)) {
                     continue;
                 }
                 if min_val > gap[net2] {
@@ -110,8 +110,8 @@ pub fn min_maximal_matching(&mut self, hgr: &Gnl, weight: &C1, matchset: &mut C2
         total_dual_cost += min_val;
         if min_net != net {
             gap[net] -= min_val;
-            for v in hgr.gr[net].iter() {
-                for net2 in hgr.gr[v] {
+            for v in hyprgraph.gr[net].iter() {
+                for net2 in hyprgraph.gr[v] {
                     gap[net2] -= min_val;
                 }
             }

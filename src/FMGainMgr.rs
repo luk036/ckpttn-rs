@@ -28,7 +28,7 @@ template <Gnl, GainCalc, class Derived> class FMGainMgr {
 
   protected:
     Item waitinglist{std::make_pair(node_t{}, u32(0))};
-    hgr: &Gnl
+    hyprgraph: &Gnl
     Vec<BPQueue<node_t>> gainbucket;
     // pmax: usize
     u8 num_parts;
@@ -43,10 +43,10 @@ template <Gnl, GainCalc, class Derived> class FMGainMgr {
     /**
      * @brief Construct a new FMGainMgr object
      *
-     * @param[in] hgr
+     * @param[in] hyprgraph
      * @param[in] num_parts
      */
-    FMGainMgr(hgr: &Gnl, u8 num_parts);
+    FMGainMgr(hyprgraph: &Gnl, u8 num_parts);
 
     /**
      * @brief

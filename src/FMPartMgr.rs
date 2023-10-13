@@ -27,23 +27,23 @@ pub struct FMPartMgr : public PartMgrBase<Gnl, GainMgr, ConstrMgr> {
     /**
      * @brief Construct a new FMPartMgr object
      *
-     * @param[in] hgr
+     * @param[in] hyprgraph
      * @param[in,out] gain_mgr
      * @param[in,out] constr_mgr
      * @param[in] num_parts
      */
-    FMPartMgr(hgr: &Gnl, gain_mgr: &mut GainMgr, constr_mgr: &mut ConstrMgr, usize num_parts)
-        : Base{hgr, gain_mgr, constr_mgr, num_parts} {}
+    FMPartMgr(hyprgraph: &Gnl, gain_mgr: &mut GainMgr, constr_mgr: &mut ConstrMgr, usize num_parts)
+        : Base{hyprgraph, gain_mgr, constr_mgr, num_parts} {}
 
     /**
      * @brief Construct a new FMPartMgr object
      *
-     * @param[in] hgr
+     * @param[in] hyprgraph
      * @param[in,out] gain_mgr
      * @param[in,out] constr_mgr
      */
-    FMPartMgr(hgr: &Gnl, gain_mgr: &mut GainMgr, constr_mgr: &mut ConstrMgr)
-        : Base{hgr, gain_mgr, constr_mgr, 2} {}
+    FMPartMgr(hyprgraph: &Gnl, gain_mgr: &mut GainMgr, constr_mgr: &mut ConstrMgr)
+        : Base{hyprgraph, gain_mgr, constr_mgr, 2} {}
 
     // /**
     //  * @brief

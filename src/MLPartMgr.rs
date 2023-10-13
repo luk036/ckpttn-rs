@@ -57,10 +57,10 @@ pub struct MLPartMgr {
      *
      * @tparam Gnl
      * @tparam PartMgr
-     * @param[in] hgr
+     * @param[in] hyprgraph
      * @param[in,out] part
      * @return LegalCheck
      */
     template <Gnl, PartMgr>
-    pub fn run_FMPartition(&mut self, hgr: &Gnl, gsl::span<u8> part) -> LegalCheck;
+    pub fn run_FMPartition(&mut self, hyprgraph: &Gnl, gsl::span<u8> part) -> LegalCheck;
 };

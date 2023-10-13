@@ -26,7 +26,7 @@ template <Gnl> pub fn FMKWayGainMgr<Gnl>::init(&mut self, part: &[u8]) -> i32 {
     for bckt in self.gainbucket.iter_mut() {
         bckt.clear();
     }
-    for v in self.hgr.iter() {
+    for v in self.hyprgraph.iter() {
         let pv = part[v];
         for (let & k : self.rr.exclude(pv)) {
             vlink: &mut auto = self.gain_calc.vertex_list[k][v];
@@ -36,7 +36,7 @@ template <Gnl> pub fn FMKWayGainMgr<Gnl>::init(&mut self, part: &[u8]) -> i32 {
         self.gainbucket[pv].set_key(vlink, 0);
         self.waitinglist.append(vlink);
     }
-    for v in self.hgr.module_fixed.iter() {
+    for v in self.hyprgraph.module_fixed.iter() {
         self.lock_all(part[v], v);
     }
     return totalcost;

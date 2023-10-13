@@ -27,7 +27,7 @@
  */
 template <Gnl>
 void FMBiGainCalc<Gnl>::_init_gain(net: &Gnl::node_t, part: &[u8]) {
-    let degree = self.hgr.gr.degree(net);
+    let degree = self.hyprgraph.gr.degree(net);
     if degree < 2 || degree > FM_MAX_DEGREE  // [[unlikely]]
     {
         return;  // does not provide any gain when moving
@@ -56,11 +56,11 @@ void FMBiGainCalc<Gnl>::_init_gain(net: &Gnl::node_t, part: &[u8]) {
  */
 template <Gnl> void FMBiGainCalc<Gnl>::_init_gain_2pin_net(net: &Gnl::node_t,
                                                                     part: &[u8]) {
-    let mut net_cur = self.hgr.gr[net].begin();
+    let mut net_cur = self.hyprgraph.gr[net].begin();
     let w = *net_cur;
     let v = *++net_cur;
 
-    let weight = self.hgr.get_net_weight(net);
+    let weight = self.hyprgraph.get_net_weight(net);
     if part[w] != part[v] {
         self.totalcost += weight;
         // self._modify_gain_va(weight, w, v);
@@ -81,12 +81,12 @@ template <Gnl> void FMBiGainCalc<Gnl>::_init_gain_2pin_net(net: &Gnl::node_t,
  */
 template <Gnl> void FMBiGainCalc<Gnl>::_init_gain_3pin_net(net: &Gnl::node_t,
                                                                     part: &[u8]) {
-    let mut net_cur = self.hgr.gr[net].begin();
+    let mut net_cur = self.hyprgraph.gr[net].begin();
     let w = *net_cur;
     let v = *++net_cur;
     let u = *++net_cur;
 
-    let weight = self.hgr.get_net_weight(net);
+    let weight = self.hyprgraph.get_net_weight(net);
     if part[u] == part[v] {
         if part[w] == part[v] {
             // self._modify_gain_va(-weight, u, v, w);
@@ -115,19 +115,19 @@ template <Gnl>
 void FMBiGainCalc<Gnl>::_init_gain_general_net(net: &Gnl::node_t,
                                                part: &[u8]) {
     let mut num = array<usize, 2>{0U, 0U};
-    for w in self.hgr.gr[net].iter() {
+    for w in self.hyprgraph.gr[net].iter() {
         num[part[w]] += 1;
     }
-    let weight = self.hgr.get_net_weight(net);
+    let weight = self.hyprgraph.get_net_weight(net);
 
     // #pragma unroll
     for k in {0U, 1U}.iter() {
         if num[k] == 0 {
-            for w in self.hgr.gr[net].iter() {
+            for w in self.hyprgraph.gr[net].iter() {
                 self._modify_gain(w, -weight);
             }
         } else if num[k] == 1 {
-            for w in self.hgr.gr[net].iter() {
+            for w in self.hyprgraph.gr[net].iter() {
                 if part[w] == k {
                     self._modify_gain(w, weight);
                     break;
@@ -153,9 +153,9 @@ template <Gnl>
 pub fn FMBiGainCalc<Gnl>::update_move_2pin_net(part: &[u8],
                                              move_info: &MoveInfo<Gnl::node_t>) ->
     Gnl::node_t {
-    let mut net_cur = self.hgr.gr[move_info.net].begin();
+    let mut net_cur = self.hyprgraph.gr[move_info.net].begin();
     let mut w = (*net_cur != move_info.v) ? *net_cur : *++net_cur;
-    let weight = self.hgr.get_net_weight(move_info.net);
+    let weight = self.hyprgraph.get_net_weight(move_info.net);
     const i32 delta = (part[w] == move_info.from_part) ? weight : -weight;
     self.delta_gain_w = 2 * delta;
     return w;
@@ -170,14 +170,14 @@ pub fn FMBiGainCalc<Gnl>::update_move_2pin_net(part: &[u8],
  */
 template <Gnl>
 void FMBiGainCalc<Gnl>::init_idx_vec(v: &Gnl::node_t, net: &Gnl::node_t) {
-    // let mut rng = self.hgr.gr[net] |
+    // let mut rng = self.hyprgraph.gr[net] |
     //         ranges::views::remove_if([&](let mut w) { return w == v; });
     // using namespace transrangers;
-    // let mut rng = filter([&](let & w) { return w != v; }, all(self.hgr.gr[net]));
+    // let mut rng = filter([&](let & w) { return w != v; }, all(self.hyprgraph.gr[net]));
     // self.idx_vec = FMPmr::Vec<Gnl::node_t>(rng.begin(), rng.end(), &self.rsrc);
 
     self.idx_vec.clear();
-    let mut rng = self.hgr.gr[net];
+    let mut rng = self.hyprgraph.gr[net];
     self.idx_vec.reserve(rng.len() - 1);
     for w in rng.iter() {
         if w == v {
@@ -203,7 +203,7 @@ pub fn FMBiGainCalc<Gnl>::update_move_3pin_net(part: &[u8],
     for w in self.idx_vec.iter() {
         num[part[w]] += 1;
     }
-    // for (let & w : self.hgr.gr[move_info.net])
+    // for (let & w : self.hyprgraph.gr[move_info.net])
     // {
     //     if (w == move_info.v)
     //     {
@@ -213,7 +213,7 @@ pub fn FMBiGainCalc<Gnl>::update_move_3pin_net(part: &[u8],
     //     idx_vec.push(w);
     // }
     let mut delta_gain = Vec<i32>{0, 0};
-    let mut weight = self.hgr.get_net_weight(move_info.net);
+    let mut weight = self.hyprgraph.get_net_weight(move_info.net);
     let part_w = part[self.idx_vec[0]];
 
     if part_w != move_info.from_part {
@@ -247,7 +247,7 @@ pub fn FMBiGainCalc<Gnl>::update_move_general_net(part: &[u8],
         num[part[w]] += 1;
     }
 
-    // for (let & w : self.hgr.gr[move_info.net])
+    // for (let & w : self.hyprgraph.gr[move_info.net])
     // {
     //     if (w == move_info.v)
     //     {
@@ -258,7 +258,7 @@ pub fn FMBiGainCalc<Gnl>::update_move_general_net(part: &[u8],
     // }
     let degree = self.idx_vec.len();
     let mut delta_gain = Vec<i32>(degree, 0);
-    let mut weight = self.hgr.get_net_weight(move_info.net);
+    let mut weight = self.hyprgraph.get_net_weight(move_info.net);
 
     // #pragma unroll
     for l in {move_info.from_part, move_info.to_part}.iter() {

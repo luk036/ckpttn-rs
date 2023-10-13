@@ -20,29 +20,29 @@ extern let mut create_contraction_subgraph(const SimpleNetlist&, const py::set<n
  *
  * @tparam Gnl
  * @tparam PartMgr
- * @param hgr
- * @param[in] hgr
+ * @param hyprgraph
+ * @param[in] hyprgraph
  * @param[in,out] part
  * @return LegalCheck
  */
 template <Gnl, PartMgr>
-pub fn MLPartMgr::run_FMPartition(&mut self, hgr: &Gnl, gsl::span<u8> part) -> LegalCheck {
+pub fn MLPartMgr::run_FMPartition(&mut self, hyprgraph: &Gnl, gsl::span<u8> part) -> LegalCheck {
     using GainMgr = PartMgr::GainMgr_;
     using ConstrMgr = PartMgr::ConstrMgr_;
 
     let mut legalcheck_fn = [&]() {
-        GainMgr gain_mgr(hgr, self.num_parts);
-        ConstrMgr constr_mgr(hgr, self.bal_tol, self.num_parts);
-        PartMgr part_mgr(hgr, gain_mgr, constr_mgr, self.num_parts);
+        GainMgr gain_mgr(hyprgraph, self.num_parts);
+        ConstrMgr constr_mgr(hyprgraph, self.bal_tol, self.num_parts);
+        PartMgr part_mgr(hyprgraph, gain_mgr, constr_mgr, self.num_parts);
         let mut legalcheck = part_mgr.legalize(part);
         return std::make_pair(legalcheck, part_mgr.totalcost);
         // release memory resource all memory saving
     };
 
     let mut optimize_fn = [&]() {
-        GainMgr gain_mgr(hgr, self.num_parts);
-        ConstrMgr constr_mgr(hgr, self.bal_tol, self.num_parts);
-        PartMgr part_mgr(hgr, gain_mgr, constr_mgr, self.num_parts);
+        GainMgr gain_mgr(hyprgraph, self.num_parts);
+        ConstrMgr constr_mgr(hyprgraph, self.bal_tol, self.num_parts);
+        PartMgr part_mgr(hyprgraph, gain_mgr, constr_mgr, self.num_parts);
         part_mgr.optimize(part);
         return part_mgr.totalcost;
         // release memory resource all memory saving
@@ -54,9 +54,9 @@ pub fn MLPartMgr::run_FMPartition(&mut self, hgr: &Gnl, gsl::span<u8> part) -> L
         return legalcheck_cost.first;
     }
 
-    if (hgr.number_of_modules() >= self.limitsize) {  // OK
-        let hgr2 = create_contraction_subgraph(hgr, py::set<Gnl::node_t>{});
-        if (hgr2->number_of_modules() <= hgr.number_of_modules()) {
+    if (hyprgraph.number_of_modules() >= self.limitsize) {  // OK
+        let hgr2 = create_contraction_subgraph(hyprgraph, py::set<Gnl::node_t>{});
+        if (hgr2->number_of_modules() <= hyprgraph.number_of_modules()) {
             let mut part2 = Vec<u8>(hgr2->number_of_modules(), 0);
             hgr2->projection_up(part, part2);
             let mut legalcheck_recur = self.run_FMPartition<Gnl, PartMgr>(*hgr2, part2);
@@ -79,9 +79,9 @@ pub fn MLPartMgr::run_FMPartition(&mut self, hgr: &Gnl, gsl::span<u8> part) -> L
 template let mut MLPartMgr::run_FMPartition<
     SimpleNetlist,
     FMPartMgr<SimpleNetlist, FMBiGainMgr<SimpleNetlist>, FMBiConstrMgr<SimpleNetlist>>>(
-    hgr: &SimpleNetlist, gsl::span<u8> part) -> LegalCheck;
+    hyprgraph: &SimpleNetlist, gsl::span<u8> part) -> LegalCheck;
 
 template let mut MLPartMgr::run_FMPartition<
     SimpleNetlist,
     FMPartMgr<SimpleNetlist, FMKWayGainMgr<SimpleNetlist>, FMKWayConstrMgr<SimpleNetlist>>>(
-    hgr: &SimpleNetlist, gsl::span<u8> part) -> LegalCheck;
+    hyprgraph: &SimpleNetlist, gsl::span<u8> part) -> LegalCheck;

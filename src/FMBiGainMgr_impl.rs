@@ -23,12 +23,12 @@ template <Gnl> pub fn FMBiGainMgr<Gnl>::init(&mut self, part: &[u8]) -> i32 {
         bckt.clear();
     }
 
-    for v in self.hgr.iter() {
+    for v in self.hyprgraph.iter() {
         vlink: &mut auto = self.gain_calc.vertex_list[v];
         // let mut to_part = 1 - part[v];
         self.gainbucket[1 - part[v]].append_direct(vlink);
     }
-    for v in self.hgr.module_fixed.iter() {
+    for v in self.hyprgraph.module_fixed.iter() {
         self.lock_all(part[v], v);
     }
     return totalcost;

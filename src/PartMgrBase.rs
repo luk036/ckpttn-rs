@@ -55,7 +55,7 @@ pub struct PartMgrBase {
   protected:
     // self: &mut Der = *static_cast<Der*>(this);
 
-    hgr: &Gnl
+    hyprgraph: &Gnl
     gain_mgr: &mut GainMgr
     validator: &mut ConstrMgr
     usize num_parts;
@@ -68,13 +68,13 @@ pub struct PartMgrBase {
     /**
      * @brief Construct a new Part Mgr Base object
      *
-     * @param[in] hgr
+     * @param[in] hyprgraph
      * @param[in,out] gain_mgr
      * @param[in,out] constr_mgr
      * @param[in] num_parts
      */
-    PartMgrBase(hgr: &Gnl, gain_mgr: &mut GainMgr, constr_mgr: &mut ConstrMgr, usize num_parts)
-        : hgr{hgr}, gain_mgr{gain_mgr}, validator{constr_mgr}, num_parts{num_parts} {}
+    PartMgrBase(hyprgraph: &Gnl, gain_mgr: &mut GainMgr, constr_mgr: &mut ConstrMgr, usize num_parts)
+        : hyprgraph{hyprgraph}, gain_mgr{gain_mgr}, validator{constr_mgr}, num_parts{num_parts} {}
 
     /**
      * @brief

@@ -115,16 +115,6 @@ impl<T: Default + Clone> BPQueue<T> {
         it.data.0 = (gain - self.offset) as usize;
     }
 
-    // /**
-    //  * @brief Append item with internal key
-    //  *
-    //  * @param[in,out] it the item
-    //  */
-    // pub fn append_direct(&mut self, it: &mut Item)
-    //     assert!(static_cast<Int>(it.data.second) > self.offset);
-    //     self.append(it, Int(it.data.second));
-    // }
-
     /// Append item with external key
     ///
     /// # Examples

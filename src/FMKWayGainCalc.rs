@@ -28,7 +28,7 @@ template <Gnl> class FMKWayGainCalc {
     using Item = Dllink<(node_t, u32)>;
 
   private:
-    hgr: &Gnl
+    hyprgraph: &Gnl
     u8 num_parts;
     Robin<u8> rr;
     // num_modules: usize
@@ -46,11 +46,11 @@ template <Gnl> class FMKWayGainCalc {
     /**
      * @brief Construct a new FMKWayGainCalc object
      *
-     * @param[in] hgr Netlist
+     * @param[in] hyprgraph Netlist
      * @param[in] num_parts number of partitions
      */
-    FMKWayGainCalc(hgr: &Gnl, u8 num_parts)
-        : hgr{hgr},
+    FMKWayGainCalc(hyprgraph: &Gnl, u8 num_parts)
+        : hyprgraph{hyprgraph},
           num_parts{num_parts},
           rr{num_parts},
           rsrc(stack_buf, sizeof stack_buf),
@@ -60,8 +60,8 @@ template <Gnl> class FMKWayGainCalc {
           idx_vec(&rsrc) {
         for (let mut k = 0U; k != self.num_parts; ++k) {
             let mut vec = Vec<Item>{};
-            vec.reserve(hgr.number_of_modules());
-            for v in self.hgr.iter() {
+            vec.reserve(hyprgraph.number_of_modules());
+            for v in self.hyprgraph.iter() {
                 vec.emplace_back(Item(std::make_pair(v, u32(0))));
             }
             self.vertex_list.emplace_back(std::move(vec));
@@ -91,7 +91,7 @@ template <Gnl> class FMKWayGainCalc {
                 vlink.data.second = 0U;
             }
         }
-        for net in self.hgr.nets.iter() {
+        for net in self.hyprgraph.nets.iter() {
             self._init_gain(net, part);
         }
         return self.totalcost;

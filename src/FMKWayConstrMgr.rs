@@ -25,12 +25,12 @@ template <Gnl> class FMKWayConstrMgr : public FMConstrMgr<Gnl> {
     /**
      * @brief Construct a new FMKWayConstrMgr object
      *
-     * @param[in] hgr
+     * @param[in] hyprgraph
      * @param[in] bal_tol
      * @param[in] num_parts
      */
-    FMKWayConstrMgr(hgr: &Gnl, f64 bal_tol, u8 num_parts)
-        : FMConstrMgr<Gnl>{hgr, bal_tol, num_parts}, illegal(num_parts, 1) {}
+    FMKWayConstrMgr(hyprgraph: &Gnl, f64 bal_tol, u8 num_parts)
+        : FMConstrMgr<Gnl>{hyprgraph, bal_tol, num_parts}, illegal(num_parts, 1) {}
 
     /**
      * @brief

@@ -20,14 +20,14 @@ template <Gnl> class FMBiGainMgr
     using GainCalc_ = FMBiGainCalc<Gnl>;
     using node_t = Gnl::node_t;
 
-    pub fn new(hgr: &Gnl) { FMBiGainMgr : Base{hgr, 2} {}
+    pub fn new(hyprgraph: &Gnl) { FMBiGainMgr : Base{hyprgraph, 2} {}
 
     /**
      * @brief Construct a new FMBiGainMgr object
      *
-     * @param[in] hgr
+     * @param[in] hyprgraph
      */
-    FMBiGainMgr(hgr: &Gnl, u8 /* num_parts */) : Base{hgr, 2} {}
+    FMBiGainMgr(hyprgraph: &Gnl, u8 /* num_parts */) : Base{hyprgraph, 2} {}
 
     /**
      * @brief

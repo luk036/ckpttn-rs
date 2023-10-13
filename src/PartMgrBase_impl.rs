@@ -41,11 +41,11 @@ pub fn PartMgrBase<Gnl, GainMgr, ConstrMgr>::legalize(&mut self, gsl::span<u8> p
     self.init(part);
 
     // Zero-weighted modules does not contribute legalization
-    for v in self.hgr.iter() {
-        if (self.hgr.get_module_weight(v) != 0U) {
+    for v in self.hyprgraph.iter() {
+        if (self.hyprgraph.get_module_weight(v) != 0U) {
             continue;
         }
-        if !self.hgr.module_fixed.contains(v) {
+        if !self.hyprgraph.module_fixed.contains(v) {
             continue;
         }
         self.gain_mgr.lock_all(part[v], v);

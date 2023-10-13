@@ -27,10 +27,10 @@ template <Gnl> class FMKWayGainMgr
     /**
      * @brief Construct a new FMKWayGainMgr object
      *
-     * @param[in] hgr
+     * @param[in] hyprgraph
      * @param[in] num_parts
      */
-    FMKWayGainMgr(hgr: &Gnl, u8 num_parts) : Base{hgr, num_parts}, rr{num_parts} {}
+    FMKWayGainMgr(hyprgraph: &Gnl, u8 num_parts) : Base{hyprgraph, num_parts}, rr{num_parts} {}
 
     /**
      * @brief

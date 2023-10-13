@@ -30,7 +30,7 @@ impl<Gnl> FMKWayGainCalc<Gnl> {
      * @param[in] vertex_list
      */
     fn init_gain(&mut self, net: &Gnl::node_t, part: &[u8]) {
-        let degree = self.hgr.gr.degree(net);
+        let degree = self.hyprgraph.gr.degree(net);
         if degree < 2 || degree > FM_MAX_DEGREE  // [[unlikely]]
         {
             return;  // does not provide any gain when moving
@@ -58,12 +58,12 @@ impl<Gnl> FMKWayGainCalc<Gnl> {
      * @param[in] part
      */
     fn init_gain_2pin_net(&mut self, net: &Gnl::node_t, part: &[u8]) {
-        let mut net_cur = self.hgr.gr[net].begin();
+        let mut net_cur = self.hyprgraph.gr[net].begin();
         let w = *net_cur;
         let v = *++net_cur;
         let part_w = part[w];
         let part_v = part[v];
-        let weight = self.hgr.get_net_weight(net);
+        let weight = self.hyprgraph.get_net_weight(net);
         if part_v == part_w {
             self._modify_gain(w, part_v, -weight);
             self._modify_gain(v, part_v, -weight);
@@ -82,14 +82,14 @@ impl<Gnl> FMKWayGainCalc<Gnl> {
      * @param[in] part
      */
     fn init_gain_3pin_net(&mut self, net: &Gnl::node_t, part: &[u8]) {
-        let mut net_cur = self.hgr.gr[net].begin();
+        let mut net_cur = self.hyprgraph.gr[net].begin();
         let w = *net_cur;
         let v = *++net_cur;
         let u = *++net_cur;
         let part_w = part[w];
         let part_v = part[v];
         let part_u = part[u];
-        let weight = self.hgr.get_net_weight(net);
+        let weight = self.hyprgraph.get_net_weight(net);
         let mut a = w;
         let mut b = v;
         let mut c = u;
@@ -143,11 +143,11 @@ impl<Gnl> FMKWayGainCalc<Gnl> {
         let mut num = FMPmr::Vec<u8>(self.num_parts, 0);
         // let mut idx_vec = FMPmr::Vec<Gnl::node_t>(&rsrc);
 
-        for w in self.hgr.gr[net].iter() {
+        for w in self.hyprgraph.gr[net].iter() {
             num[part[w]] += 1;
             // idx_vec.push(w);
         }
-        let weight = self.hgr.get_net_weight(net);
+        let weight = self.hyprgraph.get_net_weight(net);
         for c in num.iter() {
             if c > 0 {
                 self.totalcost += weight;
@@ -159,11 +159,11 @@ impl<Gnl> FMKWayGainCalc<Gnl> {
         let mut k = 0U;
         for c in num.iter() {
             if c == 0 {
-                for w in self.hgr.gr[net].iter() {
+                for w in self.hyprgraph.gr[net].iter() {
                     vertex_list[k][w].data.second -= weight;
                 }
             } else if c == 1 {
-                for w in self.hgr.gr[net].iter() {
+                for w in self.hyprgraph.gr[net].iter() {
                     if part[w] == k {
                         self._modify_gain(w, part[w], weight);
                         break;
@@ -186,9 +186,9 @@ impl<Gnl> FMKWayGainCalc<Gnl> {
         // let & [net, v, from_part, to_part] = move_info;
         assert!(part[move_info.v] == move_info.from_part);
 
-        let mut weight = self.hgr.get_net_weight(move_info.net);
+        let mut weight = self.hyprgraph.get_net_weight(move_info.net);
         // let mut delta_gain_w = Vec<i32>(self.num_parts, 0);
-        let mut net_cur = self.hgr.gr[move_info.net].begin();
+        let mut net_cur = self.hyprgraph.gr[move_info.net].begin();
         let mut w = (*net_cur != move_info.v) ? *net_cur : *++net_cur;
         fill(self.delta_gain_w.begin(), self.delta_gain_w.end(), 0);
 
@@ -222,7 +222,7 @@ impl<Gnl> FMKWayGainCalc<Gnl> {
      */
     pub fn init_idx_vec(&mut self, v: &Gnl::node_t, net: &Gnl::node_t) {
         self.idx_vec.clear();
-        for w in self.hgr.gr[net].iter() {
+        for w in self.hyprgraph.gr[net].iter() {
             if w == v {
                 continue;
             }
@@ -241,7 +241,7 @@ impl<Gnl> FMKWayGainCalc<Gnl> {
         -> FMKWayGainCalc<Gnl>::ret_info {
         let degree = self.idx_vec.len();
         let mut delta_gain = vec![vec![0i32; self.num_parts]; degree];
-        let mut weight = self.hgr.get_net_weight(move_info.net);
+        let mut weight = self.hyprgraph.get_net_weight(move_info.net);
         let part_w = part[self.idx_vec[0]];
         let part_u = part[self.idx_vec[1]];
         let mut l = move_info.from_part;
@@ -310,7 +310,7 @@ impl<Gnl> FMKWayGainCalc<Gnl> {
         }
         let degree = self.idx_vec.len();
         let mut delta_gain = vec![vec![0i32; self.num_parts]; degree];
-        let mut weight = self.hgr.get_net_weight(move_info.net);
+        let mut weight = self.hyprgraph.get_net_weight(move_info.net);
 
         let mut l = move_info.from_part;
         let mut u = move_info.to_part;
