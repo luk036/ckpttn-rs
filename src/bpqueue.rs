@@ -1,7 +1,9 @@
 use crate::dllist::{Dllink, Dllist};
 
-/// Bounded priority queue
-///
+#[doc = svgbobdoc::transform!(
+/// The `BPQueue` struct is a bounded priority queue implemented using an array of doubly-linked lists,
+/// with integer keys in a specified range.
+/// 
 /// Bounded Priority Queue with integer keys in [a..b].
 /// Implemented by an array (bucket) of doubly-linked lists.
 /// Efficient if the keys are bounded by a small integer value.
@@ -17,6 +19,55 @@ use crate::dllist::{Dllink, Dllist};
 /// sentinel) is used to reduce the boundary checking during updates.
 ///
 /// All the member functions assume that the keys are inside the bounds.
+/// 
+/// ```svgbob
+///                   ____ bucket
+///          +----+  /     
+///        b |high| V
+///          +----+
+///          |    |  
+///          +----+    +----+    +----+
+///          |max-|--->|{c}-|--->|{c} |
+///          +----+    +----+    +----+
+///          |    |
+///          +----+    +----+    +----+    +----+
+///          |   -|--->|{c}-|--->|{c}-|--->|{c} |
+///          +----+    +----+    +----+    +----+
+///          :    :
+///          
+///          :    :
+///          +----+    +----+    +----+    +----+    +----+
+///          |2  -|--->|{c}-|--->|{c}-|--->|{c}-|--->|{c} |
+///          +----+    +----+    +----+    +----+    +----+
+///        a |1   | 
+///          +----+ 
+///  sentinel|0   |
+///          +----+^
+///                 \
+///                   always empty
+/// # Legend:
+/// a = {
+///     fill: lightblue;
+/// }
+/// c = {
+///     fill: papayawhip;
+/// }
+/// ```
+/// 
+/// Properties:
+/// 
+/// * `max`: The maximum number of elements that can be stored in the bounded priority queue.
+/// * `offset`: The `offset` property represents the lower bound of the integer keys in the bounded
+/// priority queue. It is of type `i32`, which means it can hold both positive and negative values. The
+/// offset is used to calculate the index of the bucket in the `bucket` array for a given key.
+/// * `high`: The `high` property represents the highest priority level in the bounded priority queue.
+/// It indicates the index of the last bucket in the `bucket` array.
+/// * `sentinel`: A doubly linked list node that serves as a sentinel or dummy node. It is used to
+/// reduce boundary checking during updates.
+/// * `bucket`: The `bucket` property is a vector of doubly-linked lists. Each doubly-linked list
+/// represents a priority level, with the index of the vector representing the priority value. The
+/// elements in the doubly-linked lists are tuples containing a priority value and a value of type `T`.
+)]
 #[derive(Debug)]
 pub struct BPQueue<T> {
     max: usize,

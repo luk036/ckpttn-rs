@@ -1,12 +1,24 @@
+#[doc = svgbobdoc::transform!(
 /// The `Dllink` type represents a doubly linked node with a pointer to the next and previous nodes and
 /// a data field of type `T`.
 ///
+/// ```svgbob
+///         +--------+
+///         | next *-|----->
+///         +--------+
+///    <----|-* prev |
+///         +--------+
+///         |  data  |
+///         +--------+
+/// ```
+/// 
 /// Properties:
 ///
 /// * `next`: A pointer to the next node in the doubly linked list.
 /// * `prev`: A pointer to the previous node in the doubly linked list.
 /// * `data`: The `data` property is a generic type `T` that represents the actual data stored in the
 /// node. It can be any type that you specify when creating an instance of the `Dllink` struct.
+)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Dllink<T> {
     /// pointer to the next node
@@ -259,17 +271,39 @@ impl<T> Dllink<T> {
     }
 }
 
-/**
-Doubly linked list
-
-A Doubly-linked List class. This class simply contains a link of
-node's. By adding a "head" node (sentinel), deleting a node is
-extremely fast (see "Introduction to Algorithm"). This class does
-not keep the length information as it is not necessary for the FM
-algorithm. This saves memory and run-time to update the length
-information. Note that this class does not own the list node. They
-are supplied by the caller in order to better reuse the nodes.
-*/
+#[doc = svgbobdoc::transform!(
+/// The `Dllist` struct represents a doubly linked list.
+/// 
+/// A Doubly-linked List class. This class simply contains a link of
+/// node's. By adding a "head" node (sentinel), deleting a node is
+/// extremely fast (see "Introduction to Algorithm"). This class does
+/// not keep the length information as it is not necessary for the FM
+/// algorithm. This saves memory and run-time to update the length
+/// information. Note that this class does not own the list node. They
+/// are supplied by the caller in order to better reuse the nodes.
+/// 
+/// ```svgbob
+///      .----------------------------------------------- - - ------------------------------.
+///      |  +--------+      +--------+      +--------+           +--------+      +--------+  )
+///      `->| head *-|----->| {c}  *-|----->| {c}  *-|--- - - -->| {c}  *-|----->| {c1} *-|-'
+///       .-|-* {a}  |<-----|-*      |<-----|-*      |<-- - - ---|-*      |<-----|-*      |<-.
+///      (  +--------+      +--------+      +--------+           +--------+      +--------+   |
+///       `---------------------------------------------- - - -------------------------------' 
+/// 
+/// # Legend:
+/// a = {
+///     fill: lightblue;
+/// }
+/// c = {
+///     fill: papayawhip;
+/// }
+/// ```
+/// 
+/// Properties:
+/// 
+/// * `head`: The head property is a `Dllink<T>` that represents the first node in the doubly linked list.
+/// Doubly linked list
+)]
 #[derive(Debug, Clone)]
 pub struct Dllist<T> {
     pub head: Dllink<T>,
