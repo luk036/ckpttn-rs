@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde_json = "1.0.106"
+serde_json = "1.0.107"
 svgbobdoc = { version = "0.3", features = ["enable"] }
 
 [dependencies.petgraph]
