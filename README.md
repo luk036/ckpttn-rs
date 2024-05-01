@@ -5,15 +5,15 @@
 [![CI](https://github.com/luk036/ckpttn-rs/workflows/CI/badge.svg)](https://github.com/luk036/ckpttn-rs/actions)
 [![codecov](https://codecov.io/gh/luk036/ckpttn-rs/branch/master/graph/badge.svg?token=xtq6NxtMhd)](https://codecov.io/gh/luk036/ckpttn-rs)
 
-## Installation
+## 🛠️ Installation
 
-### Cargo
+### 📦 Cargo
 
 - Install the rust toolchain in order to have cargo installed by following
   [this](https://www.rust-lang.org/tools/install) guide.
 - run `cargo install ckpttn-rs`
 
-## License
+## 📜 License
 
 Licensed under either of
 
@@ -24,7 +24,7 @@ Licensed under either of
 
 at your option.
 
-## Contribution
+## 🤝 Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
