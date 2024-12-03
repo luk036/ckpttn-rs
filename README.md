@@ -1,11 +1,11 @@
-# 🔪 ckpttn-rs
+# ✂️ ckpttn-rs
 
 [![Crates.io](https://img.shields.io/crates/v/ckpttn-rs.svg)](https://crates.io/crates/ckpttn-rs)
 [![Docs.rs](https://docs.rs/ckpttn-rs/badge.svg)](https://docs.rs/ckpttn-rs)
 [![CI](https://github.com/luk036/ckpttn-rs/workflows/CI/badge.svg)](https://github.com/luk036/ckpttn-rs/actions)
 [![codecov](https://codecov.io/gh/luk036/ckpttn-rs/branch/master/graph/badge.svg?token=xtq6NxtMhd)](https://codecov.io/gh/luk036/ckpttn-rs)
 
-## 🛠️ Installation
+## 🛠 Installation
 
 ### 📦 Cargo
 
