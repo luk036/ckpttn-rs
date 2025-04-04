@@ -1,4 +1,4 @@
-# ✂️ ckpttn-rs
+# ✂️ ckpttn-rs (under construction)
 
 [![Crates.io](https://img.shields.io/crates/v/ckpttn-rs.svg)](https://crates.io/crates/ckpttn-rs)
 [![Docs.rs](https://docs.rs/ckpttn-rs/badge.svg)](https://docs.rs/ckpttn-rs)
