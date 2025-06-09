@@ -13,5 +13,5 @@ serde_json = "1.0.109"
 svgbobdoc = { version = "0.3", features = ["enable"] }
 
 [dependencies.petgraph]
-version = "0.8.0"
+version = "0.8.2"
 features = ["serde-1"]
