@@ -114,3 +114,116 @@ where
         self.total_cost -= totalgain;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::hypergraph::SimpleNetlist;
+    use crate::fm_bi_gain_calc::FMBiGainCalc;
+    use crate::fm_bi_gain_mgr::FMBiGainMgr;
+    use crate::fm_constr_mgr::FMConstrMgr;
+    use petgraph::graph::NodeIndex;
+
+    fn make_nl_4m2n() -> SimpleNetlist {
+        let mut netlist = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[5]);
+        netlist.add_edge(nodes[3], nodes[5]);
+        netlist
+    }
+
+    fn make_nl_4m2n_heavy0() -> SimpleNetlist {
+        let mut netlist = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[5]);
+        netlist.add_edge(nodes[3], nodes[5]);
+        netlist.module_weight[0] = 100;
+        netlist
+    }
+
+    fn make_nl_6m3n() -> SimpleNetlist {
+        let mut netlist = SimpleNetlist::new(6, 3);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[6]);
+        netlist.add_edge(nodes[1], nodes[6]);
+        netlist.add_edge(nodes[0], nodes[7]);
+        netlist.add_edge(nodes[2], nodes[7]);
+        netlist.add_edge(nodes[3], nodes[8]);
+        netlist.add_edge(nodes[4], nodes[8]);
+        netlist.add_edge(nodes[5], nodes[8]);
+        netlist
+    }
+
+    #[test]
+    fn test_new() {
+        let hyprgraph = make_nl_4m2n();
+        let gain_calc = FMBiGainCalc::new(make_nl_4m2n(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_nl_4m2n(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_nl_4m2n(), 0.5);
+        let pm = PartMgrBase::new(hyprgraph, gain_mgr, validator, 2);
+        assert_eq!(pm.num_parts, 2);
+        assert_eq!(pm.total_cost, 0);
+    }
+
+    #[test]
+    fn test_init() {
+        let hyprgraph = make_nl_4m2n();
+        let gain_calc = FMBiGainCalc::new(make_nl_4m2n(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_nl_4m2n(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_nl_4m2n(), 0.5);
+        let mut pm = PartMgrBase::new(hyprgraph, gain_mgr, validator, 2);
+        let mut part = vec![0u8, 0, 1, 1];
+        pm.init(&mut part);
+        assert_eq!(pm.total_cost, 0);
+    }
+
+    #[test]
+    fn test_legalize_already_balanced() {
+        let hyprgraph = make_nl_4m2n();
+        let gain_calc = FMBiGainCalc::new(make_nl_4m2n(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_nl_4m2n(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_nl_4m2n(), 0.5);
+        let mut pm = PartMgrBase::new(hyprgraph, gain_mgr, validator, 2);
+        let mut part = vec![0u8, 0, 1, 1];
+        let _result = pm.legalize(&mut part);
+    }
+
+    #[test]
+    fn test_legalize_not_satisfied() {
+        let netlist = make_nl_4m2n_heavy0();
+        let gain_calc = FMBiGainCalc::new(make_nl_4m2n_heavy0(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_nl_4m2n_heavy0(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_nl_4m2n_heavy0(), 0.5);
+        let mut pm = PartMgrBase::new(netlist, gain_mgr, validator, 2);
+        let mut part = vec![0u8, 0, 1, 1];
+        let result = pm.legalize(&mut part);
+        assert!(result == LegalCheck::AllSatisfied || result == LegalCheck::NotSatisfied);
+    }
+
+    #[test]
+    fn test_optimize_basic() {
+        let netlist = make_nl_6m3n();
+        let gain_calc = FMBiGainCalc::new(make_nl_6m3n(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_nl_6m3n(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_nl_6m3n(), 0.5);
+        let mut pm = PartMgrBase::new(netlist, gain_mgr, validator, 2);
+        let mut part = vec![0u8, 0, 0, 0, 0, 0];
+        pm.optimize(&mut part);
+    }
+
+    #[test]
+    fn test_legalize_boundary() {
+        let netlist = make_nl_4m2n();
+        let gain_calc = FMBiGainCalc::new(make_nl_4m2n(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_nl_4m2n(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_nl_4m2n(), 0.5);
+        let mut pm = PartMgrBase::new(netlist, gain_mgr, validator, 2);
+        let mut part = vec![0u8, 0, 0, 0];
+        let result = pm.legalize(&mut part);
+        assert!(result == LegalCheck::AllSatisfied || result == LegalCheck::NotSatisfied);
+    }
+}

@@ -111,3 +111,111 @@ impl Hypergraph for SimpleNetlist {
         v.index()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use petgraph::graph::NodeIndex;
+
+    #[test]
+    fn test_simple_netlist_new_sizes() {
+        let nl = SimpleNetlist::new(4, 2);
+        assert_eq!(nl.num_modules, 4);
+        assert_eq!(nl.gr.node_count(), 6);
+        assert_eq!(nl.module_weight.len(), 4);
+        assert_eq!(nl.module_weight, vec![1; 4]);
+    }
+
+    #[test]
+    fn test_add_edge_and_degree() {
+        let mut nl = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        nl.add_edge(nodes[0], nodes[4]);
+        nl.add_edge(nodes[1], nodes[4]);
+        assert_eq!(nl.degree(nodes[4]), 2);
+        assert_eq!(nl.degree(nodes[0]), 1);
+        assert_eq!(nl.degree(nodes[1]), 1);
+        assert_eq!(nl.degree(nodes[2]), 0);
+    }
+
+    #[test]
+    fn test_modules_iter() {
+        let nl = SimpleNetlist::new(3, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        let modules: Vec<_> = nl.modules().collect();
+        assert_eq!(modules.len(), 3);
+        assert_eq!(modules, nodes[..3]);
+    }
+
+    #[test]
+    fn test_nets_iter() {
+        let nl = SimpleNetlist::new(3, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        let nets: Vec<_> = nl.nets().collect();
+        assert_eq!(nets.len(), 2);
+        assert_eq!(nets, nodes[3..]);
+    }
+
+    #[test]
+    fn test_neighbors_basic() {
+        let mut nl = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        nl.add_edge(nodes[0], nodes[4]);
+        let nbrs: Vec<_> = nl.neighbors(nodes[0]).collect();
+        assert_eq!(nbrs, vec![nodes[4]]);
+    }
+
+    #[test]
+    fn test_get_module_weight_in_bounds() {
+        let nl = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        assert_eq!(nl.get_module_weight(nodes[0]), 1);
+        assert_eq!(nl.get_module_weight(nodes[3]), 1);
+    }
+
+    #[test]
+    fn test_get_module_weight_out_of_bounds() {
+        let nl = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        assert_eq!(nl.get_module_weight(nodes[5]), 1);
+    }
+
+    #[test]
+    fn test_get_net_weight_default() {
+        let nl = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        assert_eq!(nl.get_net_weight(nodes[4]), 1);
+    }
+
+    #[test]
+    fn test_number_of_modules() {
+        let nl = SimpleNetlist::new(4, 2);
+        assert_eq!(nl.number_of_modules(), 4);
+        let nl0 = SimpleNetlist::new(0, 0);
+        assert_eq!(nl0.number_of_modules(), 0);
+    }
+
+    #[test]
+    fn test_get_max_degree_normal() {
+        let mut nl = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        nl.add_edge(nodes[0], nodes[4]);
+        nl.add_edge(nodes[0], nodes[5]);
+        nl.add_edge(nodes[1], nodes[4]);
+        assert_eq!(nl.get_max_degree(), 2);
+    }
+
+    #[test]
+    fn test_get_max_degree_empty() {
+        let nl = SimpleNetlist::new(0, 0);
+        assert_eq!(nl.get_max_degree(), 0);
+    }
+
+    #[test]
+    fn test_module_index() {
+        let nl = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        assert_eq!(nl.module_index(nodes[0]), 0);
+        assert_eq!(nl.module_index(nodes[2]), 2);
+    }
+}

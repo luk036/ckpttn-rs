@@ -238,3 +238,290 @@ impl<Gnl: Hypergraph> FMBiGainCalc<Gnl> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::hypergraph::SimpleNetlist;
+    use crate::moveinfo::MoveInfo;
+    use petgraph::graph::NodeIndex;
+
+    fn setup_2pin() -> (SimpleNetlist, Vec<NodeIndex>) {
+        let mut netlist = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[5]);
+        netlist.add_edge(nodes[3], nodes[5]);
+        (netlist, nodes)
+    }
+
+    fn setup_3pin() -> (SimpleNetlist, Vec<NodeIndex>) {
+        let mut netlist = SimpleNetlist::new(3, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[3]);
+        netlist.add_edge(nodes[1], nodes[3]);
+        netlist.add_edge(nodes[2], nodes[3]);
+        (netlist, nodes)
+    }
+
+    fn setup_4pin() -> (SimpleNetlist, Vec<NodeIndex>) {
+        let mut netlist = SimpleNetlist::new(4, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[4]);
+        netlist.add_edge(nodes[3], nodes[4]);
+        (netlist, nodes)
+    }
+
+    #[test]
+    fn test_new_constructor() {
+        let netlist = SimpleNetlist::new(4, 2);
+        let calc = FMBiGainCalc::new(netlist, 2);
+        assert_eq!(calc.init_gain_list.len(), 4);
+        assert_eq!(calc.total_cost, 0);
+        assert_eq!(calc.delta_gain_w_val, 0);
+        assert!(calc.special_handle_2pin_nets);
+        assert!(calc.idx_vec.is_empty());
+    }
+
+    #[test]
+    fn test_init_no_nets() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 1, 1];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 0);
+    }
+
+    #[test]
+    fn test_init_2pin_same_part() {
+        let (netlist, _nodes) = setup_2pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 0, 0];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 0);
+        assert!(calc.init_gain_list[0] < 0);
+    }
+
+    #[test]
+    fn test_init_2pin_cross_part() {
+        let mut netlist = SimpleNetlist::new(4, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[4]);
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 1, 1];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 1);
+        assert!(calc.init_gain_list[0] > 0);
+        assert!(calc.init_gain_list[2] > 0);
+    }
+
+    #[test]
+    fn test_init_3pin_all_same_part() {
+        let (netlist, _nodes) = setup_3pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 0, 0];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 0);
+        assert!(calc.init_gain_list[0] < 0);
+        assert!(calc.init_gain_list[1] < 0);
+        assert!(calc.init_gain_list[2] < 0);
+    }
+
+    #[test]
+    fn test_init_3pin_first_two_same() {
+        let (netlist, _nodes) = setup_3pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 0, 1];
+        let _cost = calc.init(&part);
+    }
+
+    #[test]
+    fn test_init_3pin_last_two_same() {
+        let (netlist, _nodes) = setup_3pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 1, 1];
+        let _cost = calc.init(&part);
+    }
+
+    #[test]
+    fn test_init_3pin_all_different() {
+        let (netlist, _nodes) = setup_3pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 1, 0];
+        let _cost = calc.init(&part);
+    }
+
+    #[test]
+    fn test_init_general_net_special_handle_false() {
+        let (netlist, _nodes) = setup_4pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.special_handle_2pin_nets = false;
+        let part = vec![0u8, 0, 0, 0];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 0);
+    }
+
+    #[test]
+    fn test_init_general_net_both_parts() {
+        let (netlist, _nodes) = setup_4pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.special_handle_2pin_nets = false;
+        let part = vec![0u8, 0, 1, 1];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 1);
+    }
+
+    #[test]
+    fn test_init_general_net_one_part_zero() {
+        let (netlist, _nodes) = setup_4pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.special_handle_2pin_nets = false;
+        let part = vec![0u8, 0, 0, 0];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 0);
+        assert!(calc.init_gain_list[0] < 0);
+        assert!(calc.init_gain_list[3] < 0);
+    }
+
+    #[test]
+    fn test_init_idx_vec_basic() {
+        let (netlist, nodes) = setup_3pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.init_idx_vec(nodes[0], nodes[3]);
+        let idx = calc.idx_vec();
+        assert_eq!(idx.len(), 2);
+        assert!(idx.contains(&nodes[1]));
+        assert!(idx.contains(&nodes[2]));
+    }
+
+    #[test]
+    fn test_update_move_init_noop() {
+        let (netlist, _nodes) = setup_2pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.update_move_init();
+    }
+
+    #[test]
+    fn test_delta_gain_w_getter() {
+        let (netlist, _nodes) = setup_2pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.delta_gain_w_val = 42;
+        assert_eq!(calc.delta_gain_w(), 42);
+    }
+
+    #[test]
+    fn test_update_move_2pin_w_same_part() {
+        let (netlist, nodes) = setup_2pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 1, 1];
+        let move_info = MoveInfo {
+            net: nodes[4],
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
+        let w = calc.update_move_2pin_net(&part, &move_info);
+        assert_eq!(w, nodes[1]);
+        assert_eq!(calc.delta_gain_w_val, 2);
+    }
+
+    #[test]
+    fn test_update_move_2pin_w_diff_part() {
+        let (netlist, nodes) = setup_2pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 1, 1, 1];
+        let move_info = MoveInfo {
+            net: nodes[4],
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
+        let w = calc.update_move_2pin_net(&part, &move_info);
+        assert_eq!(w, nodes[1]);
+        assert_eq!(calc.delta_gain_w_val, -2);
+    }
+
+    #[test]
+    fn test_update_move_3pin_both_in_to_part() {
+        let (netlist, nodes) = setup_3pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.init_idx_vec(nodes[0], nodes[3]);
+        let part = vec![0u8, 0, 1, 1];
+        let move_info = MoveInfo {
+            net: nodes[3],
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
+        let delta = calc.update_move_3pin_net(&part, &move_info);
+        assert_eq!(delta.len(), 2);
+    }
+
+    #[test]
+    fn test_update_move_3pin_both_in_from_part() {
+        let (netlist, nodes) = setup_3pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.init_idx_vec(nodes[0], nodes[3]);
+        let part = vec![0u8, 0, 0, 0];
+        let move_info = MoveInfo {
+            net: nodes[3],
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
+        let delta = calc.update_move_3pin_net(&part, &move_info);
+        assert_eq!(delta.len(), 2);
+    }
+
+    #[test]
+    fn test_update_move_3pin_split() {
+        let (netlist, nodes) = setup_3pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.init_idx_vec(nodes[0], nodes[3]);
+        let part = vec![0u8, 0, 0, 1];
+        let move_info = MoveInfo {
+            net: nodes[3],
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
+        let delta = calc.update_move_3pin_net(&part, &move_info);
+        assert_eq!(delta.len(), 2);
+    }
+
+    #[test]
+    fn test_update_move_general_net_no_in_part() {
+        let (netlist, nodes) = setup_4pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.init_idx_vec(nodes[0], nodes[4]);
+        let part = vec![1u8, 1, 1, 1];
+        let move_info = MoveInfo {
+            net: nodes[4],
+            v: nodes[0],
+            from_part: 1,
+            to_part: 0,
+        };
+        let delta = calc.update_move_general_net(&part, &move_info);
+        assert_eq!(delta.len(), 3);
+    }
+
+    #[test]
+    fn test_update_move_general_net_one_in_part() {
+        let (netlist, nodes) = setup_4pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.init_idx_vec(nodes[3], nodes[4]);
+        let part = vec![0u8, 0, 1, 0];
+        let move_info = MoveInfo {
+            net: nodes[4],
+            v: nodes[3],
+            from_part: 0,
+            to_part: 1,
+        };
+        let delta = calc.update_move_general_net(&part, &move_info);
+        assert_eq!(delta.len(), 3);
+    }
+}

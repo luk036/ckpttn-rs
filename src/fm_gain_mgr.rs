@@ -306,6 +306,9 @@ pub trait GainCalcTrait<Gnl: Hypergraph> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hypergraph::SimpleNetlist;
+    use crate::fm_bi_gain_calc::FMBiGainCalc;
+    use petgraph::graph::NodeIndex;
 
     #[test]
     fn test_bucket_queue() {
@@ -330,5 +333,182 @@ mod tests {
         assert_eq!(bq.popleft(), Some(30));
         assert_eq!(bq.popleft(), Some(10));
         assert!(bq.is_empty());
+    }
+
+    #[test]
+    fn test_bucket_queue_get_max_empty() {
+        let bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
+        assert_eq!(bq.get_max(), -6);
+    }
+
+    #[test]
+    fn test_bucket_queue_popleft_empty() {
+        let mut bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
+        assert_eq!(bq.popleft(), None);
+    }
+
+    #[test]
+    fn test_bucket_queue_modify_key() {
+        let mut bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
+        bq.push(1, 10);
+        bq.modify_key(5, 10);
+        assert_eq!(bq.get_max(), 5);
+        assert_eq!(bq.popleft(), Some(10));
+    }
+
+    #[test]
+    fn test_bucket_queue_set_key() {
+        let mut bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
+        bq.set_key(3, 42);
+        assert_eq!(bq.popleft(), Some(42));
+    }
+
+    #[test]
+    fn test_bucket_queue_push_same_key() {
+        let mut bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
+        bq.push(0, 10);
+        bq.push(0, 20);
+        assert_eq!(bq.popleft(), Some(10));
+        assert_eq!(bq.popleft(), Some(20));
+    }
+
+    fn make_nl() -> SimpleNetlist {
+        let mut netlist = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[5]);
+        netlist.add_edge(nodes[3], nodes[5]);
+        netlist
+    }
+
+    #[test]
+    fn test_fm_gain_mgr_new() {
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        assert_eq!(mgr.num_parts, 2);
+        assert!(mgr.waiting_list.is_empty());
+        assert!(mgr.locked_nodes.is_empty());
+    }
+
+    #[test]
+    fn test_fm_gain_mgr_init() {
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        let part = vec![0u8, 0, 1, 1];
+        let cost = mgr.init(&part);
+        assert_eq!(cost, 0);
+    }
+
+    #[test]
+    fn test_fm_gain_mgr_is_empty_togo() {
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        assert!(mgr.is_empty_togo(0));
+        assert!(mgr.is_empty_togo(1));
+    }
+
+    #[test]
+    fn test_fm_gain_mgr_is_empty() {
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        assert!(mgr.is_empty());
+    }
+
+    #[test]
+    fn test_fm_gain_mgr_lock() {
+        let nodes: Vec<NodeIndex> = make_nl().gr.node_indices().collect();
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        mgr.lock(0, nodes[0]);
+        assert!(mgr.locked_nodes.contains(&0));
+    }
+
+    #[test]
+    fn test_fm_gain_mgr_lock_all() {
+        let nodes: Vec<NodeIndex> = make_nl().gr.node_indices().collect();
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        mgr.lock_all(0, nodes[1]);
+        assert!(mgr.locked_nodes.contains(&1));
+    }
+
+    #[test]
+    fn test_fm_gain_mgr_modify_key_locked_node() {
+        let nodes: Vec<NodeIndex> = make_nl().gr.node_indices().collect();
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        mgr.lock(0, nodes[0]);
+        mgr.modify_key(nodes[0], 0, 5);
+    }
+
+    #[test]
+    fn test_fm_gain_mgr_update_move_v() {
+        let nodes: Vec<NodeIndex> = make_nl().gr.node_indices().collect();
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        let move_info_v = MoveInfoV {
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
+        mgr.update_move_v(&move_info_v, 5);
+    }
+
+    #[test]
+    fn test_gain_mgr_interface_init() {
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        let part = vec![0u8, 0, 1, 1];
+        let cost = GainMgrInterface::init(&mut mgr, &part);
+        assert_eq!(cost, 0);
+    }
+
+    #[test]
+    fn test_gain_mgr_interface_is_empty() {
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        assert!(GainMgrInterface::is_empty(&mgr));
+    }
+
+    #[test]
+    fn test_gain_mgr_interface_is_empty_togo() {
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        assert!(GainMgrInterface::is_empty_togo(&mgr, 0));
+    }
+
+    #[test]
+    fn test_gain_mgr_interface_lock() {
+        let nodes: Vec<NodeIndex> = make_nl().gr.node_indices().collect();
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        GainMgrInterface::lock(&mut mgr, 0, nodes[0]);
+    }
+
+    #[test]
+    fn test_gain_mgr_interface_update_move_v() {
+        let nodes: Vec<NodeIndex> = make_nl().gr.node_indices().collect();
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        let move_info_v = MoveInfoV {
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
+        GainMgrInterface::update_move_v(&mut mgr, &move_info_v, 3);
     }
 }

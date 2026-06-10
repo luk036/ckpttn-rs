@@ -214,4 +214,162 @@ mod tests {
         let togo = mgr.select_togo();
         assert!(togo == 0 || togo == 1);
     }
+
+    #[test]
+    fn test_check_legal_not_satisfied() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 1, 1];
+        mgr.init(&part);
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        let check = mgr.check_legal(&move_info);
+        assert_eq!(check, LegalCheck::NotSatisfied);
+    }
+
+    #[test]
+    fn test_check_legal_get_better() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 0, 0];
+        mgr.init(&part);
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        let check = mgr.check_legal(&move_info);
+        assert_eq!(check, LegalCheck::GetBetter);
+    }
+
+    #[test]
+    fn test_check_constraints_true() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 0, 0];
+        mgr.init(&part);
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        assert!(mgr.check_constraints(&move_info));
+    }
+
+    #[test]
+    fn test_check_constraints_false() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 1, 1];
+        mgr.init(&part);
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        assert!(!mgr.check_constraints(&move_info));
+    }
+
+    #[test]
+    fn test_final_check_false() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 0, 0];
+        assert!(!mgr.final_check(&part));
+    }
+
+    #[test]
+    fn test_select_togo_known_returns_0() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![1u8, 1, 1, 0];
+        mgr.init(&part);
+        assert_eq!(mgr.select_togo(), 0);
+    }
+
+    #[test]
+    fn test_select_togo_known_returns_1() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![1u8, 1, 0, 0];
+        mgr.init(&part);
+        assert_eq!(mgr.select_togo(), 1);
+    }
+
+    #[test]
+    fn test_constr_mgr_interface_init() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 1, 1];
+        ConstrMgrInterface::init(&mut mgr, &part);
+        assert_eq!(mgr.diff[0], 2);
+        assert_eq!(mgr.diff[1], 2);
+    }
+
+    #[test]
+    fn test_constr_mgr_interface_check_legal() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 0, 0];
+        ConstrMgrInterface::init(&mut mgr, &part);
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        let check = ConstrMgrInterface::check_legal(&mut mgr, &move_info);
+        assert_eq!(check, LegalCheck::GetBetter);
+    }
+
+    #[test]
+    fn test_constr_mgr_interface_check_constraints() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 0, 0];
+        ConstrMgrInterface::init(&mut mgr, &part);
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        assert!(ConstrMgrInterface::check_constraints(&mgr, &move_info));
+    }
+
+    #[test]
+    fn test_constr_mgr_interface_update_move() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 1, 1];
+        ConstrMgrInterface::init(&mut mgr, &part);
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        let _ = ConstrMgrInterface::check_legal(&mut mgr, &move_info);
+        ConstrMgrInterface::update_move(&mut mgr, &move_info);
+        assert_eq!(mgr.diff[0], 1);
+        assert_eq!(mgr.diff[1], 3);
+    }
+
+    #[test]
+    fn test_constr_mgr_interface_select_togo() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 0, 0];
+        ConstrMgrInterface::init(&mut mgr, &part);
+        let togo = ConstrMgrInterface::select_togo(&mgr);
+        assert!(togo == 0 || togo == 1);
+    }
+
+    #[test]
+    fn test_constr_mgr_interface_final_check() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 1, 1];
+        assert!(ConstrMgrInterface::final_check(&mut mgr, &part));
+    }
 }

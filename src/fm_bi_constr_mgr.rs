@@ -33,3 +33,47 @@ impl<Gnl: Hypergraph> std::ops::DerefMut for FMBiConstrMgr<Gnl> {
         &mut self.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::hypergraph::SimpleNetlist;
+
+    #[test]
+    fn test_new() {
+        let netlist = SimpleNetlist::new(4, 2);
+        let mgr = FMBiConstrMgr::new(netlist, 0.5);
+        assert_eq!(mgr.0.num_parts, 2);
+    }
+
+    #[test]
+    fn test_with_num_parts() {
+        let netlist = SimpleNetlist::new(4, 2);
+        let mgr = FMBiConstrMgr::with_num_parts(netlist, 0.5, 4);
+        assert_eq!(mgr.0.num_parts, 2);
+    }
+
+    #[test]
+    fn test_select_togo() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
+        let part = vec![0u8, 0, 1, 1];
+        mgr.0.init(&part);
+        let togo = mgr.select_togo();
+        assert!(togo == 0 || togo == 1);
+    }
+
+    #[test]
+    fn test_deref() {
+        let netlist = SimpleNetlist::new(4, 2);
+        let mgr = FMBiConstrMgr::new(netlist, 0.5);
+        let _: &FMConstrMgr<SimpleNetlist> = &*mgr;
+    }
+
+    #[test]
+    fn test_deref_mut() {
+        let netlist = SimpleNetlist::new(4, 2);
+        let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
+        let _: &mut FMConstrMgr<SimpleNetlist> = &mut *mgr;
+    }
+}
