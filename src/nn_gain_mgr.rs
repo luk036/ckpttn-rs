@@ -35,8 +35,7 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
     }
 
     pub fn init(&mut self, part: &[u8]) -> i32 {
-        let total_cost = self.gain_calc.init(part);
-        total_cost
+        self.gain_calc.init(part)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -63,7 +62,14 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
             .popleft()
             .expect("bucket should not be empty");
         let from_part = part[self.hyprgraph.module_index(v)];
-        (MoveInfoV { v, from_part, to_part }, gainmax)
+        (
+            MoveInfoV {
+                v,
+                from_part,
+                to_part,
+            },
+            gainmax,
+        )
     }
 
     pub fn select_togo(&mut self, to_part: u8) -> (Gnl::Node, i32) {
@@ -172,13 +178,31 @@ pub trait NNGainMgrInterface<Gnl: Hypergraph> {
 impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgrInterface<Gnl>
     for NNGainMgr<Gnl, GainCalc>
 {
-    fn init(&mut self, part: &[u8]) -> i32 { self.init(part) }
-    fn is_empty(&self) -> bool { self.is_empty() }
-    fn is_empty_togo(&self, to_part: u8) -> bool { self.is_empty_togo(to_part) }
-    fn select(&mut self, part: &[u8]) -> (MoveInfoV<Gnl::Node>, i32) { self.select(part) }
-    fn select_togo(&mut self, to_part: u8) -> (Gnl::Node, i32) { self.select_togo(to_part) }
-    fn update_move(&mut self, part: &[u8], move_info_v: &MoveInfoV<Gnl::Node>) { self.update_move(part, move_info_v) }
-    fn update_move_v(&mut self, move_info_v: &MoveInfoV<Gnl::Node>, gain: i32) { self.update_move_v(move_info_v, gain) }
-    fn lock(&mut self, which_part: u8, v: Gnl::Node) { self.lock(which_part, v) }
-    fn modify_key(&mut self, w: Gnl::Node, part_w: u8, key: i32) { self.modify_key(w, part_w, key) }
+    fn init(&mut self, part: &[u8]) -> i32 {
+        self.init(part)
+    }
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
+    fn is_empty_togo(&self, to_part: u8) -> bool {
+        self.is_empty_togo(to_part)
+    }
+    fn select(&mut self, part: &[u8]) -> (MoveInfoV<Gnl::Node>, i32) {
+        self.select(part)
+    }
+    fn select_togo(&mut self, to_part: u8) -> (Gnl::Node, i32) {
+        self.select_togo(to_part)
+    }
+    fn update_move(&mut self, part: &[u8], move_info_v: &MoveInfoV<Gnl::Node>) {
+        self.update_move(part, move_info_v)
+    }
+    fn update_move_v(&mut self, move_info_v: &MoveInfoV<Gnl::Node>, gain: i32) {
+        self.update_move_v(move_info_v, gain)
+    }
+    fn lock(&mut self, which_part: u8, v: Gnl::Node) {
+        self.lock(which_part, v)
+    }
+    fn modify_key(&mut self, w: Gnl::Node, part_w: u8, key: i32) {
+        self.modify_key(w, part_w, key)
+    }
 }

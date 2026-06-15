@@ -34,9 +34,9 @@ impl<Gnl: Hypergraph> FMKWayConstrMgr<Gnl> {
             return status;
         }
         // Check if all parts are legal after this move
-        let (_, from_part, to_part) = (move_info_v.v, move_info_v.from_part, move_info_v.to_part);
+        let (_, _from_part, _to_part) = (move_info_v.v, move_info_v.from_part, move_info_v.to_part);
         // Recompute diff status for all parts
-        for (i, &d) in self.0.diff.iter().enumerate() {
+        for &d in self.0.diff.iter() {
             if d < self.0.lowerbound {
                 return LegalCheck::GetBetter;
             }
@@ -132,13 +132,13 @@ mod tests {
     fn test_deref() {
         let (netlist, _) = make_netlist();
         let mgr = FMKWayConstrMgr::new(netlist, 0.5, 3);
-        let _: &FMConstrMgr<SimpleNetlist> = &*mgr;
+        let _: &FMConstrMgr<SimpleNetlist> = &mgr;
     }
 
     #[test]
     fn test_deref_mut() {
         let (netlist, _) = make_netlist();
         let mut mgr = FMKWayConstrMgr::new(netlist, 0.5, 3);
-        let _: &mut FMConstrMgr<SimpleNetlist> = &mut *mgr;
+        let _: &mut FMConstrMgr<SimpleNetlist> = &mut mgr;
     }
 }

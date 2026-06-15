@@ -118,10 +118,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hypergraph::SimpleNetlist;
     use crate::fm_bi_gain_calc::FMBiGainCalc;
     use crate::fm_bi_gain_mgr::FMBiGainMgr;
     use crate::fm_constr_mgr::FMConstrMgr;
+    use crate::hypergraph::SimpleNetlist;
     use petgraph::graph::NodeIndex;
 
     fn make_nl_4m2n() -> SimpleNetlist {
@@ -268,7 +268,7 @@ mod tests {
             assert_eq!(pm.total_cost, totalcost_before);
 
             pm.optimize(&mut part);
-            assert!(pm.validator.final_check(&mut part));
+            assert!(pm.validator.final_check(&part));
             assert!(pm.total_cost <= totalcost_before);
         }
     }
@@ -331,6 +331,6 @@ mod tests {
         pm.init(&mut part);
         assert_eq!(pm.total_cost, totalcost_before);
         pm.optimize(&mut part);
-        assert!(!pm.validator.final_check(&mut part));
+        assert!(!pm.validator.final_check(&part));
     }
 }

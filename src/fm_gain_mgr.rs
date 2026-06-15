@@ -312,8 +312,8 @@ pub trait GainCalcTrait<Gnl: Hypergraph> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hypergraph::SimpleNetlist;
     use crate::fm_bi_gain_calc::FMBiGainCalc;
+    use crate::hypergraph::SimpleNetlist;
     use petgraph::graph::NodeIndex;
 
     #[test]

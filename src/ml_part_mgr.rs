@@ -16,6 +16,12 @@ pub struct MLPartMgr {
     pub limitsize: usize,
 }
 
+impl Default for MLPartMgr {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MLPartMgr {
     pub fn new() -> Self {
         MLPartMgr {
@@ -44,14 +50,14 @@ impl MLBiPartMgr {
     pub fn run_partition(
         &mut self,
         hyprgraph: &impl Hypergraph<Node = NodeIndex>,
-        module_weight: &[u32],
+        _module_weight: &[u32],
         part: &mut [u8],
     ) -> LegalCheck {
         // Legalize check
         use crate::fm_bi_constr_mgr::FMBiConstrMgr;
         use crate::fm_bi_gain_calc::FMBiGainCalc;
         use crate::fm_bi_gain_mgr::FMBiGainMgr;
-        use crate::fm_gain_mgr::{ConstrMgrInterface, GainMgrInterface};
+
         use crate::part_mgr_base::PartMgrBase;
 
         let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
@@ -95,7 +101,6 @@ impl MLKWayPartMgr {
         module_weight: &[u32],
         part: &mut [u8],
     ) -> LegalCheck {
-        use crate::fm_gain_mgr::{ConstrMgrInterface, GainMgrInterface};
         use crate::fm_kway_constr_mgr::FMKWayConstrMgr;
         use crate::fm_kway_gain_calc::FMKWayGainCalc;
         use crate::fm_kway_gain_mgr::FMKWayGainMgr;
@@ -104,7 +109,8 @@ impl MLKWayPartMgr {
         let gain_calc = FMKWayGainCalc::new(hyprgraph, self.num_parts);
         let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, self.num_parts);
         let constr_mgr = FMKWayConstrMgr::new(hyprgraph, self.bal_tol, self.num_parts);
-        let mut part_mgr = PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, self.num_parts as usize);
+        let mut part_mgr =
+            PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, self.num_parts as usize);
         let legalcheck = part_mgr.legalize(part);
 
         if legalcheck != LegalCheck::AllSatisfied {
@@ -113,7 +119,7 @@ impl MLKWayPartMgr {
 
         // Check if contraction is needed
         if hyprgraph.number_of_modules() >= self.limitsize {
-            let (hgr2, module_weight2) =
+            let (hgr2, _module_weight2) =
                 contract_subgraph(hyprgraph, module_weight, &HashSet::new());
             if hgr2.number_of_modules() * 3 / 2 < hyprgraph.number_of_modules() {
                 let mut part2 = vec![0u8; hgr2.number_of_modules()];
@@ -133,7 +139,6 @@ impl MLKWayPartMgr {
 #[cfg(test)]
 mod tests {
     use crate::hypergraph::SimpleNetlist;
-    use petgraph::graph::NodeIndex;
 
     #[test]
     fn test_ml_bi_part_mgr_basic() {
@@ -143,7 +148,9 @@ mod tests {
         let weights = vec![1u32; 4];
         let result = mgr.run_partition(&netlist, &weights, &mut part.clone());
         // May or may not satisfy constraints with this simple netlist
-        assert!(result == super::LegalCheck::AllSatisfied || result == super::LegalCheck::NotSatisfied);
+        assert!(
+            result == super::LegalCheck::AllSatisfied || result == super::LegalCheck::NotSatisfied
+        );
     }
 
     #[test]
@@ -153,6 +160,8 @@ mod tests {
         let part = vec![0u8, 0, 1, 1, 2, 2];
         let weights = vec![1u32; 6];
         let result = mgr.run_partition(&netlist, &weights, &mut part.clone());
-        assert!(result == super::LegalCheck::AllSatisfied || result == super::LegalCheck::NotSatisfied);
+        assert!(
+            result == super::LegalCheck::AllSatisfied || result == super::LegalCheck::NotSatisfied
+        );
     }
 }

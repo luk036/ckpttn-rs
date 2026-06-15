@@ -52,10 +52,7 @@ pub fn contract_subgraph(
         if forbid.contains(&net) {
             continue;
         }
-        let module_idxs: Vec<usize> = hyprgraph
-            .neighbors(net)
-            .map(|v| v.index())
-            .collect();
+        let module_idxs: Vec<usize> = hyprgraph.neighbors(net).map(|v| v.index()).collect();
         let any_covered = module_idxs.iter().any(|idx| covered_modules.contains(idx));
         if !any_covered && module_idxs.len() >= 2 {
             matched_nets_set.insert(net);

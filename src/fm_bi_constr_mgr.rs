@@ -89,14 +89,14 @@ mod tests {
     fn test_deref() {
         let netlist = SimpleNetlist::new(4, 2);
         let mgr = FMBiConstrMgr::new(netlist, 0.5);
-        let _: &FMConstrMgr<SimpleNetlist> = &*mgr;
+        let _: &FMConstrMgr<SimpleNetlist> = &mgr;
     }
 
     #[test]
     fn test_deref_mut() {
         let netlist = SimpleNetlist::new(4, 2);
         let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
-        let _: &mut FMConstrMgr<SimpleNetlist> = &mut *mgr;
+        let _: &mut FMConstrMgr<SimpleNetlist> = &mut mgr;
     }
 
     #[test]
@@ -121,7 +121,7 @@ mod tests {
     fn test_select_togo_equal_parts() {
         let netlist = SimpleNetlist::new(4, 0);
         let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
-        mgr.0.init(&vec![1u8, 1, 0, 0]);
+        mgr.0.init(&[1u8, 1, 0, 0]);
         mgr.0.diff = vec![10, 10];
         assert_eq!(mgr.select_togo(), 1);
     }

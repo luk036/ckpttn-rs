@@ -122,7 +122,7 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         let pv = part[i_v];
         let pw = part[i_w];
 
-        let do_modify_gain = |this: &mut Self, node: Gnl::Node, p: u8, w: i32| {
+        let _do_modify_gain = |this: &mut Self, node: Gnl::Node, p: u8, w: i32| {
             this.modify_gain(node, p, w);
         };
 
@@ -218,7 +218,11 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         }
     }
 
-    pub fn update_move_2pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Gnl::Node {
+    pub fn update_move_2pin_net(
+        &mut self,
+        part: &[u8],
+        move_info: &MoveInfo<Gnl::Node>,
+    ) -> Gnl::Node {
         let nbrs: Vec<_> = self.hyprgraph.neighbors(move_info.net).collect();
         let first = nbrs[0];
         let second = nbrs[1];
@@ -231,8 +235,8 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         let mut dg_w = vec![0i32; self.num_parts as usize];
         for &l_part in &[fp, tp] {
             if part_w == l_part {
-                for k in 0..self.num_parts as usize {
-                    dg_w[k] += weight;
+                for (k, dg_w_elem) in dg_w.iter_mut().enumerate() {
+                    *dg_w_elem += weight;
                     self.delta_gain_v[k] += weight;
                 }
             }
@@ -244,7 +248,11 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         w
     }
 
-    pub fn update_move_3pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Vec<Vec<i32>> {
+    pub fn update_move_3pin_net(
+        &mut self,
+        part: &[u8],
+        move_info: &MoveInfo<Gnl::Node>,
+    ) -> Vec<Vec<i32>> {
         let (_, fp, tp) = (move_info.v, move_info.from_part, move_info.to_part);
         let weight = self.hyprgraph.get_net_weight(move_info.net) as i32;
         let nparts = self.num_parts as usize;
@@ -276,12 +284,12 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         let mut cur_tp = tp;
         for _ in 0..2 {
             if part_w == cur_fp {
-                for k in 0..nparts {
-                    delta_gain[0][k] += weight;
+                for item in delta_gain[0].iter_mut() {
+                    *item += weight;
                 }
             } else if part_u == cur_fp {
-                for k in 0..nparts {
-                    delta_gain[1][k] += weight;
+                for item in delta_gain[1].iter_mut() {
+                    *item += weight;
                 }
             } else {
                 delta_gain[0][cur_fp as usize] -= weight;
@@ -298,7 +306,11 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         delta_gain
     }
 
-    pub fn update_move_general_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Vec<Vec<i32>> {
+    pub fn update_move_general_net(
+        &mut self,
+        part: &[u8],
+        move_info: &MoveInfo<Gnl::Node>,
+    ) -> Vec<Vec<i32>> {
         let (_, fp, tp) = (move_info.v, move_info.from_part, move_info.to_part);
         let nparts = self.num_parts as usize;
         let degree = self.idx_vec.len();
@@ -320,8 +332,8 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         for _ in 0..2 {
             let fp_idx = cur_fp as usize;
             if num[fp_idx] == 0 {
-                for index in 0..degree {
-                    delta_gain[index][fp_idx] -= cur_weight;
+                for row in delta_gain.iter_mut() {
+                    row[fp_idx] -= cur_weight;
                 }
                 if num[cur_tp as usize] > 0 {
                     for k in 0..nparts {
@@ -333,8 +345,8 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
                 while part[self.hyprgraph.module_index(self.idx_vec[index])] != cur_fp {
                     index += 1;
                 }
-                for k in 0..nparts {
-                    delta_gain[index][k] += cur_weight;
+                for item in delta_gain[index].iter_mut() {
+                    *item += cur_weight;
                 }
             }
             cur_weight = -cur_weight;
@@ -378,7 +390,11 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMKWayGainCalc<Gnl> {
         }
     }
 
-    fn update_move_general_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Vec<i32> {
+    fn update_move_general_net(
+        &mut self,
+        part: &[u8],
+        move_info: &MoveInfo<Gnl::Node>,
+    ) -> Vec<i32> {
         let result = self.update_move_general_net(part, move_info);
         if result.is_empty() {
             Vec::new()

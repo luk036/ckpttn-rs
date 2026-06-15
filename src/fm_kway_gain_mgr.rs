@@ -1,5 +1,4 @@
-use crate::fm_gain_mgr::{FMGainMgr, GainCalcTrait};
-use crate::hypergraph::Hypergraph;
+use crate::fm_gain_mgr::FMGainMgr;
 
 /// K-way FM gain manager.
 ///

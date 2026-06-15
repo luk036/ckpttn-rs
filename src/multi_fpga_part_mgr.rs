@@ -32,13 +32,13 @@ impl MultiFPGAPartMgr {
         module_weights: &[HashMap<String, f64>],
     ) -> Vec<u8> {
         // Calculate total resource requirements for each module
-        let total_module_weights: Vec<u32> = module_weights
+        let _total_module_weights: Vec<u32> = module_weights
             .iter()
             .map(|mw| mw.values().sum::<f64>() as u32)
             .collect();
 
         // Initialize partition assignment
-        let mut initial_part = vec![0u8; _hyprgraph.number_of_modules()];
+        let initial_part = vec![0u8; _hyprgraph.number_of_modules()];
 
         // TODO: Full partitioning flow with MLKWayPartMgr equivalent
         // For now, return the initial partition
@@ -65,9 +65,9 @@ impl MultiFPGAPartMgr {
         for (module_idx, &fpga_idx) in partition.iter().enumerate() {
             let fpga_idx = fpga_idx as usize;
             if fpga_idx >= self.num_fpgas as usize {
-        let mut error: HashMap<String, f64> = HashMap::new();
-        error.insert("error".to_string(), fpga_idx as f64);
-        return (false, error);
+                let mut error: HashMap<String, f64> = HashMap::new();
+                error.insert("error".to_string(), fpga_idx as f64);
+                return (false, error);
             }
             if let Some(module_resource_weights) = module_weights.get(module_idx) {
                 for (resource, &weight) in module_resource_weights {
@@ -79,9 +79,7 @@ impl MultiFPGAPartMgr {
         }
 
         // Check resource constraints
-        for (fpga_idx, (usage, capacity)) in
-            fpga_resource_usage.iter().zip(self.fpga_resources.iter()).enumerate()
-        {
+        for (usage, capacity) in fpga_resource_usage.iter().zip(self.fpga_resources.iter()) {
             for (resource, &used) in usage {
                 if let Some(&cap) = capacity.get(resource) {
                     if used > cap {
@@ -98,10 +96,7 @@ impl MultiFPGAPartMgr {
         (true, details)
     }
 
-    pub fn optimize_inter_fpga_connections(
-        &self,
-        partition: &[u8],
-    ) -> Vec<u8> {
+    pub fn optimize_inter_fpga_connections(&self, partition: &[u8]) -> Vec<u8> {
         partition.to_vec()
     }
 }
@@ -167,9 +162,7 @@ mod tests {
 
     #[test]
     fn test_validate_partition_nonexistent_fpga() {
-        let module_weights = vec![
-            HashMap::from([("lut".to_string(), 200.0)]),
-        ];
+        let module_weights = vec![HashMap::from([("lut".to_string(), 200.0)])];
         let mgr = MultiFPGAPartMgr::new(2, make_resources(), 0.1);
         let partition = vec![5u8];
         let (valid, details) = mgr.validate_partition(&partition, &module_weights);

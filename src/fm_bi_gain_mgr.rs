@@ -57,9 +57,9 @@ pub type FMBiGainMgr<Gnl> = FMGainMgr<Gnl, FMBiGainCalc<Gnl>>;
 #[cfg(test)]
 mod tests {
     use super::FMBiGainMgr;
-    use crate::hypergraph::SimpleNetlist;
     use crate::fm_bi_gain_calc::FMBiGainCalc;
     use crate::fm_gain_mgr::GainCalcTrait;
+    use crate::hypergraph::SimpleNetlist;
     use crate::moveinfo::MoveInfo;
     use petgraph::graph::NodeIndex;
 
