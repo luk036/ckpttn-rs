@@ -524,4 +524,156 @@ mod tests {
         let delta = calc.update_move_general_net(&part, &move_info);
         assert_eq!(delta.len(), 3);
     }
+
+    // ── Ported from Python test_FMBiGainCalc.py ────────────────────
+
+    #[test]
+    fn test_init_gain_2pin_same_part_gain_values() {
+        // n1 connects modules 0 and 1 with weight 2, both in part 0
+        let mut netlist = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[5]);
+        netlist.add_edge(nodes[3], nodes[5]);
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 0, 0];
+        // All modules in part 0, net n1 has weight 1 (default)
+        // 2-pin net with both in same part → both get -weight gain, totalcost = 0
+        let cost = calc.init(&part);
+        assert_eq!(cost, 0);
+        // init_gain_list[0] should be -1 (from n1: both in same part)
+        // n1 connects 0,1: both in part 0 → -weight = -1
+        // n2 connects 2,3: both in part 0 → -weight = -1
+        assert_eq!(calc.init_gain_list[0], -1);
+        assert_eq!(calc.init_gain_list[1], -1);
+        assert_eq!(calc.init_gain_list[2], -1);
+        assert_eq!(calc.init_gain_list[3], -1);
+    }
+
+    #[test]
+    fn test_init_gain_2pin_cross_part_gain_values() {
+        let mut netlist = SimpleNetlist::new(4, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[4]);
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 1, 1];
+        // n1 connects 0,2 with weight 1; modules 0 in part 0, 2 in part 1
+        // 2-pin net across partitions → both get +weight, totalcost += weight
+        let cost = calc.init(&part);
+        assert_eq!(cost, 1);
+        assert!(calc.init_gain_list[0] > 0);
+        assert_eq!(calc.init_gain_list[0], 1);
+        assert!(calc.init_gain_list[2] > 0);
+    }
+
+    #[test]
+    fn test_init_gain_3pin_all_same_gain_values() {
+        let mut netlist = SimpleNetlist::new(3, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[3]);
+        netlist.add_edge(nodes[1], nodes[3]);
+        netlist.add_edge(nodes[2], nodes[3]);
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 0];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 0);
+        // All in same part → all get -weight = -1
+        assert_eq!(calc.init_gain_list[0], -1);
+        assert_eq!(calc.init_gain_list[1], -1);
+        assert_eq!(calc.init_gain_list[2], -1);
+    }
+
+    #[test]
+    fn test_init_gain_4pin_general_net_all_same_part() {
+        let mut netlist = SimpleNetlist::new(4, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[4]);
+        netlist.add_edge(nodes[3], nodes[4]);
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.special_handle_2pin_nets = false;
+        let part = vec![0u8, 0, 0, 0];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 0);
+        // All in part 0, part 1 has 0 → all get -weight = -1
+        assert_eq!(calc.init_gain_list[0], -1);
+        assert_eq!(calc.init_gain_list[1], -1);
+        assert_eq!(calc.init_gain_list[2], -1);
+        assert_eq!(calc.init_gain_list[3], -1);
+    }
+
+    #[test]
+    fn test_init_gain_4pin_general_net_split_parts() {
+        let mut netlist = SimpleNetlist::new(4, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[4]);
+        netlist.add_edge(nodes[3], nodes[4]);
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.special_handle_2pin_nets = false;
+        let part = vec![0u8, 0, 1, 1];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 1);
+        // Modules in part 0: 0,1 → no positive gain (num[0]=2)
+        // Modules in part 1: 2,3 → no positive gain (num[1]=2)
+        // Since both parts have >0 modules, totalcost += weight
+        assert_eq!(calc.init_gain_list[0], 0);
+        assert_eq!(calc.init_gain_list[1], 0);
+        assert_eq!(calc.init_gain_list[2], 0);
+        assert_eq!(calc.init_gain_list[3], 0);
+    }
+
+    #[test]
+    fn test_init_gain_4pin_general_net_one_in_each_part() {
+        let mut netlist = SimpleNetlist::new(4, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[4]);
+        netlist.add_edge(nodes[3], nodes[4]);
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        calc.special_handle_2pin_nets = false;
+        let part = vec![0u8, 1, 1, 1];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 1);
+        // Module 0 alone in part 0 → gets +weight = +1
+        assert_eq!(calc.init_gain_list[0], 1);
+        // Modules 1,2,3 in part 1 (num[1] = 3 > 1) → no positive gain
+        // But they get -weight from part 0 being empty? No, part 0 has 1 module.
+        // Wait: num[0] = 1 → module 0 gets +weight.
+        // num[1] = 3 > 1 → no positive gain for modules 1,2,3.
+        // Since both parts have >0 → totalcost += weight = 1
+        assert_eq!(calc.init_gain_list[1], 0);
+        assert_eq!(calc.init_gain_list[2], 0);
+        assert_eq!(calc.init_gain_list[3], 0);
+    }
+
+    // ── Ported from Python test_FMBiGainMgr.py integration pattern ──
+
+    #[test]
+    fn test_full_gain_calc_flow_with_update() {
+        let (netlist, nodes) = setup_2pin();
+        let mut calc = FMBiGainCalc::new(netlist, 2);
+        let mut part = vec![0u8, 0, 1, 1];
+        let _cost = calc.init(&part);
+
+        // Select a move: move vertex 0 from part 0 to part 1
+        calc.init_idx_vec(nodes[0], nodes[4]);
+        calc.update_move_init();
+        let move_info = MoveInfo {
+            net: nodes[4],
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
+        let w = calc.update_move_2pin_net(&part, &move_info);
+        assert_eq!(w, nodes[1]);
+        // vertex 1 is in part 0, same as from_part, so delta = +weight, delta_gain_w = 2
+        assert_eq!(calc.delta_gain_w(), 2);
+        part[0] = 1; // apply the move
+    }
 }

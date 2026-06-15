@@ -372,4 +372,102 @@ mod tests {
         let part = vec![0u8, 0, 1, 1];
         assert!(ConstrMgrInterface::final_check(&mut mgr, &part));
     }
+
+    // ── Ported from Python test_FMConstrMgr.py ─────────────────────
+
+    #[test]
+    fn test_chain_move_legal_checks() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.25);
+        let part = vec![0u8, 0, 1, 1];
+        mgr.init(&part);
+        // diff = [2, 2], lowerbound = 1
+
+        // Move vertex 0 from part 0 to part 1 → AllSatisfied
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        assert_eq!(mgr.check_legal(&move_info), LegalCheck::AllSatisfied);
+
+        mgr.update_move(&move_info);
+        // diff = [1, 3]
+
+        // Move vertex 1 from part 0 to part 1 → NotSatisfied
+        let move_info2 = MoveInfoV {
+            v: NodeIndex::new(1),
+            from_part: 0,
+            to_part: 1,
+        };
+        assert_eq!(mgr.check_legal(&move_info2), LegalCheck::NotSatisfied);
+
+        // Move vertex 2 from part 1 to part 0 → AllSatisfied
+        let move_info3 = MoveInfoV {
+            v: NodeIndex::new(2),
+            from_part: 1,
+            to_part: 0,
+        };
+        assert_eq!(mgr.check_legal(&move_info3), LegalCheck::AllSatisfied);
+    }
+
+    #[test]
+    fn test_chain_move_constraints() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.25);
+        let part = vec![0u8, 0, 1, 1];
+        mgr.init(&part);
+
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        assert!(mgr.check_constraints(&move_info));
+
+        // Rust update_move requires weight_cache from check_legal
+        let _ = mgr.check_legal(&move_info);
+        mgr.update_move(&move_info);
+
+        let move_info2 = MoveInfoV {
+            v: NodeIndex::new(1),
+            from_part: 0,
+            to_part: 1,
+        };
+        assert!(!mgr.check_constraints(&move_info2));
+    }
+
+    #[test]
+    fn test_update_move_changes_diff() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.25);
+        let part = vec![0u8, 0, 1, 1];
+        mgr.init(&part);
+        assert_eq!(mgr.diff, vec![2, 2]);
+
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        let _ = mgr.check_legal(&move_info);
+        mgr.update_move(&move_info);
+        assert_eq!(mgr.diff, vec![1, 3]);
+    }
+
+    #[test]
+    fn test_legal_3_parts_all_satisfied() {
+        let netlist = SimpleNetlist::new(6, 0);
+        let mut mgr = FMConstrMgr::with_num_parts(netlist, 0.3, 3);
+        let part = vec![0u8, 0, 1, 1, 2, 2];
+        mgr.init(&part);
+        // diff = [2, 2, 2], totalweight = 6, totalweightK = 6 * 2/3 = 4, lowerbound = round(4*0.3) = 1
+
+        let move_info = MoveInfoV {
+            v: NodeIndex::new(0),
+            from_part: 0,
+            to_part: 1,
+        };
+        assert_eq!(mgr.check_legal(&move_info), LegalCheck::AllSatisfied);
+    }
 }

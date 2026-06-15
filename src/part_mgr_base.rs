@@ -226,4 +226,111 @@ mod tests {
         let result = pm.legalize(&mut part);
         assert!(result == LegalCheck::AllSatisfied || result == LegalCheck::NotSatisfied);
     }
+
+    // ── Ported from Python test_FMBiPartMgr.py ─────────────────────
+
+    fn make_netlist_drawf() -> SimpleNetlist {
+        let mut netlist = SimpleNetlist::new(7, 6);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.module_weight[0] = 3;
+        netlist.add_edge(nodes[0], nodes[7]);
+        netlist.add_edge(nodes[1], nodes[7]);
+        netlist.add_edge(nodes[1], nodes[8]);
+        netlist.add_edge(nodes[2], nodes[8]);
+        netlist.add_edge(nodes[2], nodes[9]);
+        netlist.add_edge(nodes[3], nodes[9]);
+        netlist.add_edge(nodes[3], nodes[10]);
+        netlist.add_edge(nodes[4], nodes[10]);
+        netlist.add_edge(nodes[4], nodes[11]);
+        netlist.add_edge(nodes[5], nodes[11]);
+        netlist.add_edge(nodes[5], nodes[12]);
+        netlist.add_edge(nodes[6], nodes[12]);
+        netlist.add_edge(nodes[6], nodes[7]);
+        netlist
+    }
+
+    #[test]
+    fn test_legalize_and_optimize_with_dict_part() {
+        let netlist = make_netlist_drawf();
+        let gain_calc = FMBiGainCalc::new(make_netlist_drawf(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_netlist_drawf(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_netlist_drawf(), 0.5);
+        let mut pm = PartMgrBase::new(netlist, gain_mgr, validator, 2);
+        let mut part = vec![0u8; 7];
+
+        let legal_check = pm.legalize(&mut part);
+        // With bal_tol=0.5, legalization should succeed or at least not crash
+        assert!(legal_check == LegalCheck::AllSatisfied || legal_check == LegalCheck::NotSatisfied);
+
+        if legal_check == LegalCheck::AllSatisfied {
+            let totalcost_before = pm.total_cost;
+            pm.init(&mut part);
+            assert_eq!(pm.total_cost, totalcost_before);
+
+            pm.optimize(&mut part);
+            assert!(pm.validator.final_check(&mut part));
+            assert!(pm.total_cost <= totalcost_before);
+        }
+    }
+
+    #[test]
+    fn test_optimize_reduces_cost() {
+        let netlist = make_netlist_drawf();
+        let gain_calc = FMBiGainCalc::new(make_netlist_drawf(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_netlist_drawf(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_netlist_drawf(), 0.45);
+        let mut pm = PartMgrBase::new(netlist, gain_mgr, validator, 2);
+        let mut part = vec![0u8; 7];
+
+        let _ = pm.legalize(&mut part);
+        let totalcost_before = pm.total_cost;
+        pm.optimize(&mut part);
+        assert!(pm.total_cost <= totalcost_before);
+    }
+
+    #[test]
+    fn test_total_cost_non_negative() {
+        let netlist = make_netlist_drawf();
+        let gain_calc = FMBiGainCalc::new(make_netlist_drawf(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_netlist_drawf(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_netlist_drawf(), 0.45);
+        let mut pm = PartMgrBase::new(netlist, gain_mgr, validator, 2);
+        let mut part = vec![0u8; 7];
+
+        let _ = pm.legalize(&mut part);
+        assert!(pm.total_cost >= 0);
+
+        pm.optimize(&mut part);
+        assert!(pm.total_cost >= 0);
+    }
+
+    // ── Ported from Python test_illegal.py ──────────────────────────
+
+    fn make_netlist_4m_balanced() -> SimpleNetlist {
+        let mut netlist = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[5]);
+        netlist.add_edge(nodes[3], nodes[5]);
+        netlist
+    }
+
+    #[test]
+    fn test_illegal_partition_detected() {
+        let netlist = make_netlist_4m_balanced();
+        let gain_calc = FMBiGainCalc::new(make_netlist_4m_balanced(), 2);
+        let gain_mgr = FMBiGainMgr::new(make_netlist_4m_balanced(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_netlist_4m_balanced(), 0.499);
+        let mut pm = PartMgrBase::new(netlist, gain_mgr, validator, 2);
+        let mut part = vec![0u8; 4];
+        let legal_check = pm.legalize(&mut part);
+        assert_ne!(legal_check, LegalCheck::AllSatisfied);
+
+        let totalcost_before = pm.total_cost;
+        pm.init(&mut part);
+        assert_eq!(pm.total_cost, totalcost_before);
+        pm.optimize(&mut part);
+        assert!(!pm.validator.final_check(&mut part));
+    }
 }

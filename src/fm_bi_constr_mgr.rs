@@ -1,4 +1,5 @@
-use crate::fm_constr_mgr::FMConstrMgr;
+use crate::fm_constr_mgr::{FMConstrMgr, LegalCheck};
+use crate::fm_gain_mgr::ConstrMgrInterface;
 use crate::hypergraph::Hypergraph;
 
 /// Binary Constraint Manager
@@ -31,6 +32,27 @@ impl<Gnl: Hypergraph> std::ops::Deref for FMBiConstrMgr<Gnl> {
 impl<Gnl: Hypergraph> std::ops::DerefMut for FMBiConstrMgr<Gnl> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+impl<Gnl: Hypergraph> ConstrMgrInterface<Gnl> for FMBiConstrMgr<Gnl> {
+    fn init(&mut self, part: &[u8]) {
+        self.0.init(part)
+    }
+    fn check_legal(&mut self, move_info_v: &crate::moveinfo::MoveInfoV<Gnl::Node>) -> LegalCheck {
+        self.0.check_legal(move_info_v)
+    }
+    fn check_constraints(&self, move_info_v: &crate::moveinfo::MoveInfoV<Gnl::Node>) -> bool {
+        self.0.check_constraints(move_info_v)
+    }
+    fn update_move(&mut self, move_info_v: &crate::moveinfo::MoveInfoV<Gnl::Node>) {
+        self.0.update_move(move_info_v)
+    }
+    fn select_togo(&self) -> u8 {
+        self.select_togo()
+    }
+    fn final_check(&mut self, part: &[u8]) -> bool {
+        self.0.final_check(part)
     }
 }
 
@@ -75,5 +97,48 @@ mod tests {
         let netlist = SimpleNetlist::new(4, 2);
         let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
         let _: &mut FMConstrMgr<SimpleNetlist> = &mut *mgr;
+    }
+
+    #[test]
+    fn test_select_togo_prefers_smaller_part() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
+        let part = vec![1u8, 1, 1, 0];
+        mgr.0.init(&part);
+        assert_eq!(mgr.select_togo(), 0);
+    }
+
+    #[test]
+    fn test_select_togo_prefers_smaller_part_2() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
+        let part = vec![1u8, 1, 0, 0];
+        mgr.0.init(&part);
+        assert_eq!(mgr.select_togo(), 1);
+    }
+
+    #[test]
+    fn test_select_togo_equal_parts() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
+        mgr.0.init(&vec![1u8, 1, 0, 0]);
+        mgr.0.diff = vec![10, 10];
+        assert_eq!(mgr.select_togo(), 1);
+    }
+
+    #[test]
+    fn test_select_togo_known_returns_0() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
+        mgr.0.diff = vec![10, 20];
+        assert_eq!(mgr.select_togo(), 0);
+    }
+
+    #[test]
+    fn test_select_togo_known_returns_1() {
+        let netlist = SimpleNetlist::new(4, 0);
+        let mut mgr = FMBiConstrMgr::new(netlist, 0.5);
+        mgr.0.diff = vec![20, 10];
+        assert_eq!(mgr.select_togo(), 1);
     }
 }

@@ -112,6 +112,39 @@ impl Hypergraph for SimpleNetlist {
     }
 }
 
+// Allow passing references where Hypergraph is expected
+impl<T: Hypergraph> Hypergraph for &T {
+    type Node = T::Node;
+
+    fn modules(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
+        (*self).modules()
+    }
+    fn nets(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
+        (*self).nets()
+    }
+    fn neighbors(&self, node: Self::Node) -> Box<dyn Iterator<Item = Self::Node> + '_> {
+        (*self).neighbors(node)
+    }
+    fn degree(&self, node: Self::Node) -> usize {
+        (*self).degree(node)
+    }
+    fn get_module_weight(&self, v: Self::Node) -> u32 {
+        (*self).get_module_weight(v)
+    }
+    fn get_net_weight(&self, net: Self::Node) -> u32 {
+        (*self).get_net_weight(net)
+    }
+    fn number_of_modules(&self) -> usize {
+        (*self).number_of_modules()
+    }
+    fn get_max_degree(&self) -> usize {
+        (*self).get_max_degree()
+    }
+    fn module_index(&self, v: Self::Node) -> usize {
+        (*self).module_index(v)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -217,5 +250,71 @@ mod tests {
         let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
         assert_eq!(nl.module_index(nodes[0]), 0);
         assert_eq!(nl.module_index(nodes[2]), 2);
+    }
+
+    // ── Ported from Python test_netlist.py ─────────────────────────
+
+    #[test]
+    fn test_netlist_sizes() {
+        let nl = SimpleNetlist::new(7, 6);
+        assert_eq!(nl.number_of_modules(), 7);
+        assert_eq!(nl.nets().count(), 6);
+        assert_eq!(nl.gr.node_count(), 13);
+    }
+
+    #[test]
+    fn test_netlist_pins_after_edges() {
+        let mut nl = SimpleNetlist::new(3, 3);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        nl.add_edge(nodes[0], nodes[3]);
+        nl.add_edge(nodes[1], nodes[3]);
+        nl.add_edge(nodes[0], nodes[4]);
+        nl.add_edge(nodes[2], nodes[4]);
+        nl.add_edge(nodes[1], nodes[5]);
+        nl.add_edge(nodes[2], nodes[5]);
+        // Total pins = 6 (3 nets × 2 pins each)
+        let total_pins: usize = nl.nets().map(|n| nl.degree(n)).sum();
+        assert_eq!(total_pins, 6);
+    }
+
+    #[test]
+    fn test_netlist_module_weight_custom() {
+        let mut nl = SimpleNetlist::new(4, 2);
+        nl.module_weight[0] = 10;
+        nl.module_weight[1] = 20;
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        assert_eq!(nl.get_module_weight(nodes[0]), 10);
+        assert_eq!(nl.get_module_weight(nodes[1]), 20);
+        assert_eq!(nl.get_module_weight(nodes[2]), 1); // default
+    }
+
+    #[test]
+    fn test_netlist_get_max_degree_with_pins() {
+        let mut nl = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        nl.add_edge(nodes[0], nodes[4]);
+        nl.add_edge(nodes[0], nodes[5]);
+        nl.add_edge(nodes[1], nodes[4]);
+        nl.add_edge(nodes[2], nodes[5]);
+        assert_eq!(nl.get_max_degree(), 2);
+    }
+
+    #[test]
+    fn test_netlist_duplicate_edge_counted() {
+        // petgraph::Graph counts parallel edges; this test documents that behavior
+        let mut nl = SimpleNetlist::new(2, 1);
+        let nodes: Vec<NodeIndex> = nl.gr.node_indices().collect();
+        nl.add_edge(nodes[0], nodes[2]);
+        nl.add_edge(nodes[0], nodes[2]);
+        assert_eq!(nl.degree(nodes[2]), 2);
+        assert_eq!(nl.degree(nodes[0]), 2);
+    }
+
+    #[test]
+    fn test_netlist_no_pins_zero_nets() {
+        let nl = SimpleNetlist::new(4, 0);
+        assert_eq!(nl.number_of_modules(), 4);
+        assert_eq!(nl.nets().count(), 0);
+        assert_eq!(nl.get_max_degree(), 0);
     }
 }
