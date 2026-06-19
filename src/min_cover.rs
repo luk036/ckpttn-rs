@@ -43,7 +43,7 @@ pub fn contract_subgraph(
         .iter()
         .map(|&n| (n, *cluster_weight.get(&n).unwrap_or(&0)))
         .collect();
-    sorted_nets.sort_by(|a, b| b.1.cmp(&a.1));
+    sorted_nets.sort_by_key(|b| std::cmp::Reverse(b.1));
 
     let mut matched_nets_set: HashSet<NodeIndex> = HashSet::new();
     let mut covered_modules: HashSet<usize> = HashSet::new();
