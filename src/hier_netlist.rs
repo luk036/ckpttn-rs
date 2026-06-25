@@ -147,3 +147,89 @@ impl Hypergraph for HierNetlist {
         v.index()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hier_netlist_new() {
+        let hn = HierNetlist::new(4, 2);
+        assert_eq!(hn.num_modules, 4);
+        assert_eq!(hn.gr.node_count(), 6);
+        assert_eq!(hn.module_weight.len(), 4);
+        assert!(hn.parent.is_none());
+    }
+
+    #[test]
+    fn test_hier_netlist_counts() {
+        let hn = HierNetlist::new(4, 2);
+        assert_eq!(hn.number_of_modules(), 4);
+        assert_eq!(hn.number_of_nets(), 2);
+        assert_eq!(hn.number_of_pins(), 0);
+        assert_eq!(hn.get_max_degree(), 0);
+    }
+
+    #[test]
+    fn test_hier_netlist_add_edge() {
+        let mut hn = HierNetlist::new(4, 2);
+        let module = NodeIndex::new(0);
+        let net = NodeIndex::new(4);
+        hn.add_edge(module, net);
+        assert_eq!(hn.number_of_pins(), 1);
+        assert_eq!(hn.get_max_degree(), 1);
+    }
+
+    #[test]
+    fn test_hier_netlist_hypergraph_trait() {
+        let mut hn = HierNetlist::new(4, 2);
+        let module = NodeIndex::new(0);
+        let net = NodeIndex::new(4);
+        hn.add_edge(module, net);
+
+        let modules: Vec<_> = hn.modules().collect();
+        assert_eq!(modules.len(), 4);
+
+        let nets: Vec<_> = hn.nets().collect();
+        assert_eq!(nets.len(), 2);
+
+        let weight = hn.get_module_weight(NodeIndex::new(0));
+        assert_eq!(weight, 1);
+
+        let net_weight = hn.get_net_weight(NodeIndex::new(4));
+        assert_eq!(net_weight, 1);
+
+        let deg = hn.degree(net);
+        assert_eq!(deg, 1);
+
+        let idx = hn.module_index(module);
+        assert_eq!(idx, 0);
+    }
+
+    #[test]
+    fn test_hier_netlist_projection_down() {
+        let mut hn = HierNetlist::new(4, 2);
+        hn.node_down_list = vec![0, 1, 100, 101];
+        hn.clusters = vec![101];
+
+        let part = vec![0u8, 1, 2, 3];
+        let mut part_down = vec![0u8; 4];
+        hn.projection_down(&part, &mut part_down);
+    }
+
+    #[test]
+    fn test_hier_netlist_projection_up() {
+        let hn = HierNetlist::new(4, 2);
+        let part = vec![0u8, 1, 2, 3];
+        let mut part_up = vec![0u8; 4];
+        hn.projection_up(&part, &mut part_up);
+    }
+
+    #[test]
+    fn test_hier_netlist_weight_out_of_range() {
+        let hn = HierNetlist::new(2, 1);
+        // module_index beyond module_weight.len() returns default 1
+        let w = hn.get_module_weight(NodeIndex::new(5));
+        assert_eq!(w, 1);
+    }
+}

@@ -103,3 +103,59 @@ where
         self.validator.final_check(part)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fm_bi_gain_calc::FMBiGainCalc;
+    use crate::fm_constr_mgr::FMConstrMgr;
+    use crate::hypergraph::SimpleNetlist;
+    use crate::nn_gain_mgr::NNGainMgr;
+    use petgraph::graph::NodeIndex;
+
+    fn make_nl() -> SimpleNetlist {
+        let mut netlist = SimpleNetlist::new(4, 2);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[5]);
+        netlist.add_edge(nodes[3], nodes[5]);
+        netlist
+    }
+
+    #[test]
+    fn test_nn_part_mgr_new() {
+        let hyprgraph = make_nl();
+        let gain_calc = FMBiGainCalc::new(make_nl(), 2);
+        let gain_mgr = NNGainMgr::new(make_nl(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_nl(), 0.5);
+        let pm = NNPartMgr::new(hyprgraph, gain_mgr, validator, 2);
+        assert_eq!(pm.num_parts, 2);
+        assert_eq!(pm.total_cost, 0);
+    }
+
+    #[test]
+    fn test_nn_part_mgr_init() {
+        let hyprgraph = make_nl();
+        let gain_calc = FMBiGainCalc::new(make_nl(), 2);
+        let gain_mgr = NNGainMgr::new(make_nl(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_nl(), 0.5);
+        let mut pm = NNPartMgr::new(hyprgraph, gain_mgr, validator, 2);
+        let mut part = vec![0u8, 0, 1, 1];
+        pm.init(&mut part);
+        assert_eq!(pm.total_cost, 0);
+    }
+
+    #[test]
+    fn test_nn_part_mgr_final_check() {
+        let hyprgraph = make_nl();
+        let gain_calc = FMBiGainCalc::new(make_nl(), 2);
+        let gain_mgr = NNGainMgr::new(make_nl(), gain_calc, 2);
+        let validator = FMConstrMgr::new(make_nl(), 0.5);
+        let mut pm = NNPartMgr::new(hyprgraph, gain_mgr, validator, 2);
+        let mut part = vec![0u8, 0, 1, 1];
+        pm.init(&mut part);
+        let legal = pm.final_check(&mut part);
+        assert!(legal);
+    }
+}

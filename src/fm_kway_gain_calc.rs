@@ -508,4 +508,74 @@ mod tests {
         assert_eq!(calc.init_gain_matrix[2][0], 5);
         assert_eq!(calc.init_gain_matrix[0][0], 0);
     }
+
+    #[test]
+    fn test_init_gain_3pin_all_diff_part_kway() {
+        let mut netlist = SimpleNetlist::new(3, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[3]);
+        netlist.add_edge(nodes[1], nodes[3]);
+        netlist.add_edge(nodes[2], nodes[3]);
+        let mut calc = FMKWayGainCalc::new(netlist, 3);
+        let part = vec![0u8, 1, 2];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 2);
+    }
+
+    #[test]
+    fn test_init_gain_3pin_two_same_kway() {
+        let mut netlist = SimpleNetlist::new(3, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[3]);
+        netlist.add_edge(nodes[1], nodes[3]);
+        netlist.add_edge(nodes[2], nodes[3]);
+        let mut calc = FMKWayGainCalc::new(netlist, 3);
+        let part = vec![0u8, 0, 1];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 1);
+    }
+
+    #[test]
+    fn test_init_gain_general_net_kway() {
+        let mut netlist = SimpleNetlist::new(4, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        for i in 0..4 {
+            netlist.add_edge(nodes[i], nodes[4]);
+        }
+        let mut calc = FMKWayGainCalc::new(netlist, 2);
+        let part = vec![0u8, 0, 1, 1];
+        let cost = calc.init(&part);
+        assert_eq!(cost, 1);
+    }
+
+    #[test]
+    fn test_kway_update_move_2pin_net() {
+        let mut netlist = SimpleNetlist::new(2, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[2]);
+        netlist.add_edge(nodes[1], nodes[2]);
+        let mut calc = FMKWayGainCalc::new(netlist, 2);
+        let part = vec![0u8, 1];
+        let _ = calc.init(&part);
+        let move_info = MoveInfo { net: nodes[2], v: nodes[0], from_part: 0, to_part: 1 };
+        calc.update_move_init();
+        calc.init_idx_vec(nodes[0], nodes[2]);
+        let w = calc.update_move_2pin_net(&part, &move_info);
+        assert_eq!(w, nodes[1]);
+    }
+
+    #[test]
+    fn test_kway_gain_calc_trait() {
+        let mut netlist = SimpleNetlist::new(2, 1);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[2]);
+        netlist.add_edge(nodes[1], nodes[2]);
+        let mut calc = FMKWayGainCalc::new(netlist, 2);
+        let part = vec![0u8, 1];
+        let _ = calc.init(&part);
+        assert_eq!(calc.delta_gain_w(), 0);
+        let mut calc2 = FMKWayGainCalc::new(SimpleNetlist::new(2, 0), 2);
+        <FMKWayGainCalc<_> as GainCalcTrait<_>>::update_move_init(&mut calc2);
+        assert!(calc2.idx_vec().is_empty());
+    }
 }
