@@ -557,7 +557,12 @@ mod tests {
         let mut calc = FMKWayGainCalc::new(netlist, 2);
         let part = vec![0u8, 1];
         let _ = calc.init(&part);
-        let move_info = MoveInfo { net: nodes[2], v: nodes[0], from_part: 0, to_part: 1 };
+        let move_info = MoveInfo {
+            net: nodes[2],
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
         calc.update_move_init();
         calc.init_idx_vec(nodes[0], nodes[2]);
         let w = calc.update_move_2pin_net(&part, &move_info);

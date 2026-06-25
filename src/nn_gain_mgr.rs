@@ -271,7 +271,11 @@ mod tests {
         let netlist = make_nl();
         let calc = FMBiGainCalc::new(make_nl(), 2);
         let mut mgr: NNGainMgr<_, FMBiGainCalc<_>> = NNGainMgr::new(netlist, calc, 2);
-        let move_info_v = MoveInfoV { v: nodes[0], from_part: 0, to_part: 1 };
+        let move_info_v = MoveInfoV {
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
         mgr.update_move_v(&move_info_v, 5);
         mgr.modify_key(nodes[0], 0, 3);
     }
@@ -290,7 +294,11 @@ mod tests {
         assert!(NNGainMgrInterface::is_empty_togo(&mgr, 0));
 
         NNGainMgrInterface::lock(&mut mgr, 0, nodes[0]);
-        let move_info_v = MoveInfoV { v: nodes[0], from_part: 0, to_part: 1 };
+        let move_info_v = MoveInfoV {
+            v: nodes[0],
+            from_part: 0,
+            to_part: 1,
+        };
         NNGainMgrInterface::update_move_v(&mut mgr, &move_info_v, 3);
         NNGainMgrInterface::modify_key(&mut mgr, nodes[0], 0, 5);
     }
