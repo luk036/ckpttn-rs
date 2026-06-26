@@ -3,6 +3,11 @@ use crate::moveinfo::MoveInfo;
 
 /// K-way gain calculator for FM partitioning.
 ///
+/// Maintains a gain matrix $G_{p,v}$ for each module $v$ and target partition $p$:
+///
+/// $$ G_{p,v} = \sum_{n \in N(v)} w(n) \cdot \bigl(\mathbf{1}_{\text{improves}}(n, p, v) - \mathbf{1}_{\text{worsens}}(n, p, v)\bigr) $$
+///
+/// Positive $G_{p,v}$ means moving $v$ to partition $p$ reduces the total cut cost.
 /// Supports N partitions with per-partition gain tracking.
 /// Ported from Python `FMKWayGainCalc` in `FMKWayGainCalc.py`.
 pub struct FMKWayGainCalc<Gnl: Hypergraph> {

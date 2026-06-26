@@ -7,6 +7,12 @@ use crate::hypergraph::Hypergraph;
 
 /// Contract a subgraph by clustering connected modules.
 ///
+/// Each net $n$ becomes a cluster with weight equal to the sum of its module weights:
+///
+/// $$ w(c_n) = \sum_{v \in N(n)} w(v) $$
+///
+/// Greedy matching selects nets by descending cluster weight, avoiding overlap.
+///
 /// This is the main entry point for the contraction/clustering algorithm.
 /// It finds a matching, creates clusters, builds a new hierarchical netlist,
 /// and purges duplicate nets.

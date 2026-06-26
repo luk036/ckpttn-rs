@@ -1,6 +1,14 @@
 use crate::hypergraph::Hypergraph;
 use crate::moveinfo::MoveInfo;
 
+/// FM bi-partitioning gain calculator.
+///
+/// Computes the gain of moving a module $v$ from its current partition to the other:
+///
+/// $$ g(v) = \sum_{n \in N(v)} w(n) \cdot \bigl(\mathbf{1}_{\text{uncut after}}(n) - \mathbf{1}_{\text{cut after}}(n)\bigr) $$
+///
+/// where $N(v)$ is the set of nets connected to $v$ and $w(n)$ is the net weight.
+/// Positive gain means the move reduces the total cut cost.
 pub struct FMBiGainCalc<Gnl: Hypergraph> {
     hyprgraph: Gnl,
     pub init_gain_list: Vec<i32>,
