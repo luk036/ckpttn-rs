@@ -3,11 +3,15 @@ use crate::moveinfo::MoveInfo;
 
 /// FM bi-partitioning gain calculator.
 ///
-/// Computes the gain of moving a module $v$ from its current partition to the other:
-///
-/// $$ g(v) = \sum_{n \in N(v)} w(n) \cdot \bigl(\mathbf{1}_{\text{uncut after}}(n) - \mathbf{1}_{\text{cut after}}(n)\bigr) $$
-///
-/// where $N(v)$ is the set of nets connected to $v$ and $w(n)$ is the net weight.
+    /// Computes the gain of moving a module $v$ from its current partition to the other:
+    ///
+    /// $$ g(v) = \sum_{n \in N(v)} w(n) \cdot \bigl(\mathbf{1}_{\text{uncut after}}(n) - \mathbf{1}_{\text{cut after}}(n)\bigr) $$
+    ///
+    /// where $N(v)$ is the set of nets connected to $v$ and $w(n)$ is the net weight.
+    ///
+    /// For a 2-pin net $\{v,w\}$, the initial gain is:
+    ///
+    /// $$ g(v) = g(w) = w(n) \text{ if } p_v \neq p_w, \quad g(v) = g(w) = -w(n) \text{ if } p_v = p_w $$
 /// Positive gain means the move reduces the total cut cost.
 pub struct FMBiGainCalc<Gnl: Hypergraph> {
     hyprgraph: Gnl,
@@ -65,6 +69,10 @@ impl<Gnl: Hypergraph> FMBiGainCalc<Gnl> {
         self.delta_gain_w_val
     }
 
+    /// Updates gain for a 2-pin net after moving $v$ from $p_{\text{from}}$ to $p_{\text{to}}$.
+    ///
+    /// $$ \Delta g_w = 2 \cdot w(n) \quad \text{if } p_w = p_{\text{from}} $$
+    /// $$ \Delta g_w = -2 \cdot w(n) \quad \text{if } p_w = p_{\text{to}} $$
     pub fn update_move_2pin_net(
         &mut self,
         part: &[u8],
@@ -160,6 +168,11 @@ impl<Gnl: Hypergraph> FMBiGainCalc<Gnl> {
         }
     }
 
+    /// Initializes gain for a 2-pin net.
+    ///
+    /// $$ \text{total\_cost} \mathrel{+}= w(n) \quad \text{if } p_v \neq p_w $$
+    /// $$ g(v) \mathrel{+}= w(n), \; g(w) \mathrel{+}= w(n) \quad \text{if } p_v \neq p_w $$
+    /// $$ g(v) \mathrel{-}= w(n), \; g(w) \mathrel{-}= w(n) \quad \text{if } p_v = p_w $$
     fn init_gain_2pin_net(&mut self, net: Gnl::Node, part: &[u8]) {
         let nbrs: Vec<_> = self.hyprgraph.neighbors(net).collect();
         let node_w = nbrs[0];
@@ -202,6 +215,10 @@ impl<Gnl: Hypergraph> FMBiGainCalc<Gnl> {
         self.total_cost += weight;
     }
 
+    /// Initializes gain for a general (degree $\ge 4$) net.
+    ///
+    /// For each partition $p$ with $\text{num}\[p\] = 0$, all modules get $g(v) \mathrel{-}= w(n)$.
+    /// For each partition $p$ with $\text{num}\[p\] = 1$, that module gets $g(v) \mathrel{+}= w(n)$.
     fn init_gain_general_net(&mut self, net: Gnl::Node, part: &[u8]) {
         let nbrs: Vec<_> = self.hyprgraph.neighbors(net).collect();
         let mut num = [0usize; 2];

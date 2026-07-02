@@ -30,6 +30,12 @@ impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
     }
 
     /// Creates a new FMConstrMgr with the specified number of partitions.
+    ///
+    /// Computes the lower bound for each partition:
+    ///
+    /// $$ L = \left\lfloor \frac{2 \cdot \text{total\_weight}}{k} \cdot \text{bal\_tol} \right\rceil $$
+    ///
+    /// where $k$ is the number of partitions.
     pub fn with_num_parts(hyprgraph: Gnl, bal_tol: f64, num_parts: u8) -> Self {
         let mut total_weight = 0u32;
         for v in hyprgraph.modules() {
@@ -50,6 +56,8 @@ impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
     }
 
     /// Initializes the diff vector based on the given partition.
+    ///
+    /// $$ \text{diff}\[p\] = \sum_{v \in P_p} w(v) $$
     pub fn init(&mut self, part: &[u8]) {
         for d in &mut self.diff {
             *d = 0;
@@ -63,6 +71,10 @@ impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
     }
 
     /// Checks the legality of a move.
+    ///
+    /// A move is legal if:
+    ///
+    /// $$ \text{diff}[p_{\text{from}}] \ge L + w(v) \quad \land \quad \text{diff}[p_{\text{to}}] + w(v) \ge L $$
     pub fn check_legal(&mut self, move_info_v: &MoveInfoV<Gnl::Node>) -> LegalCheck {
         self.weight_cache = self.hyprgraph.get_module_weight(move_info_v.v);
         let diff_from = self.diff[move_info_v.from_part as usize];

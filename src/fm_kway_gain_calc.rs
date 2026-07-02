@@ -72,6 +72,7 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         self.hyprgraph.module_index(v)
     }
 
+    /// Updates gain matrix for module $v$: $G_{p,v} \mathrel{+}= \text{weight}$ for all $p \neq p_v$.
     fn modify_gain(&mut self, v: Gnl::Node, pv: u8, weight: i32) {
         let idx = self.hyprgraph.module_index(v);
         for k in 0..self.num_parts {
@@ -187,6 +188,11 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         }
     }
 
+    /// Initializes gain matrix for a general net.
+    ///
+    /// For each partition $k$ with $\text{num}\[k\] = 0$, all modules get $G_{k,v} \mathrel{-}= w(n)$.
+    /// For each partition $k$ with $\text{num}\[k\] = 1$, the single module in $k$ gets
+    /// $G_{p,v} \mathrel{+}= w(n)$ for all $p \neq k$.
     fn init_gain_general_net(&mut self, net: Gnl::Node, part: &[u8]) {
         let nbrs: Vec<_> = self.hyprgraph.neighbors(net).collect();
         let mut num = vec![0usize; self.num_parts as usize];
@@ -223,6 +229,7 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         }
     }
 
+    /// Updates gain matrix for a 2-pin net after moving $v$ from $p_{\text{from}}$ to $p_{\text{to}}$.
     pub fn update_move_2pin_net(
         &mut self,
         part: &[u8],
