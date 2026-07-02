@@ -3,15 +3,15 @@ use crate::moveinfo::MoveInfo;
 
 /// FM bi-partitioning gain calculator.
 ///
-    /// Computes the gain of moving a module $v$ from its current partition to the other:
-    ///
-    /// $$ g(v) = \sum_{n \in N(v)} w(n) \cdot \bigl(\mathbf{1}_{\text{uncut after}}(n) - \mathbf{1}_{\text{cut after}}(n)\bigr) $$
-    ///
-    /// where $N(v)$ is the set of nets connected to $v$ and $w(n)$ is the net weight.
-    ///
-    /// For a 2-pin net $\{v,w\}$, the initial gain is:
-    ///
-    /// $$ g(v) = g(w) = w(n) \text{ if } p_v \neq p_w, \quad g(v) = g(w) = -w(n) \text{ if } p_v = p_w $$
+/// Computes the gain of moving a module $v$ from its current partition to the other:
+///
+/// $$ g(v) = \sum_{n \in N(v)} w(n) \cdot \bigl(\mathbf{1}_{\text{uncut after}}(n) - \mathbf{1}_{\text{cut after}}(n)\bigr) $$
+///
+/// where $N(v)$ is the set of nets connected to $v$ and $w(n)$ is the net weight.
+///
+/// For a 2-pin net $\{v,w\}$, the initial gain is:
+///
+/// $$ g(v) = g(w) = w(n) \text{ if } p_v \neq p_w, \quad g(v) = g(w) = -w(n) \text{ if } p_v = p_w $$
 /// Positive gain means the move reduces the total cut cost.
 pub struct FMBiGainCalc<Gnl: Hypergraph> {
     hyprgraph: Gnl,
