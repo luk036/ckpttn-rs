@@ -287,7 +287,7 @@ mod tests {
         let calc = FMBiGainCalc::new(make_nl(), 2);
         let mut mgr: NNGainMgr<_, FMBiGainCalc<_>> = NNGainMgr::new(netlist, calc, 2);
 
-        let mut part = vec![0u8, 0, 1, 1];
+        let part = vec![0u8, 0, 1, 1];
         let cost = NNGainMgrInterface::init(&mut mgr, &part);
         assert_eq!(cost, 0);
         assert!(NNGainMgrInterface::is_empty(&mgr));
