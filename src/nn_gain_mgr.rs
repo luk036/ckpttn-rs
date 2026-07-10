@@ -35,7 +35,14 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
     }
 
     pub fn init(&mut self, part: &[u8]) -> i32 {
-        self.gain_calc.init(part)
+        let total_cost = self.gain_calc.init(part);
+        for bucket in &mut self.gain_bucket {
+            bucket.clear();
+        }
+        let modules: Vec<Gnl::Node> = self.hyprgraph.modules().collect();
+        self.gain_calc
+            .populate_buckets(part, &modules, &mut self.gain_bucket);
+        total_cost
     }
 
     pub fn is_empty(&self) -> bool {
@@ -290,8 +297,13 @@ mod tests {
         let part = vec![0u8, 0, 1, 1];
         let cost = NNGainMgrInterface::init(&mut mgr, &part);
         assert_eq!(cost, 0);
-        assert!(NNGainMgrInterface::is_empty(&mgr));
-        assert!(NNGainMgrInterface::is_empty_togo(&mgr, 0));
+        // After init, buckets are populated, so NOT empty
+        assert!(!NNGainMgrInterface::is_empty(&mgr));
+        // Modules in part 0 go to bucket 1 (to move to partition 1)
+        // Modules in part 1 go to bucket 0
+        // So neither bucket should be empty
+        assert!(!NNGainMgrInterface::is_empty_togo(&mgr, 0));
+        assert!(!NNGainMgrInterface::is_empty_togo(&mgr, 1));
 
         NNGainMgrInterface::lock(&mut mgr, 0, nodes[0]);
         let move_info_v = MoveInfoV {

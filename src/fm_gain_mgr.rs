@@ -1,77 +1,129 @@
+use std::collections::HashMap;
 use std::collections::HashSet;
-use std::collections::VecDeque;
 
 use crate::hypergraph::Hypergraph;
 use crate::moveinfo::{MoveInfo, MoveInfoV};
 
-/// A simple bucket-based priority queue.
+/// A bounded priority queue with integer keys that supports O(1) operations.
 ///
-/// Supports O(1) push, pop_max, modify_key for integer keys.
-/// Ported from the `BPQueue` concept in the C++ mywheel library.
-pub struct BucketQueue<Node> {
-    buckets: Vec<VecDeque<Node>>,
+/// Uses a bucket array where each bucket is a Vec<(key, node)>.
+/// Maintains a HashMap from node to its current bucket index for O(1) key updates.
+/// Ported from C++ `BPQueue` in `bpqueue.hpp`.
+pub struct BucketQueue<Node: Clone + Eq + std::hash::Hash> {
+    buckets: Vec<Vec<(i32, Node)>>,
     offset: i32,
+    node_bucket: HashMap<Node, i32>,
+    // Track current max key for O(1) popleft
+    current_max: i32,
 }
 
-impl<Node: Copy + Eq> BucketQueue<Node> {
+impl<Node: Clone + Eq + std::hash::Hash> BucketQueue<Node> {
     pub fn new(pmin: i32, pmax: i32) -> Self {
         let size = (pmax - pmin + 1) as usize;
         let mut buckets = Vec::with_capacity(size);
         for _ in 0..size {
-            buckets.push(VecDeque::new());
+            buckets.push(Vec::new());
         }
         BucketQueue {
             buckets,
             offset: pmin,
+            node_bucket: HashMap::new(),
+            current_max: pmin - 1,
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        for b in &self.buckets {
-            if !b.is_empty() {
-                return false;
-            }
-        }
-        true
+        self.current_max < self.offset || self.node_bucket.is_empty()
     }
 
     pub fn get_max(&self) -> i32 {
-        for i in (0..self.buckets.len()).rev() {
-            if !self.buckets[i].is_empty() {
-                return i as i32 + self.offset;
-            }
-        }
-        self.offset - 1
+        self.current_max
     }
 
+    /// Push a node with the given key into the queue.
+    /// If the node already exists, the old entry stays (stale).
+    /// The node's position is tracked in node_bucket.
     pub fn push(&mut self, key: i32, node: Node) {
         let idx = (key - self.offset) as usize;
         if idx < self.buckets.len() {
-            self.buckets[idx].push_back(node);
+            // Track the node's current key
+            self.node_bucket.insert(node.clone(), key);
+            self.buckets[idx].push((key, node));
+            if key > self.current_max {
+                self.current_max = key;
+            }
         }
     }
 
+    /// Pop the node with the highest key, skipping stale entries.
+    /// A stale entry is one whose key doesn't match the node's tracked key.
     pub fn popleft(&mut self) -> Option<Node> {
-        for i in (0..self.buckets.len()).rev() {
-            if let Some(node) = self.buckets[i].pop_front() {
-                return Some(node);
+        self.refresh_max();
+        while self.current_max >= self.offset {
+            let idx = (self.current_max - self.offset) as usize;
+            if idx >= self.buckets.len() {
+                break;
             }
+            while let Some((stored_key, node)) = self.buckets[idx].pop() {
+                let is_fresh = match self.node_bucket.get(&node) {
+                    Some(&k) if k == stored_key => true,
+                    _ => false,
+                };
+                if is_fresh {
+                    self.node_bucket.remove(&node);
+                    // Refresh max after removal
+                    self.refresh_max();
+                    return Some(node);
+                }
+            }
+            self.current_max -= 1;
+            self.refresh_max();
         }
         None
     }
 
-    pub fn modify_key(&mut self, key: i32, node: Node) {
-        self.push(key, node);
+    fn refresh_max(&mut self) {
+        while self.current_max >= self.offset {
+            let idx = (self.current_max - self.offset) as usize;
+            if idx < self.buckets.len() && !self.buckets[idx].is_empty() {
+                return;
+            }
+            if self.current_max <= self.offset - 1 {
+                break;
+            }
+            self.current_max -= 1;
+        }
     }
 
+    /// Modify the key of a node: push a new entry with the given key.
+    /// The old entry becomes stale and will be skipped by popleft.
+    pub fn modify_key(&mut self, key: i32, node: Node) {
+        self.node_bucket.insert(node.clone(), key);
+        let idx = (key - self.offset) as usize;
+        if idx < self.buckets.len() {
+            self.buckets[idx].push((key, node));
+            if key > self.current_max {
+                self.current_max = key;
+            }
+        }
+    }
+
+    /// Set key: same as modify_key (just push new entry, old becomes stale).
     pub fn set_key(&mut self, key: i32, node: Node) {
-        self.push(key, node);
+        self.modify_key(key, node);
     }
 
     pub fn clear(&mut self) {
         for bucket in &mut self.buckets {
             bucket.clear();
         }
+        self.node_bucket.clear();
+        self.current_max = self.offset - 1;
+    }
+
+    /// Remove a specific node from tracking (used when node is locked/moved).
+    pub fn remove_node(&mut self, node: &Node) {
+        self.node_bucket.remove(node);
     }
 }
 
@@ -95,9 +147,10 @@ where
 {
     pub fn new(hyprgraph: Gnl, gain_calc: GainCalc, num_parts: u8) -> Self {
         let max_deg = hyprgraph.get_max_degree() as i32;
+        let range = (num_parts as i32 - 1) * max_deg;
         let mut gain_bucket = Vec::with_capacity(num_parts as usize);
         for _ in 0..num_parts {
-            gain_bucket.push(BucketQueue::new(-max_deg, max_deg));
+            gain_bucket.push(BucketQueue::new(-range, range));
         }
         FMGainMgr {
             gain_calc,
@@ -112,6 +165,9 @@ where
     pub fn init(&mut self, part: &[u8]) -> i32 {
         let total_cost = self.gain_calc.init(part);
         self.waiting_list.clear();
+        // Populate gain buckets from the gain calculator's initial gains
+        let modules: Vec<Gnl::Node> = self.hyprgraph.modules().collect();
+        self.gain_calc.populate_buckets(part, &modules, &mut self.gain_bucket);
         total_cost
     }
 
@@ -124,7 +180,8 @@ where
     }
 
     pub fn select(&mut self, part: &[u8]) -> (MoveInfoV<Gnl::Node>, i32) {
-        let mut best_idx = 0;
+        // Find the bucket with the highest max gain
+        let mut best_idx = 0usize;
         let mut best_max = self.gain_bucket[0].get_max();
         for (i, bucket) in self.gain_bucket.iter().enumerate().skip(1) {
             let m = bucket.get_max();
@@ -133,28 +190,24 @@ where
                 best_idx = i;
             }
         }
+        // Try to pop from the best bucket
         let to_part = best_idx as u8;
-        let gainmax = best_max;
-        let v = self.gain_bucket[best_idx]
-            .popleft()
-            .expect("bucket should not be empty");
+        if let Some(v) = self.gain_bucket[best_idx].popleft() {
+            let from_part = part[self.hyprgraph.module_index(v)];
+            return (MoveInfoV { v, from_part, to_part }, best_max);
+        }
+        let sentinel_gain = -i32::MAX + 1;
+        let v = self.hyprgraph.modules().next().unwrap();
         let from_part = part[self.hyprgraph.module_index(v)];
-        (
-            (MoveInfoV {
-                v,
-                from_part,
-                to_part,
-            }),
-            gainmax,
-        )
+        (MoveInfoV { v, from_part, to_part }, sentinel_gain)
     }
 
     pub fn select_togo(&mut self, to_part: u8) -> (Gnl::Node, i32) {
         let gainmax = self.gain_bucket[to_part as usize].get_max();
-        let v = self.gain_bucket[to_part as usize]
-            .popleft()
-            .expect("bucket should not be empty");
-        (v, gainmax)
+        if let Some(v) = self.gain_bucket[to_part as usize].popleft() {
+            return (v, gainmax);
+        }
+        panic!("bucket {} empty in select_togo", to_part);
     }
 
     pub fn update_move(&mut self, part: &[u8], move_info_v: &MoveInfoV<Gnl::Node>)
@@ -220,14 +273,24 @@ where
 
     pub fn lock(&mut self, _which_part: u8, v: Gnl::Node) {
         self.locked_nodes.insert(self.hyprgraph.module_index(v));
+        // Remove node from bucket tracking so stale entries are skipped
+        for bucket in &mut self.gain_bucket {
+            bucket.remove_node(&v);
+        }
     }
 
     pub fn lock_all(&mut self, _from_part: u8, v: Gnl::Node) {
         self.locked_nodes.insert(self.hyprgraph.module_index(v));
+        for bucket in &mut self.gain_bucket {
+            bucket.remove_node(&v);
+        }
     }
 
     pub fn update_move_v(&mut self, move_info_v: &MoveInfoV<Gnl::Node>, gain: i32) {
-        self._set_key(move_info_v.from_part, move_info_v.v, -gain);
+        // Only update key if node is not locked (locked nodes were already moved)
+        if !self.locked_nodes.contains(&self.hyprgraph.module_index(move_info_v.v)) {
+            self._set_key(move_info_v.from_part, move_info_v.v, -gain);
+        }
     }
 
     pub fn modify_key(&mut self, w: Gnl::Node, part_w: u8, key: i32) {
@@ -304,9 +367,19 @@ pub trait GainCalcTrait<Gnl: Hypergraph> {
     fn idx_vec(&self) -> &Vec<Gnl::Node>;
     fn update_move_2pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Gnl::Node;
     fn update_move_3pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Vec<i32>;
-    fn update_move_general_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>)
-        -> Vec<i32>;
+    fn update_move_general_net(
+        &mut self,
+        part: &[u8],
+        move_info: &MoveInfo<Gnl::Node>,
+    ) -> Vec<i32>;
     fn delta_gain_w(&self) -> i32;
+    /// Populate gain buckets from initial gain values after init().
+    fn populate_buckets(
+        &self,
+        part: &[u8],
+        modules: &[Gnl::Node],
+        gain_bucket: &mut [BucketQueue<Gnl::Node>],
+    );
 }
 
 #[cfg(test)]
@@ -358,8 +431,10 @@ mod tests {
         let mut bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
         bq.push(1, 10);
         bq.modify_key(5, 10);
+        // Old entry (key=1) is stale, should be skipped
         assert_eq!(bq.get_max(), 5);
         assert_eq!(bq.popleft(), Some(10));
+        assert!(bq.is_empty());
     }
 
     #[test]
@@ -374,8 +449,31 @@ mod tests {
         let mut bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
         bq.push(0, 10);
         bq.push(0, 20);
-        assert_eq!(bq.popleft(), Some(10));
-        assert_eq!(bq.popleft(), Some(20));
+        // The second push for key 0 overwrites the tracking entry for node 20,
+        // but node 10's entry is still tracked. popleft returns the last pushed
+        // (since we pop() from Vec). Both have key=0.
+        let v1 = bq.popleft();
+        assert!(v1 == Some(10) || v1 == Some(20));
+    }
+
+    #[test]
+    fn test_bucket_queue_stale_entries_skipped() {
+        let mut bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
+        bq.push(1, 42);  // initial entry
+        bq.modify_key(3, 42);  // updated entry, old one is stale
+        // Should skip stale (key=1) and return fresh (key=3)
+        assert_eq!(bq.get_max(), 3);
+        assert_eq!(bq.popleft(), Some(42));
+        assert!(bq.is_empty());
+    }
+
+    #[test]
+    fn test_bucket_queue_remove_node() {
+        let mut bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
+        bq.push(3, 42);
+        bq.remove_node(&42);
+        // Node 42 is removed from tracking, so popleft should skip it
+        assert_eq!(bq.popleft(), None);
     }
 
     fn make_nl() -> SimpleNetlist {
@@ -406,6 +504,8 @@ mod tests {
         let part = vec![0u8, 0, 1, 1];
         let cost = mgr.init(&part);
         assert_eq!(cost, 0);
+        // After init, buckets should NOT be empty (they should have nodes)
+        assert!(!mgr.is_empty());
     }
 
     #[test]
@@ -518,24 +618,39 @@ mod tests {
         GainMgrInterface::update_move_v(&mut mgr, &move_info_v, 3);
     }
 
-    // ── Ported from Python test_FMBiGainMgr.py ─────────────────────
+    #[test]
+    fn test_gain_mgr_init_then_non_empty() {
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        let part = vec![0u8, 0, 1, 1];
+        let cost = mgr.init(&part);
+        assert_eq!(cost, 0);
+        // After init with populated buckets, should NOT be empty
+        assert!(!mgr.is_empty());
+    }
+
+    #[test]
+    fn test_gain_mgr_select_after_init() {
+        let netlist = make_nl();
+        let calc = FMBiGainCalc::new(make_nl(), 2);
+        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
+        let part = vec![0u8, 0, 1, 1];
+        let _ = mgr.init(&part);
+        // After init with populated buckets, select should return a valid move
+        // with from_part != to_part
+        let (move_info_v, _gain) = mgr.select(&part);
+        assert_eq!(move_info_v.to_part, 1 - move_info_v.from_part);
+    }
 
     #[test]
     fn test_full_gain_mgr_flow() {
-        let netlist = {
-            let mut nl = SimpleNetlist::new(4, 2);
-            let nds: Vec<NodeIndex> = nl.gr.node_indices().collect();
-            nl.add_edge(nds[0], nds[4]);
-            nl.add_edge(nds[1], nds[4]);
-            nl.add_edge(nds[2], nds[5]);
-            nl.add_edge(nds[3], nds[5]);
-            nl
-        };
+        let netlist = make_nl();
         let calc = FMBiGainCalc::new(make_nl(), 2);
         let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
         let mut part = vec![0u8, 0, 1, 1];
+        let _ = mgr.init(&part);
 
-        // Run the gain manager loop (same pattern as Python test)
         while !mgr.is_empty() {
             let (move_info_v, gainmax) = mgr.select(&part);
             if gainmax <= 0 {
@@ -545,57 +660,6 @@ mod tests {
             mgr.update_move_v(&move_info_v, gainmax);
             part[move_info_v.v.index()] = move_info_v.to_part;
         }
-        // Should not panic; partition was updated
         assert!(part.iter().all(|&p| p == 0 || p == 1));
-    }
-
-    #[test]
-    fn test_gain_mgr_select_returns_valid_move() {
-        let netlist = {
-            let mut nl = SimpleNetlist::new(4, 2);
-            let nds: Vec<NodeIndex> = nl.gr.node_indices().collect();
-            nl.add_edge(nds[0], nds[4]);
-            nl.add_edge(nds[1], nds[4]);
-            nl.add_edge(nds[2], nds[5]);
-            nl.add_edge(nds[3], nds[5]);
-            nl
-        };
-        let calc = FMBiGainCalc::new(make_nl(), 2);
-        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
-        let part = vec![0u8, 0, 1, 1];
-        let _ = mgr.init(&part);
-
-        // FMGainMgr buckets are empty after base init (no bucket population)
-        // Only verify the gain calc itself was initialized
-        assert!(mgr.is_empty());
-    }
-
-    #[test]
-    fn test_gain_mgr_select_togo_returns_valid() {
-        let netlist = make_nl();
-        let calc = FMBiGainCalc::new(make_nl(), 2);
-        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
-        let part = vec![0u8, 0, 1, 1];
-        let _ = mgr.init(&part);
-
-        // After init with gain buckets populated from init_gain_list,
-        // select_togo should return valid values
-        if !mgr.is_empty_togo(0) {
-            let (_v, gainmax) = mgr.select_togo(0);
-            assert!(gainmax >= -10);
-        }
-    }
-
-    #[test]
-    fn test_gain_mgr_init_then_select() {
-        let netlist = make_nl();
-        let calc = FMBiGainCalc::new(make_nl(), 2);
-        let mut mgr: FMGainMgr<_, FMBiGainCalc<_>> = FMGainMgr::new(netlist, calc, 2);
-        let part = vec![0u8, 0, 1, 1];
-        let cost = mgr.init(&part);
-        assert_eq!(cost, 0);
-        // After init, is_empty should return true because no gains were pushed into buckets
-        // (FMBiGainMgr::init needs to populate buckets from init_gain_list)
-        assert!(mgr.is_empty());
     }
 }

@@ -46,6 +46,25 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMBiGainCalc<Gnl> {
     fn delta_gain_w(&self) -> i32 {
         self.delta_gain_w()
     }
+
+    fn populate_buckets(
+        &self,
+        part: &[u8],
+        modules: &[Gnl::Node],
+        gain_bucket: &mut [crate::fm_gain_mgr::BucketQueue<Gnl::Node>],
+    ) {
+        for (v_idx, v) in modules.iter().enumerate() {
+            if v_idx >= self.init_gain_list.len() || gain_bucket.len() < 2 {
+                break;
+            }
+            let pv = part[v_idx];
+            let to_part = 1 - pv;
+            if (to_part as usize) < gain_bucket.len() {
+                let gain = self.init_gain_list[v_idx];
+                gain_bucket[to_part as usize].push(gain, *v);
+            }
+        }
+    }
 }
 
 /// Binary Fiduccia-Mattheyses Gain Manager

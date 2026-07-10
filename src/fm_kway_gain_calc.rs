@@ -418,6 +418,26 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMKWayGainCalc<Gnl> {
     fn delta_gain_w(&self) -> i32 {
         0
     }
+
+    fn populate_buckets(
+        &self,
+        part: &[u8],
+        modules: &[Gnl::Node],
+        gain_bucket: &mut [crate::fm_gain_mgr::BucketQueue<Gnl::Node>],
+    ) {
+        for (v_idx, v) in modules.iter().enumerate() {
+            if v_idx >= self.init_gain_matrix[0].len() {
+                break;
+            }
+            let pv = part[v_idx] as usize;
+            for (k, bucket) in gain_bucket.iter_mut().enumerate() {
+                if k != pv {
+                    let gain = self.init_gain_matrix[k][v_idx];
+                    bucket.push(gain, *v);
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
