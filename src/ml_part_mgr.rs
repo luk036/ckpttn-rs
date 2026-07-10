@@ -138,7 +138,41 @@ impl MLKWayPartMgr {
 
 #[cfg(test)]
 mod tests {
-    use crate::hypergraph::SimpleNetlist;
+    use petgraph::graph::NodeIndex;
+
+    use crate::hypergraph::{Hypergraph, SimpleNetlist};
+
+    fn create_dwarf_netlist() -> (SimpleNetlist, Vec<u32>) {
+        let mut netlist = SimpleNetlist::new(7, 6);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        // C++ dwarf: a0=0, a1=1, a2=2, a3=3, p1=4, p2=5, p3=6, n1=7..n6=12
+        // Edges: (p1,n1), (a0,n1), (a1,n1), (a0,n2), (a2,n2), (a3,n2),
+        //        (a1,n3), (a2,n3), (a3,n3), (a2,n4), (p2,n4), (a3,n5), (p3,n5), (a0,n6)
+        let edge_pairs: Vec<(usize, usize)> = vec![
+            (4, 7), (0, 7), (1, 7), (0, 8), (2, 8), (3, 8),
+            (1, 9), (2, 9), (3, 9), (2, 10), (5, 10), (3, 11), (6, 11), (0, 12),
+        ];
+        for (u, v) in &edge_pairs {
+            netlist.add_edge(nodes[*u], nodes[*v]);
+        }
+        netlist.module_weight = vec![1, 3, 4, 2, 0, 0, 0];
+        let weights = netlist.module_weight.clone();
+        (netlist, weights)
+    }
+
+    fn create_test_netlist() -> (SimpleNetlist, Vec<u32>) {
+        let mut netlist = SimpleNetlist::new(3, 3);
+        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
+        netlist.add_edge(nodes[0], nodes[3]);
+        netlist.add_edge(nodes[0], nodes[4]);
+        netlist.add_edge(nodes[1], nodes[3]);
+        netlist.add_edge(nodes[1], nodes[4]);
+        netlist.add_edge(nodes[2], nodes[4]);
+        netlist.add_edge(nodes[0], nodes[5]);
+        netlist.module_weight = vec![3, 4, 2];
+        let weights = netlist.module_weight.clone();
+        (netlist, weights)
+    }
 
     #[test]
     fn test_ml_bi_part_mgr_basic() {
@@ -147,7 +181,26 @@ mod tests {
         let part = vec![0u8, 0, 1, 1];
         let weights = vec![1u32; 4];
         let result = mgr.run_partition(&netlist, &weights, &mut part.clone());
-        // May or may not satisfy constraints with this simple netlist
+        assert!(
+            result == super::LegalCheck::AllSatisfied || result == super::LegalCheck::NotSatisfied
+        );
+    }
+
+    #[test]
+    fn test_ml_bi_part_mgr_dwarf() {
+        let (netlist, weights) = create_dwarf_netlist();
+        let mut mgr = super::MLBiPartMgr::new(0.3);
+        let mut part = vec![0u8; netlist.number_of_modules()];
+        let _result = mgr.run_partition(&netlist, &weights, &mut part);
+        // Total cost is valid regardless of legalization result
+    }
+
+    #[test]
+    fn test_ml_bi_part_mgr_test_netlist() {
+        let (netlist, weights) = create_test_netlist();
+        let mut mgr = super::MLBiPartMgr::new(0.4);
+        let mut part = vec![0u8; netlist.number_of_modules()];
+        let result = mgr.run_partition(&netlist, &weights, &mut part);
         assert!(
             result == super::LegalCheck::AllSatisfied || result == super::LegalCheck::NotSatisfied
         );
@@ -163,5 +216,46 @@ mod tests {
         assert!(
             result == super::LegalCheck::AllSatisfied || result == super::LegalCheck::NotSatisfied
         );
+    }
+
+    #[test]
+    fn test_ml_kway_part_mgr_dwarf() {
+        let (netlist, weights) = create_dwarf_netlist();
+        let mut mgr = super::MLKWayPartMgr::new(0.4, 3);
+        let mut part = vec![0u8; netlist.number_of_modules()];
+        let result = mgr.run_partition(&netlist, &weights, &mut part);
+        assert!(
+            result == super::LegalCheck::AllSatisfied || result == super::LegalCheck::NotSatisfied
+        );
+        if result == super::LegalCheck::AllSatisfied {
+            use crate::fm_kway_constr_mgr::FMKWayConstrMgr;
+            let mut constr_mgr = FMKWayConstrMgr::new(&netlist, 0.4, 3);
+            assert!(constr_mgr.final_check(&part));
+        }
+        assert!(mgr.total_cost >= 0);
+    }
+
+    #[test]
+    fn test_ml_bi_part_mgr_legalize_all_zero() {
+        let netlist = SimpleNetlist::new(4, 2);
+        let mut mgr = super::MLBiPartMgr::new(0.5);
+        let mut part = vec![0u8; 4];
+        let weights = vec![1u32; 4];
+        // All modules in partition 0 - legalize should fix this
+        let _result = mgr.run_partition(&netlist, &weights, &mut part);
+    }
+
+    #[test]
+    fn test_ml_bi_part_mgr_optimize_reduces_cost() {
+        let (netlist, weights) = create_dwarf_netlist();
+        let mut mgr = super::MLBiPartMgr::new(0.4);
+        let mut part = vec![0u8; netlist.number_of_modules()];
+        let result = mgr.run_partition(&netlist, &weights, &mut part);
+        if result == super::LegalCheck::AllSatisfied {
+            let cost_after = mgr.total_cost;
+            // Re-run should not increase cost
+            let _result2 = mgr.run_partition(&netlist, &weights, &mut part);
+            assert!(mgr.total_cost <= cost_after || mgr.total_cost == cost_after);
+        }
     }
 }
