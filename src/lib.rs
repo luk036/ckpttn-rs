@@ -16,6 +16,9 @@ pub mod multi_fpga_part_mgr;
 pub mod nn_gain_mgr;
 pub mod nn_part_mgr;
 pub mod part_mgr_base;
+pub mod shift_array;
+pub mod midlevel;
+pub mod netlist_adapter;
 
 pub use fm_bi_constr_mgr::FMBiConstrMgr;
 pub use fm_bi_gain_calc::FMBiGainCalc;
