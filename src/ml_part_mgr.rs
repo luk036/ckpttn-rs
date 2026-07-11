@@ -50,14 +50,12 @@ impl MLBiPartMgr {
     pub fn run_partition(
         &mut self,
         hyprgraph: &impl Hypergraph<Node = NodeIndex>,
-        _module_weight: &[u32],
+        module_weight: &[u32],
         part: &mut [u8],
     ) -> LegalCheck {
-        // Legalize check
         use crate::fm_bi_constr_mgr::FMBiConstrMgr;
         use crate::fm_bi_gain_calc::FMBiGainCalc;
         use crate::fm_bi_gain_mgr::FMBiGainMgr;
-
         use crate::part_mgr_base::PartMgrBase;
 
         let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
@@ -67,10 +65,27 @@ impl MLBiPartMgr {
         let legalcheck = part_mgr.legalize(part);
 
         if legalcheck != LegalCheck::AllSatisfied {
+            self.total_cost = part_mgr.total_cost;
             return legalcheck;
         }
 
-        // Optimize
+        if hyprgraph.number_of_modules() >= self.limitsize {
+            let (hgr2, module_weight2) =
+                contract_subgraph(hyprgraph, module_weight, &HashSet::new());
+            if hgr2.number_of_modules() * 3 / 2 < hyprgraph.number_of_modules() {
+                let mut part2 = vec![0u8; hgr2.number_of_modules()];
+                hgr2.projection_up(part, &mut part2);
+                let lc_recur = self.run_partition(&hgr2, &module_weight2, &mut part2);
+                if lc_recur == LegalCheck::AllSatisfied {
+                    hgr2.projection_down(&part2, part);
+                }
+            }
+        }
+
+        let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
+        let gain_mgr = FMBiGainMgr::new(hyprgraph, gain_calc, 2);
+        let constr_mgr = FMBiConstrMgr::new(hyprgraph, self.bal_tol);
+        let mut part_mgr = PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, 2);
         part_mgr.optimize(part);
         self.total_cost = part_mgr.total_cost;
         legalcheck
@@ -114,22 +129,28 @@ impl MLKWayPartMgr {
         let legalcheck = part_mgr.legalize(part);
 
         if legalcheck != LegalCheck::AllSatisfied {
+            self.total_cost = part_mgr.total_cost;
             return legalcheck;
         }
 
-        // Check if contraction is needed
         if hyprgraph.number_of_modules() >= self.limitsize {
-            let (hgr2, _module_weight2) =
+            let (hgr2, module_weight2) =
                 contract_subgraph(hyprgraph, module_weight, &HashSet::new());
             if hgr2.number_of_modules() * 3 / 2 < hyprgraph.number_of_modules() {
                 let mut part2 = vec![0u8; hgr2.number_of_modules()];
                 hgr2.projection_up(part, &mut part2);
-                // Recursion would go here with the coarse graph
-                // For now, just proceed to optimization
+                let lc_recur = self.run_partition(&hgr2, &module_weight2, &mut part2);
+                if lc_recur == LegalCheck::AllSatisfied {
+                    hgr2.projection_down(&part2, part);
+                }
             }
         }
 
-        // Optimize
+        let gain_calc = FMKWayGainCalc::new(hyprgraph, self.num_parts);
+        let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, self.num_parts);
+        let constr_mgr = FMKWayConstrMgr::new(hyprgraph, self.bal_tol, self.num_parts);
+        let mut part_mgr =
+            PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, self.num_parts as usize);
         part_mgr.optimize(part);
         self.total_cost = part_mgr.total_cost;
         legalcheck

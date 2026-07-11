@@ -11,8 +11,6 @@ use crate::hypergraph::Hypergraph;
 /// and uncoarsening.
 /// Ported from Python `HierNetlist` in `HierNetlist.py`.
 pub struct HierNetlist {
-    /// Parent netlist (the level above)
-    pub parent: Option<Box<HierNetlist>>,
     /// Number of modules
     pub num_modules: usize,
     /// Graph representation (bipartite: modules + nets)
@@ -25,6 +23,9 @@ pub struct HierNetlist {
     pub clusters: Vec<usize>,
     /// Node list for projection down
     pub node_down_list: Vec<usize>,
+    /// For each cluster (by index in `clusters`), the list of original
+    /// module indices that belong to that cluster.
+    pub cluster_modules: Vec<Vec<usize>>,
 }
 
 impl HierNetlist {
@@ -35,13 +36,13 @@ impl HierNetlist {
             gr.add_node(());
         }
         HierNetlist {
-            parent: None,
             num_modules,
             gr,
             module_weight: vec![1; num_modules],
             net_weight: HashMap::new(),
             clusters: Vec::new(),
             node_down_list: Vec::new(),
+            cluster_modules: Vec::new(),
         }
     }
 
@@ -79,14 +80,11 @@ impl HierNetlist {
                 part_down[v2] = part[v1];
             }
         }
-        for (i_v, &net) in self.clusters.iter().enumerate() {
+        for (i_v, modules) in self.cluster_modules.iter().enumerate() {
             let p = part[num_cells + i_v];
-            if let Some(ref parent) = self.parent {
-                for v2 in parent.gr.neighbors(NodeIndex::new(net)) {
-                    let idx = v2.index();
-                    if idx < part_down.len() {
-                        part_down[idx] = p;
-                    }
+            for &idx in modules {
+                if idx < part_down.len() {
+                    part_down[idx] = p;
                 }
             }
         }
@@ -158,7 +156,6 @@ mod tests {
         assert_eq!(hn.num_modules, 4);
         assert_eq!(hn.gr.node_count(), 6);
         assert_eq!(hn.module_weight.len(), 4);
-        assert!(hn.parent.is_none());
     }
 
     #[test]
