@@ -393,13 +393,12 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMKWayGainCalc<Gnl> {
     }
 
     fn update_move_3pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Vec<i32> {
-        // Convert Vec<Vec<i32>> to flat Vec<i32> for the trait interface
         let result = self.update_move_3pin_net(part, move_info);
-        if result.is_empty() {
-            Vec::new()
-        } else {
-            result[0].clone()
+        let mut per_neighbor = Vec::with_capacity(result.len());
+        for row in &result {
+            per_neighbor.push(row[move_info.to_part as usize]);
         }
+        per_neighbor
     }
 
     fn update_move_general_net(
@@ -408,11 +407,16 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMKWayGainCalc<Gnl> {
         move_info: &MoveInfo<Gnl::Node>,
     ) -> Vec<i32> {
         let result = self.update_move_general_net(part, move_info);
-        if result.is_empty() {
-            Vec::new()
-        } else {
-            result[0].clone()
+        // result is [degree x nparts] matrix. The FMGainMgr expects per-neighbor
+        // deltas: delta_gain[i] is the gain change for neighbor i (for k-way this
+        // is the delta for the column corresponding to the move to_part).
+        let mut per_neighbor = Vec::with_capacity(result.len());
+        for row in &result {
+            // For k-way, the gain change for neighbor i is the entry in
+            // the to_part column (the effect of v moving to to_part).
+            per_neighbor.push(row[move_info.to_part as usize]);
         }
+        per_neighbor
     }
 
     fn delta_gain_w(&self) -> i32 {
