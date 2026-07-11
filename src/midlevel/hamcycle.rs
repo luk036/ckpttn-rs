@@ -2,7 +2,7 @@ use crate::midlevel::tree::MidTree;
 use crate::midlevel::vertex::MidVertex;
 
 /// Callback function type for visiting vertices during Hamiltonian cycle traversal
-pub type MidVisitFunc = Box<dyn FnMut(&[i32], usize)>;
+pub type MidVisitFunc<'a> = Box<dyn FnMut(&[i32], usize) + 'a>;
 
 /// Hamiltonian cycle generation for middle-levels Gray code.
 ///
@@ -10,16 +10,16 @@ pub type MidVisitFunc = Box<dyn FnMut(&[i32], usize)>;
 /// through the middle-levels graph.
 ///
 /// Adapted from: Torsten Muetze, Jerri Nummenpalo (2018)
-pub struct MidHamCycle {
+pub struct MidHamCycle<'a> {
     x_: MidVertex,
     y_: MidVertex,
     limit_: i64,
-    visit_f_: MidVisitFunc,
+    visit_f_: MidVisitFunc<'a>,
     length_: i64,
 }
 
-impl MidHamCycle {
-    pub fn new(x: MidVertex, limit: i64, visit_f: MidVisitFunc) -> Self {
+impl<'a> MidHamCycle<'a> {
+    pub fn new(x: MidVertex, limit: i64, visit_f: MidVisitFunc<'a>) -> Self {
         let y_init = x.clone();
         let mut ham = MidHamCycle {
             x_: x,
@@ -154,11 +154,11 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "MidHamCycle algorithm has subtle flip sequence issues in the Rust port - WIP"]
+    #[ignore = "MidHamCycle: to_first_vertex() produces wrong state for small inputs"]
     fn test_mid_ham_cycle_small() {
         let x = MidVertex::new(vec![1, 0, 1, 0, 1]);
         let visited = std::cell::RefCell::new(0usize);
-        let visit_f: MidVisitFunc = Box::new(move |_bits, _i| {
+        let visit_f: MidVisitFunc<'static> = Box::new(move |_bits, _i| {
             *visited.borrow_mut() += 1;
         });
         let ham = MidHamCycle::new(x, -1, visit_f);
@@ -166,11 +166,10 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "MidHamCycle algorithm has subtle flip sequence issues in the Rust port - WIP"]
     fn test_mid_ham_cycle_with_limit() {
         let x = MidVertex::new(vec![1, 0, 1, 0, 1]);
         let visited = std::cell::RefCell::new(0usize);
-        let visit_f: MidVisitFunc = Box::new(move |_bits, _i| {
+        let visit_f: MidVisitFunc<'static> = Box::new(move |_bits, _i| {
             *visited.borrow_mut() += 1;
         });
         let ham = MidHamCycle::new(x, 10, visit_f);
@@ -178,11 +177,10 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "MidHamCycle algorithm has subtle flip sequence issues in the Rust port - WIP"]
     fn test_mid_ham_cycle_n3() {
         let x = MidVertex::new(vec![1, 1, 1, 0, 0, 0, 1]);
         let visited = std::cell::RefCell::new(0usize);
-        let visit_f: MidVisitFunc = Box::new(move |_bits, _i| {
+        let visit_f: MidVisitFunc<'static> = Box::new(move |_bits, _i| {
             *visited.borrow_mut() += 1;
         });
         let ham = MidHamCycle::new(x, 20, visit_f);
@@ -191,10 +189,9 @@ mod tests {
 
     #[test]
     fn test_mid_ham_cycle_n2() {
-        // n=2, size=5: [1,1,0,0,1] is a balanced bitstring
         let x = MidVertex::new(vec![1, 1, 0, 0, 1]);
         let visited = std::cell::RefCell::new(0usize);
-        let visit_f: MidVisitFunc = Box::new(move |_bits, _i| {
+        let visit_f: MidVisitFunc<'static> = Box::new(move |_bits, _i| {
             *visited.borrow_mut() += 1;
         });
         let ham = MidHamCycle::new(x, 10, visit_f);
@@ -205,7 +202,7 @@ mod tests {
     fn test_mid_ham_cycle_zero_limit() {
         let x = MidVertex::new(vec![1, 0, 1, 0, 1]);
         let visited = std::cell::RefCell::new(0usize);
-        let visit_f: MidVisitFunc = Box::new(move |_bits, _i| {
+        let visit_f: MidVisitFunc<'static> = Box::new(move |_bits, _i| {
             *visited.borrow_mut() += 1;
         });
         let ham = MidHamCycle::new(x, 0, visit_f);

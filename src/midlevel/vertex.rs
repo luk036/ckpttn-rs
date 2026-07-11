@@ -245,37 +245,40 @@ impl MidVertex {
         assert!(self.is_first_vertex());
 
         if !flip {
-        let b = self.first_touchdown(0) as usize;
-        let length = 2 * (b - 1) + 2;
-        seq.resize(length, 0);
+            let td = self.first_touchdown(0);
+            if td < 0 { seq.clear(); return; }
+            let b = td as usize;
+            let length = 2 * (b - 1) + 2;
+            seq.resize(length, 0);
 
-        let mut next_step = vec![0i32; b + 1];
-        self.aux_pointers(0, b, &mut next_step);
+            let mut next_step = vec![0i32; b + 1];
+            self.aux_pointers(0, b, &mut next_step);
 
-        let mut idx = 0;
-        seq[idx] = b;
-        idx += 1;
-        seq[idx] = 0;
-        idx += 1;
-        self.compute_flip_seq_0_rec(seq, &mut idx, 1, b - 1, &next_step);
-        return;
-    }
+            let mut idx = 0;
+            seq[idx] = b;
+            idx += 1;
+            seq[idx] = 0;
+            idx += 1;
+            self.compute_flip_seq_0_rec(seq, &mut idx, 1isize, (b - 1) as isize, &next_step);
+            return;
+        }
 
-    assert!(flip);
-    assert_eq!(self.bits[0], 1);
-    if self.bits[1] == 1 {
-        assert_eq!(self.bits[2], 0);
-        seq.resize(2, 0);
+        assert!(flip);
+        assert_eq!(self.bits[0], 1);
+        if self.bits[1] == 1 {
+            assert_eq!(self.bits[2], 0);
+            seq.resize(2, 0);
             seq[0] = 2;
             seq[1] = 0;
         } else {
-            // Temporarily modify and restore
             let mut modified = self.bits.clone();
             modified[1] = 1;
             modified[2] = 0;
 
             let temp_vertex = MidVertex::new(modified);
-            let b = temp_vertex.first_touchdown(0) as usize;
+            let td = temp_vertex.first_touchdown(0);
+            if td < 0 { seq.clear(); return; }
+            let b = td as usize;
             let length = 2 * (b - 1) + 2;
             seq.resize(length, 0);
 
@@ -287,9 +290,8 @@ impl MidVertex {
             idx += 1;
             seq[idx] = 0;
             idx += 1;
-            temp_vertex.compute_flip_seq_0_rec(seq, &mut idx, 1, b - 1, &next_step);
+            temp_vertex.compute_flip_seq_0_rec(seq, &mut idx, 1isize, (b - 1) as isize, &next_step);
 
-            // Fix the special case
             assert!(seq.len() >= 6);
             seq[0] = b;
             seq[1] = 0;
@@ -304,26 +306,29 @@ impl MidVertex {
         &self,
         seq: &mut Vec<usize>,
         idx: &mut usize,
-        left: usize,
-        right: usize,
+        left: isize,
+        right: isize,
         next_step: &[i32],
     ) {
         if right < left {
             return;
         }
-        assert!(self.bits[left] == 1 && self.bits[right] == 0);
+        let lu = left as usize;
+        let ru = right as usize;
+        assert!(self.bits[lu] == 1 && self.bits[ru] == 0);
 
-        let m = next_step[left] as usize;
-        assert!(m <= right && self.bits[m] == 0);
+        let m = next_step[lu] as isize;
+        assert!(m <= right && self.bits[m as usize] == 0);
+        let mu = m as usize;
 
-        seq[*idx] = m;
+        seq[*idx] = mu;
         *idx += 1;
-        seq[*idx] = left;
+        seq[*idx] = lu;
         *idx += 1;
         self.compute_flip_seq_0_rec(seq, idx, left + 1, m - 1, next_step);
-        seq[*idx] = left - 1;
+        seq[*idx] = (left - 1) as usize;
         *idx += 1;
-        seq[*idx] = m;
+        seq[*idx] = mu;
         *idx += 1;
         self.compute_flip_seq_0_rec(seq, idx, m + 1, right, next_step);
     }
@@ -342,7 +347,7 @@ impl MidVertex {
             seq.clear();
             return;
         }
-        let length = 2 * (sz - 2 - (b + 2) + 1) + 2;
+        let length = 2 * (sz - b - 3) + 2;
         seq.resize(length, 0);
 
         let mut next_step = vec![0i32; sz - 1];
@@ -351,7 +356,7 @@ impl MidVertex {
         let mut idx = 0;
         seq[idx] = b + 1;
         idx += 1;
-        self.compute_flip_seq_1_rec(seq, &mut idx, b + 2, sz - 2, &next_step);
+        self.compute_flip_seq_1_rec(seq, &mut idx, (b + 2) as isize, (sz - 2) as isize, &next_step);
         seq[idx] = b;
     }
 
@@ -359,46 +364,52 @@ impl MidVertex {
         &self,
         seq: &mut Vec<usize>,
         idx: &mut usize,
-        left: usize,
-        right: usize,
+        left: isize,
+        right: isize,
         next_step: &[i32],
     ) {
         if right < left {
             return;
         }
-        assert!(self.bits[left] == 1 && self.bits[right] == 0);
+        let lu = left as usize;
+        let ru = right as usize;
+        assert!(self.bits[lu] == 1 && self.bits[ru] == 0);
 
-        let m = next_step[left] as usize;
-        assert!(m <= right && self.bits[m] == 0);
+        let m = next_step[lu] as isize;
+        assert!(m <= right && self.bits[m as usize] == 0);
+        let mu = m as usize;
 
-        seq[*idx] = m;
+        seq[*idx] = mu;
         *idx += 1;
-        seq[*idx] = left;
+        seq[*idx] = lu;
         *idx += 1;
         self.compute_flip_seq_1_rec(seq, idx, left + 1, m - 1, next_step);
-        seq[*idx] = left - 1;
+        seq[*idx] = (left - 1) as usize;
         *idx += 1;
-        seq[*idx] = m;
+        seq[*idx] = mu;
         *idx += 1;
         self.compute_flip_seq_1_rec(seq, idx, m + 1, right, next_step);
     }
 
     fn aux_pointers(&self, a: usize, b: usize, next_step: &mut [i32]) {
         assert!(a == b + 1 || (self.bits[a] == 1 && self.bits[b] == 0));
+        if a > b {
+            return;
+        }
         let mut left_ustep_height = vec![-1i32; b - a + 1];
-        let mut height: i32 = 0;
+        let mut height: isize = 0;
         for i in a..=b {
             if self.bits[i] == 0 {
                 assert!(height >= 1);
-                let left = left_ustep_height[(height - 1) as usize];
-                assert!(left >= 0 && (left as usize) < i);
-                next_step[left as usize] = i as i32;
-                next_step[i] = left;
+                let l = left_ustep_height[(height - 1) as usize];
+                assert!(l >= 0 && (l as usize) < i);
+                next_step[l as usize] = i as i32;
+                next_step[i] = l;
             } else {
                 assert!(height >= 0);
                 left_ustep_height[height as usize] = i as i32;
             }
-            height += 2 * self.bits[i] - 1;
+            height += 2 * (self.bits[i] as isize) - 1;
         }
         assert_eq!(height, 0);
     }
