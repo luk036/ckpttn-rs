@@ -112,6 +112,20 @@ impl Hypergraph for SimpleNetlist {
     }
 }
 
+/// Trait for creating a node from a usize index.
+///
+/// This is used by mid-level partition managers that receive
+/// node indices from the Hamiltonian cycle traversal.
+pub trait FromIndex: Copy + Eq + std::hash::Hash {
+    fn from_index(idx: usize) -> Self;
+}
+
+impl FromIndex for petgraph::graph::NodeIndex {
+    fn from_index(idx: usize) -> Self {
+        petgraph::graph::NodeIndex::new(idx)
+    }
+}
+
 // Allow passing references where Hypergraph is expected
 impl<T: Hypergraph> Hypergraph for &T {
     type Node = T::Node;
