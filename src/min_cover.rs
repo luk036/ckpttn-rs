@@ -9,23 +9,21 @@ use crate::hypergraph::Hypergraph;
 /// Build a `netlistx_rs::Netlist` from a `Hypergraph` so we can use netlistx_rs algorithms.
 fn to_netlist(hyprgraph: &impl Hypergraph<Node = NodeIndex>) -> netlistx_rs::Netlist {
     let mut nl = netlistx_rs::Netlist::new();
-    let mut mod_map: HashMap<usize, String> = HashMap::new();
+    let mut mod_idx_map: HashMap<usize, usize> = HashMap::new();
     for v in hyprgraph.modules() {
-        let name = format!("m{}", v.index());
-        mod_map.insert(v.index(), name.clone());
-        let _ = nl.add_module(name);
+        let idx = nl.add_module(format!("m{}", v.index())).unwrap();
+        mod_idx_map.insert(v.index(), idx);
     }
-    let mut net_map: HashMap<usize, String> = HashMap::new();
+    let mut net_idx_map: HashMap<usize, usize> = HashMap::new();
     for net in hyprgraph.nets() {
-        let name = format!("n{}", net.index());
-        net_map.insert(net.index(), name.clone());
-        let _ = nl.add_net(name);
+        let idx = nl.add_net(format!("n{}", net.index())).unwrap();
+        net_idx_map.insert(net.index(), idx);
     }
     for net in hyprgraph.nets() {
-        let net_name = net_map.get(&net.index()).unwrap();
+        let &net_idx = net_idx_map.get(&net.index()).unwrap();
         for v in hyprgraph.neighbors(net) {
-            let mod_name = mod_map.get(&v.index()).unwrap();
-            let _ = nl.add_edge(net_name, mod_name);
+            let &mod_idx = mod_idx_map.get(&v.index()).unwrap();
+            let _ = nl.add_edge(net_idx, mod_idx);
         }
     }
     nl
@@ -71,28 +69,21 @@ pub fn contract_subgraph(
 
     // Step 2: Find matching via primal-dual minimum-weight maximal matching
     let nl = to_netlist(hyprgraph);
-    let mut weight_named = HashMap::new();
-    for net in hyprgraph.nets() {
-        let name = format!("n{}", net.index());
-        let w = cluster_weight.get(&net).copied().unwrap_or(0);
-        weight_named.insert(name, w);
-    }
-    let mut matchset_str: HashSet<String> = HashSet::new();
-    let mut dep_str: HashSet<String> = HashSet::new();
+    let weight_named: Vec<u32> = hyprgraph
+        .nets()
+        .map(|net| cluster_weight.get(&net).copied().unwrap_or(0))
+        .collect();
+    let mut matchset_idx: HashSet<usize> = HashSet::new();
+    let mut dep_idx: HashSet<usize> = HashSet::new();
     for &f in forbid {
-        dep_str.insert(format!("n{}", f.index()));
+        dep_idx.insert(f.index());
     }
-    let (matched_str, _cost) =
-        min_maximal_matching(&nl, &weight_named, &mut matchset_str, &mut dep_str);
-    let matched_nets_set: HashSet<NodeIndex> = matched_str
+    let (matched_idx, _cost) =
+        min_maximal_matching(&nl, &weight_named, &mut matchset_idx, &mut dep_idx);
+    let orig_nets: Vec<NodeIndex> = hyprgraph.nets().collect();
+    let matched_nets_set: HashSet<NodeIndex> = matched_idx
         .iter()
-        .filter_map(|name| {
-            if name.starts_with('n') {
-                name[1..].parse::<usize>().ok().map(NodeIndex::new)
-            } else {
-                None
-            }
-        })
+        .filter_map(|&idx| orig_nets.get(idx).copied())
         .collect();
 
     // Step 3: Separate clusters (matched nets) and remaining nets
@@ -451,13 +442,10 @@ mod tests {
         let forbid = HashSet::new();
         let greedy_set = greedy_matching(&hg, &cluster_weight, &forbid);
         let netlist_nl = super::to_netlist(&hg);
-        let mut wgt = HashMap::new();
-        for net in hg.nets() {
-            wgt.insert(
-                format!("n{}", net.index()),
-                *cluster_weight.get(&net).unwrap_or(&0),
-            );
-        }
+        let wgt: Vec<u32> = hg
+            .nets()
+            .map(|net| *cluster_weight.get(&net).unwrap_or(&0))
+            .collect();
         let mut ms = std::collections::HashSet::new();
         let mut dp = std::collections::HashSet::new();
         let (pd_set, _) = netlistx_rs::min_maximal_matching(&netlist_nl, &wgt, &mut ms, &mut dp);
@@ -469,20 +457,11 @@ mod tests {
             .iter()
             .flat_map(|&n| hg.neighbors(n).map(|v| v.index()).collect::<Vec<_>>())
             .collect();
+        let hg_nets: Vec<NodeIndex> = hg.nets().collect();
         let pd_covered: HashSet<usize> = pd_set
             .iter()
-            .filter_map(|name| {
-                if name.starts_with('n') {
-                    name[1..].parse::<usize>().ok()
-                } else {
-                    None
-                }
-            })
-            .flat_map(|idx| {
-                hg.neighbors(NodeIndex::new(idx))
-                    .map(|v| v.index())
-                    .collect::<Vec<_>>()
-            })
+            .filter_map(|&idx| hg_nets.get(idx))
+            .flat_map(|&net| hg.neighbors(net).map(|v| v.index()).collect::<Vec<_>>())
             .collect();
 
         eprintln!("\n=== p1 clustering comparison ===");
