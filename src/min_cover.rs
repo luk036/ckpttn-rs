@@ -125,8 +125,13 @@ pub fn contract_subgraph(
     let _num_remaining_nets = remaining_nets.len();
 
     // Step 6: Purge duplicate nets (MinHash) and reconstruct graph
-    let (gr2, net_weight_map, num_purged_nets) =
-        reconstruct_graph(hyprgraph, &ugraph, &remaining_nets, num_clusters, num_modules);
+    let (gr2, net_weight_map, num_purged_nets) = reconstruct_graph(
+        hyprgraph,
+        &ugraph,
+        &remaining_nets,
+        num_clusters,
+        num_modules,
+    );
 
     // Step 7: Build HierNetlist from purged graph
     let mut hgr2 = HierNetlist::new(num_modules, num_purged_nets);
@@ -312,12 +317,12 @@ fn purge_duplicate_nets(
                     }
                 } else if deg <= MINHASH_MAX_DEGREE {
                     // Compute/cache signatures, clone to avoid double-borrow
-                    let s1 = *sig_cache.entry(n1).or_insert_with(|| {
-                        minhash_signature(ugraph, net1)
-                    });
-                    let s2 = *sig_cache.entry(n2).or_insert_with(|| {
-                        minhash_signature(ugraph, net2)
-                    });
+                    let s1 = *sig_cache
+                        .entry(n1)
+                        .or_insert_with(|| minhash_signature(ugraph, net1));
+                    let s2 = *sig_cache
+                        .entry(n2)
+                        .or_insert_with(|| minhash_signature(ugraph, net2));
                     let sim = jaccard_similarity(&s1, &s2);
                     if sim >= MINHASH_SIMILARITY {
                         let set1: Vec<_> = ugraph.neighbors(net1).collect();
@@ -362,8 +367,7 @@ fn reconstruct_graph(
         purge_duplicate_nets(hyprgraph, ugraph, nets, num_clusters, num_modules);
 
     let num_nets = updated_nets.len();
-    let mut gr2: petgraph::Graph<(), (), petgraph::Undirected> =
-        petgraph::Graph::new_undirected();
+    let mut gr2: petgraph::Graph<(), (), petgraph::Undirected> = petgraph::Graph::new_undirected();
     for _ in 0..num_modules + num_nets {
         gr2.add_node(());
     }
@@ -399,12 +403,20 @@ mod tests {
         let mut matched = HashSet::new();
         let mut covered: HashSet<usize> = HashSet::new();
         for (&net, _) in &sorted {
-            if forbid.contains(&net) { continue; }
+            if forbid.contains(&net) {
+                continue;
+            }
             let idxs: Vec<usize> = hyprgraph.neighbors(net).map(|v| v.index()).collect();
-            if idxs.len() < 2 { continue; }
-            if idxs.iter().any(|i| covered.contains(i)) { continue; }
+            if idxs.len() < 2 {
+                continue;
+            }
+            if idxs.iter().any(|i| covered.contains(i)) {
+                continue;
+            }
             matched.insert(net);
-            for i in idxs { covered.insert(i); }
+            for i in idxs {
+                covered.insert(i);
+            }
         }
         matched
     }
@@ -418,44 +430,76 @@ mod tests {
         let hg = crate::netlist_adapter::NetlistHypergraph::from_netlist(&nl);
         let module_weight: Vec<u32> = hg.modules().map(|v| hg.get_module_weight(v)).collect();
 
-        let cluster_weight: HashMap<_, u32> = hg.nets().map(|net| {
-            let w: u32 = hg.neighbors(net).map(|v| {
-                let i = v.index();
-                if i < module_weight.len() { module_weight[i] } else { 1 }
-            }).sum();
-            (net, w)
-        }).collect();
+        let cluster_weight: HashMap<_, u32> = hg
+            .nets()
+            .map(|net| {
+                let w: u32 = hg
+                    .neighbors(net)
+                    .map(|v| {
+                        let i = v.index();
+                        if i < module_weight.len() {
+                            module_weight[i]
+                        } else {
+                            1
+                        }
+                    })
+                    .sum();
+                (net, w)
+            })
+            .collect();
 
         let forbid = HashSet::new();
         let greedy_set = greedy_matching(&hg, &cluster_weight, &forbid);
         let netlist_nl = super::to_netlist(&hg);
         let mut wgt = HashMap::new();
         for net in hg.nets() {
-            wgt.insert(format!("n{}", net.index()), *cluster_weight.get(&net).unwrap_or(&0));
+            wgt.insert(
+                format!("n{}", net.index()),
+                *cluster_weight.get(&net).unwrap_or(&0),
+            );
         }
         let mut ms = std::collections::HashSet::new();
-    let mut dp = std::collections::HashSet::new();
-    let (pd_set, _) = netlistx_rs::min_maximal_matching(&netlist_nl, &wgt, &mut ms, &mut dp);
+        let mut dp = std::collections::HashSet::new();
+        let (pd_set, _) = netlistx_rs::min_maximal_matching(&netlist_nl, &wgt, &mut ms, &mut dp);
 
         let n_mod = hg.number_of_modules();
         let greedy_clusters = greedy_set.len();
         let pd_clusters = pd_set.len();
-        let greedy_covered: HashSet<usize> = greedy_set.iter().flat_map(|&n| {
-            hg.neighbors(n).map(|v| v.index()).collect::<Vec<_>>()
-        }).collect();
-        let pd_covered: HashSet<usize> = pd_set.iter().filter_map(|name| {
-            if name.starts_with('n') { name[1..].parse::<usize>().ok() } else { None }
-        }).flat_map(|idx| {
-            hg.neighbors(NodeIndex::new(idx)).map(|v| v.index()).collect::<Vec<_>>()
-        }).collect();
+        let greedy_covered: HashSet<usize> = greedy_set
+            .iter()
+            .flat_map(|&n| hg.neighbors(n).map(|v| v.index()).collect::<Vec<_>>())
+            .collect();
+        let pd_covered: HashSet<usize> = pd_set
+            .iter()
+            .filter_map(|name| {
+                if name.starts_with('n') {
+                    name[1..].parse::<usize>().ok()
+                } else {
+                    None
+                }
+            })
+            .flat_map(|idx| {
+                hg.neighbors(NodeIndex::new(idx))
+                    .map(|v| v.index())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
 
         eprintln!("\n=== p1 clustering comparison ===");
         eprintln!("  Modules: {}", n_mod);
         eprintln!("  Nets: {}", hg.nets().count());
-        eprintln!("  Greedy:  {} clusters, {} modules covered ({} uncovered)",
-            greedy_clusters, greedy_covered.len(), n_mod - greedy_covered.len());
-        eprintln!("  PrimalDual: {} clusters, {} modules covered ({} uncovered)",
-            pd_clusters, pd_covered.len(), n_mod - pd_covered.len());
+        eprintln!(
+            "  Greedy:  {} clusters, {} modules covered ({} uncovered)",
+            greedy_clusters,
+            greedy_covered.len(),
+            n_mod - greedy_covered.len()
+        );
+        eprintln!(
+            "  PrimalDual: {} clusters, {} modules covered ({} uncovered)",
+            pd_clusters,
+            pd_covered.len(),
+            n_mod - pd_covered.len()
+        );
     }
 
     #[test]

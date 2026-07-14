@@ -49,11 +49,7 @@ impl NetlistHypergraph {
         for edge in nl.grph.raw_edges() {
             let s = edge.source().index();
             let t = edge.target().index();
-            let (mod_idx, net_global_idx) = if s < num_modules {
-                (s, t)
-            } else {
-                (t, s)
-            };
+            let (mod_idx, net_global_idx) = if s < num_modules { (s, t) } else { (t, s) };
             if net_global_idx < num_modules {
                 continue;
             }
@@ -92,9 +88,7 @@ impl Hypergraph for NetlistHypergraph {
     }
 
     fn nets(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
-        Box::new(
-            (self.num_modules..self.num_modules + self.num_nets).map(NodeIndex::new),
-        )
+        Box::new((self.num_modules..self.num_modules + self.num_nets).map(NodeIndex::new))
     }
 
     fn neighbors(&self, node: Self::Node) -> Box<dyn Iterator<Item = Self::Node> + '_> {

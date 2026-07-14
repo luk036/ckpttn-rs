@@ -110,12 +110,7 @@ impl<'a> MidHamCycle<'a> {
         self.length_
     }
 
-    fn flip_seq(
-        &mut self,
-        seq: &[usize],
-        dist_to_start: &mut i32,
-        final_path: bool,
-    ) -> bool {
+    fn flip_seq(&mut self, seq: &[usize], dist_to_start: &mut i32, final_path: bool) -> bool {
         let seq_sz = seq.len() as i64;
         if (*dist_to_start > 0)
             || final_path

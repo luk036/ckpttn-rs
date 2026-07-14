@@ -32,11 +32,7 @@ impl MLMidLvlPartMgr {
         self.limitsize = limit;
     }
 
-    pub fn run_partition<Gnl>(
-        &mut self,
-        hyprgraph: &Gnl,
-        part: &mut [u8],
-    ) -> LegalCheck
+    pub fn run_partition<Gnl>(&mut self, hyprgraph: &Gnl, part: &mut [u8]) -> LegalCheck
     where
         Gnl: Hypergraph<Node = NodeIndex>,
     {

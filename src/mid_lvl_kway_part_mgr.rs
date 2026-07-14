@@ -168,11 +168,8 @@ impl MidLvlKWayPartMgr {
 
                         lc2.set(lc2.get() + delta);
                         ps.current_part[v] = to_part;
-                        lp2.borrow_mut()[flipped_pos] = if bits[flipped_pos] == 0 {
-                            0u8
-                        } else {
-                            1u8
-                        };
+                        lp2.borrow_mut()[flipped_pos] =
+                            if bits[flipped_pos] == 0 { 0u8 } else { 1u8 };
                         ps.constr_mgr.update_move(&move_info_v);
 
                         if legal == LegalCheck::AllSatisfied && lc2.get() < bc2.get() {

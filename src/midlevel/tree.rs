@@ -118,7 +118,7 @@ impl MidTree {
         self.parent[leaf] = new_parent;
     }
 
-    pub(crate)     fn rotate(&mut self) {
+    pub(crate) fn rotate(&mut self) {
         assert!(self.num_vertices >= 2);
         let u = self.ith_child(self.root, 0);
         self.parent[self.root] = u;
@@ -522,7 +522,9 @@ mod tests {
         let x = MidVertex::new(vec![1, 1, 0, 0, 1]);
         let mut tree = MidTree::new(&x);
         // Find a leaf
-        let leaf = (0..tree.num_vertices).find(|&i| tree.num_children(i) == 0).unwrap();
+        let leaf = (0..tree.num_vertices)
+            .find(|&i| tree.num_children(i) == 0)
+            .unwrap();
         let new_parent = tree.root;
         tree.move_leaf(leaf, new_parent, 0);
     }

@@ -166,7 +166,12 @@ impl MidVertex {
         let mut dsteps_neg = Vec::new();
         let mut usteps_pos = Vec::new();
         let mut dsteps_pos = Vec::new();
-        self.steps_height(&mut usteps_neg, &mut usteps_pos, &mut dsteps_neg, &mut dsteps_pos);
+        self.steps_height(
+            &mut usteps_neg,
+            &mut usteps_pos,
+            &mut dsteps_neg,
+            &mut dsteps_pos,
+        );
 
         let min_zero = usteps_neg.is_empty();
         let unique_min = if min_zero {
@@ -178,15 +183,31 @@ impl MidVertex {
 
         let to = if (!unique_min && middle_level) || (unique_min && !middle_level) {
             if min_zero {
-                usteps_pos.first().and_then(|v| v.first()).copied().unwrap_or(0)
+                usteps_pos
+                    .first()
+                    .and_then(|v| v.first())
+                    .copied()
+                    .unwrap_or(0)
             } else {
-                usteps_neg.last().and_then(|v| v.first()).copied().unwrap_or(0)
+                usteps_neg
+                    .last()
+                    .and_then(|v| v.first())
+                    .copied()
+                    .unwrap_or(0)
             }
         } else {
             if min_zero {
-                usteps_pos.first().and_then(|v| v.last()).copied().unwrap_or(0)
+                usteps_pos
+                    .first()
+                    .and_then(|v| v.last())
+                    .copied()
+                    .unwrap_or(0)
             } else {
-                usteps_neg.last().and_then(|v| v.last()).copied().unwrap_or(0)
+                usteps_neg
+                    .last()
+                    .and_then(|v| v.last())
+                    .copied()
+                    .unwrap_or(0)
             }
         };
         let to_val = to.saturating_sub(1);
@@ -246,7 +267,10 @@ impl MidVertex {
 
         if !flip {
             let td = self.first_touchdown(0);
-            if td < 0 { seq.clear(); return; }
+            if td < 0 {
+                seq.clear();
+                return;
+            }
             let b = td as usize;
             let length = 2 * (b - 1) + 2;
             seq.resize(length, 0);
@@ -277,7 +301,10 @@ impl MidVertex {
 
             let temp_vertex = MidVertex::new(modified);
             let td = temp_vertex.first_touchdown(0);
-            if td < 0 { seq.clear(); return; }
+            if td < 0 {
+                seq.clear();
+                return;
+            }
             let b = td as usize;
             let length = 2 * (b - 1) + 2;
             seq.resize(length, 0);
@@ -356,7 +383,13 @@ impl MidVertex {
         let mut idx = 0;
         seq[idx] = b + 1;
         idx += 1;
-        self.compute_flip_seq_1_rec(seq, &mut idx, (b + 2) as isize, (sz - 2) as isize, &next_step);
+        self.compute_flip_seq_1_rec(
+            seq,
+            &mut idx,
+            (b + 2) as isize,
+            (sz - 2) as isize,
+            &next_step,
+        );
         seq[idx] = b;
     }
 

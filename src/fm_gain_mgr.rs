@@ -167,7 +167,8 @@ where
         self.waiting_list.clear();
         // Populate gain buckets from the gain calculator's initial gains
         let modules: Vec<Gnl::Node> = self.hyprgraph.modules().collect();
-        self.gain_calc.populate_buckets(part, &modules, &mut self.gain_bucket);
+        self.gain_calc
+            .populate_buckets(part, &modules, &mut self.gain_bucket);
         total_cost
     }
 
@@ -194,12 +195,26 @@ where
         let to_part = best_idx as u8;
         if let Some(v) = self.gain_bucket[best_idx].popleft() {
             let from_part = part[self.hyprgraph.module_index(v)];
-            return (MoveInfoV { v, from_part, to_part }, best_max);
+            return (
+                MoveInfoV {
+                    v,
+                    from_part,
+                    to_part,
+                },
+                best_max,
+            );
         }
         let sentinel_gain = -i32::MAX + 1;
         let v = self.hyprgraph.modules().next().unwrap();
         let from_part = part[self.hyprgraph.module_index(v)];
-        (MoveInfoV { v, from_part, to_part }, sentinel_gain)
+        (
+            MoveInfoV {
+                v,
+                from_part,
+                to_part,
+            },
+            sentinel_gain,
+        )
     }
 
     pub fn select_togo(&mut self, to_part: u8) -> (Gnl::Node, i32) {
@@ -288,7 +303,10 @@ where
 
     pub fn update_move_v(&mut self, move_info_v: &MoveInfoV<Gnl::Node>, gain: i32) {
         // Only update key if node is not locked (locked nodes were already moved)
-        if !self.locked_nodes.contains(&self.hyprgraph.module_index(move_info_v.v)) {
+        if !self
+            .locked_nodes
+            .contains(&self.hyprgraph.module_index(move_info_v.v))
+        {
             self._set_key(move_info_v.from_part, move_info_v.v, -gain);
         }
     }
@@ -367,11 +385,8 @@ pub trait GainCalcTrait<Gnl: Hypergraph> {
     fn idx_vec(&self) -> &Vec<Gnl::Node>;
     fn update_move_2pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Gnl::Node;
     fn update_move_3pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Vec<i32>;
-    fn update_move_general_net(
-        &mut self,
-        part: &[u8],
-        move_info: &MoveInfo<Gnl::Node>,
-    ) -> Vec<i32>;
+    fn update_move_general_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>)
+        -> Vec<i32>;
     fn delta_gain_w(&self) -> i32;
     /// Populate gain buckets from initial gain values after init().
     fn populate_buckets(
@@ -459,9 +474,9 @@ mod tests {
     #[test]
     fn test_bucket_queue_stale_entries_skipped() {
         let mut bq: BucketQueue<i32> = BucketQueue::new(-5, 5);
-        bq.push(1, 42);  // initial entry
-        bq.modify_key(3, 42);  // updated entry, old one is stale
-        // Should skip stale (key=1) and return fresh (key=3)
+        bq.push(1, 42); // initial entry
+        bq.modify_key(3, 42); // updated entry, old one is stale
+                              // Should skip stale (key=1) and return fresh (key=3)
         assert_eq!(bq.get_max(), 3);
         assert_eq!(bq.popleft(), Some(42));
         assert!(bq.is_empty());

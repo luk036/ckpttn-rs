@@ -6,11 +6,11 @@ use petgraph::graph::NodeIndex;
 use ckpttn_rs::fm_bi_constr_mgr::FMBiConstrMgr;
 use ckpttn_rs::fm_bi_gain_calc::FMBiGainCalc;
 use ckpttn_rs::fm_bi_gain_mgr::FMBiGainMgr;
-use ckpttn_rs::hypergraph::SimpleNetlist;
 use ckpttn_rs::fm_constr_mgr::LegalCheck;
 use ckpttn_rs::fm_kway_constr_mgr::FMKWayConstrMgr;
 use ckpttn_rs::fm_kway_gain_calc::FMKWayGainCalc;
 use ckpttn_rs::fm_kway_gain_mgr::FMKWayGainMgr;
+use ckpttn_rs::hypergraph::SimpleNetlist;
 use ckpttn_rs::netlist_adapter::NetlistHypergraph;
 use ckpttn_rs::part_mgr_base::PartMgrBase;
 use ckpttn_rs::Hypergraph;
@@ -146,8 +146,20 @@ fn create_cpp_dwarf() -> SimpleNetlist {
     let mut netlist = SimpleNetlist::new(7, 6);
     let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
     let edges: Vec<(usize, usize)> = vec![
-        (4, 7), (0, 7), (1, 7), (0, 8), (2, 8), (3, 8),
-        (1, 9), (2, 9), (3, 9), (2, 10), (5, 10), (3, 11), (6, 11), (0, 12),
+        (4, 7),
+        (0, 7),
+        (1, 7),
+        (0, 8),
+        (2, 8),
+        (3, 8),
+        (1, 9),
+        (2, 9),
+        (3, 9),
+        (2, 10),
+        (5, 10),
+        (3, 11),
+        (6, 11),
+        (0, 12),
     ];
     for (u, v) in &edges {
         netlist.add_edge(nodes[*u], nodes[*v]);
@@ -184,20 +196,52 @@ fn run_cpp_flat_fm_bi(hyprgraph: &impl Hypergraph<Node = NodeIndex>, bal_tol: f6
     let legal = part_mgr.legalize(&mut part);
     assert_eq!(legal, LegalCheck::AllSatisfied, "{} legalize failed", label);
     let cost_before = part_mgr.total_cost;
-    assert!(cost_before >= 0, "{} cost_before={} < 0", label, cost_before);
+    assert!(
+        cost_before >= 0,
+        "{} cost_before={} < 0",
+        label,
+        cost_before
+    );
     part_mgr.optimize(&mut part);
-    eprintln!("{}: legalize_cost={}, optimize_cost={}", label, cost_before, part_mgr.total_cost);
-    assert!(part_mgr.total_cost <= cost_before, "{} cost increased {}→{}", label, cost_before, part_mgr.total_cost);
-    assert!(part_mgr.total_cost >= 0, "{} optimize cost={} < 0", label, part_mgr.total_cost);
-    assert!(part_mgr.validator.final_check(&part), "{} final_check failed", label);
+    eprintln!(
+        "{}: legalize_cost={}, optimize_cost={}",
+        label, cost_before, part_mgr.total_cost
+    );
+    assert!(
+        part_mgr.total_cost <= cost_before,
+        "{} cost increased {}→{}",
+        label,
+        cost_before,
+        part_mgr.total_cost
+    );
+    assert!(
+        part_mgr.total_cost >= 0,
+        "{} optimize cost={} < 0",
+        label,
+        part_mgr.total_cost
+    );
+    assert!(
+        part_mgr.validator.final_check(&part),
+        "{} final_check failed",
+        label
+    );
     // Verify init returns same cost
     let cost_after = part_mgr.total_cost;
     part_mgr.init(&mut part);
-    assert_eq!(part_mgr.total_cost, cost_after, "{} init cost mismatch after optimize", label);
+    assert_eq!(
+        part_mgr.total_cost, cost_after,
+        "{} init cost mismatch after optimize",
+        label
+    );
 }
 
 /// Exact replica of C++ `run_PartMgr<FMKWayGainMgr, FMKWayConstrMgr>` template (k-way).
-fn run_cpp_flat_fm_kway(hyprgraph: &impl Hypergraph<Node = NodeIndex>, bal_tol: f64, num_parts: u8, label: &str) {
+fn run_cpp_flat_fm_kway(
+    hyprgraph: &impl Hypergraph<Node = NodeIndex>,
+    bal_tol: f64,
+    num_parts: u8,
+    label: &str,
+) {
     let gain_calc = FMKWayGainCalc::new(hyprgraph, num_parts);
     let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, num_parts);
     let constr_mgr = FMKWayConstrMgr::new(hyprgraph, bal_tol, num_parts);
@@ -206,15 +250,42 @@ fn run_cpp_flat_fm_kway(hyprgraph: &impl Hypergraph<Node = NodeIndex>, bal_tol: 
     let legal = part_mgr.legalize(&mut part);
     assert_eq!(legal, LegalCheck::AllSatisfied, "{} legalize failed", label);
     let cost_before = part_mgr.total_cost;
-    assert!(cost_before >= 0, "{} cost_before={} < 0", label, cost_before);
+    assert!(
+        cost_before >= 0,
+        "{} cost_before={} < 0",
+        label,
+        cost_before
+    );
     part_mgr.optimize(&mut part);
-    eprintln!("{}: legalize_cost={}, optimize_cost={}", label, cost_before, part_mgr.total_cost);
-    assert!(part_mgr.total_cost <= cost_before, "{} cost increased {}→{}", label, cost_before, part_mgr.total_cost);
-    assert!(part_mgr.total_cost >= 0, "{} optimize cost={} < 0", label, part_mgr.total_cost);
-    assert!(part_mgr.validator.final_check(&part), "{} final_check failed", label);
+    eprintln!(
+        "{}: legalize_cost={}, optimize_cost={}",
+        label, cost_before, part_mgr.total_cost
+    );
+    assert!(
+        part_mgr.total_cost <= cost_before,
+        "{} cost increased {}→{}",
+        label,
+        cost_before,
+        part_mgr.total_cost
+    );
+    assert!(
+        part_mgr.total_cost >= 0,
+        "{} optimize cost={} < 0",
+        label,
+        part_mgr.total_cost
+    );
+    assert!(
+        part_mgr.validator.final_check(&part),
+        "{} final_check failed",
+        label
+    );
     let cost_after = part_mgr.total_cost;
     part_mgr.init(&mut part);
-    assert_eq!(part_mgr.total_cost, cost_after, "{} init cost mismatch after optimize", label);
+    assert_eq!(
+        part_mgr.total_cost, cost_after,
+        "{} init cost mismatch after optimize",
+        label
+    );
 }
 
 #[test]
@@ -288,7 +359,10 @@ fn test_cpp_dwarf_comprehensive() {
     let totalcostbefore2 = part_mgr.total_cost;
     part_mgr.init(&mut part);
     assert_eq!(part_mgr.total_cost, totalcostbefore2);
-    eprintln!("C++-compatible dwarf flat FM: legalize={}, optimize={}", totalcostbefore, part_mgr.total_cost);
+    eprintln!(
+        "C++-compatible dwarf flat FM: legalize={}, optimize={}",
+        totalcostbefore, part_mgr.total_cost
+    );
 }
 
 #[test]
@@ -312,10 +386,7 @@ fn test_drawf_legalize_check() {
     let mut part_mgr = PartMgrBase::new(&hg, gain_mgr, constr_mgr, 2);
     let mut part = vec![0u8; hg.number_of_modules()];
     let legal = part_mgr.legalize(&mut part);
-    assert!(
-        legal == LegalCheck::AllSatisfied
-            || legal == LegalCheck::NotSatisfied
-    );
+    assert!(legal == LegalCheck::AllSatisfied || legal == LegalCheck::NotSatisfied);
 }
 
 // ── Multi-level partition tests ───────────────────────────────────
@@ -391,7 +462,12 @@ fn test_ml_p1_json_bi() {
     // debug: verify adapter integrity
     let nmod = hg.number_of_modules();
     let nnets = hg.nets().count();
-    eprintln!("p1: {} modules, {} nets, {} max_deg", nmod, nnets, hg.get_max_degree());
+    eprintln!(
+        "p1: {} modules, {} nets, {} max_deg",
+        nmod,
+        nnets,
+        hg.get_max_degree()
+    );
     for v in hg.modules().take(5) {
         let deg = hg.degree(v);
         eprintln!("  module {}: degree={}", hg.module_index(v), deg);
@@ -400,7 +476,12 @@ fn test_ml_p1_json_bi() {
     for net in hg.nets().take(5) {
         let deg = hg.degree(net);
         let nbrs: Vec<_> = hg.neighbors(net).collect();
-        eprintln!("  net {}: degree={}, neighbors={:?}", hg.module_index(net), deg, nbrs.iter().map(|n| n.index()).collect::<Vec<_>>());
+        eprintln!(
+            "  net {}: degree={}, neighbors={:?}",
+            hg.module_index(net),
+            deg,
+            nbrs.iter().map(|n| n.index()).collect::<Vec<_>>()
+        );
     }
 
     // Use large limitsize to disable contraction (the HierNetlist contract_subgraph
