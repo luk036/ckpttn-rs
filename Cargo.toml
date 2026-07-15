@@ -17,3 +17,10 @@ netlistx-rs = { path = "../netlistx-rs", features = ["serde"] }
 [dependencies.petgraph]
 version = "0.8.3"
 features = ["serde-1"]
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "fm_bench"
+harness = false

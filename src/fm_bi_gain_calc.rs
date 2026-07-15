@@ -17,7 +17,7 @@ pub struct FMBiGainCalc<Gnl: Hypergraph> {
     hyprgraph: Gnl,
     pub init_gain_list: Vec<i32>,
     pub total_cost: i32,
-    pub delta_gain_w_val: i32,
+    pub delta_gain_w: i32,
     pub idx_vec: Vec<Gnl::Node>,
     pub special_handle_2pin_nets: bool,
 }
@@ -29,7 +29,7 @@ impl<Gnl: Hypergraph> FMBiGainCalc<Gnl> {
             hyprgraph,
             init_gain_list: vec![0; nmod],
             total_cost: 0,
-            delta_gain_w_val: 0,
+            delta_gain_w: 0,
             idx_vec: Vec::new(),
             special_handle_2pin_nets: true,
         }
@@ -66,7 +66,7 @@ impl<Gnl: Hypergraph> FMBiGainCalc<Gnl> {
     }
 
     pub fn delta_gain_w(&self) -> i32 {
-        self.delta_gain_w_val
+        self.delta_gain_w
     }
 
     /// Updates gain for a 2-pin net after moving $v$ from $p_{\text{from}}$ to $p_{\text{to}}$.
@@ -88,7 +88,7 @@ impl<Gnl: Hypergraph> FMBiGainCalc<Gnl> {
         } else {
             -gain
         };
-        self.delta_gain_w_val = 2 * delta;
+        self.delta_gain_w = 2 * delta;
         node_w
     }
 
@@ -306,7 +306,7 @@ mod tests {
         let calc = FMBiGainCalc::new(netlist, 2);
         assert_eq!(calc.init_gain_list.len(), 4);
         assert_eq!(calc.total_cost, 0);
-        assert_eq!(calc.delta_gain_w_val, 0);
+        assert_eq!(calc.delta_gain_w, 0);
         assert!(calc.special_handle_2pin_nets);
         assert!(calc.idx_vec.is_empty());
     }
@@ -434,7 +434,7 @@ mod tests {
     fn test_delta_gain_w_getter() {
         let (netlist, _nodes) = setup_2pin();
         let mut calc = FMBiGainCalc::new(netlist, 2);
-        calc.delta_gain_w_val = 42;
+        calc.delta_gain_w = 42;
         assert_eq!(calc.delta_gain_w(), 42);
     }
 
@@ -451,7 +451,7 @@ mod tests {
         };
         let w = calc.update_move_2pin_net(&part, &move_info);
         assert_eq!(w, nodes[1]);
-        assert_eq!(calc.delta_gain_w_val, 2);
+        assert_eq!(calc.delta_gain_w, 2);
     }
 
     #[test]
@@ -467,7 +467,7 @@ mod tests {
         };
         let w = calc.update_move_2pin_net(&part, &move_info);
         assert_eq!(w, nodes[1]);
-        assert_eq!(calc.delta_gain_w_val, -2);
+        assert_eq!(calc.delta_gain_w, -2);
     }
 
     #[test]
