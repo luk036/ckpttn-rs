@@ -227,7 +227,10 @@ impl MidVertex {
 
         let usteps_neg_len = usteps_neg.len();
         let limit2 = if unique_min && !middle_level { 1 } else { 0 };
-        for step in usteps_neg.iter().take(usteps_neg_len.saturating_sub(limit2)) {
+        for step in usteps_neg
+            .iter()
+            .take(usteps_neg_len.saturating_sub(limit2))
+        {
             if let Some(v) = step.last() {
                 self.bits[*v] = 0;
             }
