@@ -116,8 +116,8 @@ mod tests {
         let n = hyprgraph.number_of_modules();
         let mut mgr = MLMidLvlKWayPartMgr::new(0.4, 3);
         let mut part = vec![0u8; n];
-        for i in 0..n {
-            part[i] = (i % 3) as u8;
+        for (i, p) in part.iter_mut().enumerate().take(n) {
+            *p = (i % 3) as u8;
         }
         mgr.optimize(&mut part, &hyprgraph);
         assert!(mgr.total_cost >= 0);
