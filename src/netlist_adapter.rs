@@ -22,10 +22,10 @@ impl NetlistHypergraph {
         let num_nets = nl.num_nets();
 
         let mut module_weights = vec![1u32; num_modules];
-        for i in 0..num_modules {
+        for (i, mw) in module_weights.iter_mut().enumerate().take(num_modules) {
             let w = nl.get_module_weight(i);
             if w > 0 {
-                module_weights[i] = w as u32;
+                *mw = w as u32;
             }
         }
 
