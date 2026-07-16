@@ -143,8 +143,8 @@ mod tests {
         let netlist = create_star_netlist(8);
         let mut mgr = MLMidLvlPartMgr::new(0.45);
         let mut part = vec![0u8; 8];
-        for i in 0..4 {
-            part[i] = 1;
+        for x in part.iter_mut().take(4) {
+            *x = 1;
         }
         let lc = mgr.run_partition(&netlist, &mut part);
         assert_eq!(lc, LegalCheck::AllSatisfied);
@@ -156,8 +156,8 @@ mod tests {
         let netlist = create_star_netlist(12);
         let mut mgr = MLMidLvlPartMgr::new(0.45);
         let mut part = vec![0u8; 12];
-        for i in 0..6 {
-            part[i] = 1;
+        for x in part.iter_mut().take(6) {
+            *x = 1;
         }
         let lc = mgr.run_partition(&netlist, &mut part);
         assert_eq!(lc, LegalCheck::AllSatisfied);
@@ -169,8 +169,8 @@ mod tests {
         let netlist = create_star_netlist(11);
         let mut mgr = MLMidLvlPartMgr::new(0.45);
         let mut part = vec![0u8; 11];
-        for i in 0..5 {
-            part[i] = 1;
+        for x in part.iter_mut().take(5) {
+            *x = 1;
         }
         let lc = mgr.run_partition(&netlist, &mut part);
         assert_eq!(lc, LegalCheck::AllSatisfied);

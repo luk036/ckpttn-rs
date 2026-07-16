@@ -38,8 +38,8 @@ impl<'a, Gnl: Hypergraph> MidLvlPartMgr<'a, Gnl> {
         let total_bits = 2 * half_bits + 1;
 
         let mut current_part = vec![0u8; num_modules];
-        for i in 0..half_bits.min(num_modules) {
-            current_part[i] = 1;
+        for x in current_part.iter_mut().take(half_bits.min(num_modules)) {
+            *x = 1;
         }
 
         let mut gain_calc = FMBiGainCalc::new(self.hyprgraph, 2);
@@ -51,8 +51,8 @@ impl<'a, Gnl: Hypergraph> MidLvlPartMgr<'a, Gnl> {
         let current_gain = gain_calc.init_gain_list.clone();
 
         let mut init_bits = vec![0i32; total_bits];
-        for i in 0..half_bits {
-            init_bits[i] = 1;
+        for x in init_bits.iter_mut().take(half_bits) {
+            *x = 1;
         }
 
         let hyprgraph = self.hyprgraph;
@@ -134,9 +134,7 @@ impl<'a, Gnl: Hypergraph> MidLvlPartMgr<'a, Gnl> {
         let _ham = MidHamCycle::new(start_vertex, -1, Box::new(visit_fn));
 
         let s = state.borrow();
-        for i in 0..num_modules {
-            part[i] = s.best_part[i];
-        }
+        part[..num_modules].copy_from_slice(&s.best_part[..num_modules]);
         self.total_cost = s.best_cost;
     }
 }
@@ -183,8 +181,8 @@ mod tests {
         let n = netlist.number_of_modules();
         let mut part = vec![0u8; n];
         let half = n / 2;
-        for i in 0..half {
-            part[i] = 1;
+        for x in part.iter_mut().take(half) {
+            *x = 1;
         }
         mgr.optimize(&mut part);
         assert!(mgr.total_cost >= 0);
@@ -197,8 +195,8 @@ mod tests {
         let mut mgr = MidLvlPartMgr::new(&netlist, 0.45);
         let m = netlist.number_of_modules();
         let mut part = vec![0u8; m];
-        for i in 0..m / 2 {
-            part[i] = 1;
+        for x in part.iter_mut().take(m / 2) {
+            *x = 1;
         }
         mgr.optimize(&mut part);
         assert!(mgr.total_cost >= 0);
@@ -210,8 +208,8 @@ mod tests {
         let mut mgr = MidLvlPartMgr::new(&netlist, 0.45);
         let m = netlist.number_of_modules();
         let mut part = vec![0u8; m];
-        for i in 0..m / 2 {
-            part[i] = 1;
+        for x in part.iter_mut().take(m / 2) {
+            *x = 1;
         }
         mgr.optimize(&mut part);
         assert!(mgr.total_cost >= 0);
@@ -223,8 +221,8 @@ mod tests {
         let mut mgr = MidLvlPartMgr::new(&netlist, 0.45);
         let m = netlist.number_of_modules();
         let mut part = vec![0u8; m];
-        for i in 0..m / 2 {
-            part[i] = 1;
+        for x in part.iter_mut().take(m / 2) {
+            *x = 1;
         }
         mgr.optimize(&mut part);
         assert!(mgr.total_cost >= 0);
@@ -236,8 +234,8 @@ mod tests {
         let mut mgr = MidLvlPartMgr::new(&netlist, 0.45);
         let m = netlist.number_of_modules();
         let mut part = vec![0u8; m];
-        for i in 0..m / 2 {
-            part[i] = 1;
+        for x in part.iter_mut().take(m / 2) {
+            *x = 1;
         }
         mgr.optimize(&mut part);
         assert!(mgr.total_cost >= 0);
