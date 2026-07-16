@@ -3,16 +3,13 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use petgraph::graph::NodeIndex;
 use netlistx_rs::io::read_are;
 use netlistx_rs::{read_node_link_json, Netlist};
+use petgraph::graph::NodeIndex;
 
 use ckpttn_rs::fm_bi_constr_mgr::FMBiConstrMgr;
 use ckpttn_rs::fm_bi_gain_calc::FMBiGainCalc;
 use ckpttn_rs::fm_bi_gain_mgr::FMBiGainMgr;
-use ckpttn_rs::fm_kway_constr_mgr::FMKWayConstrMgr;
-use ckpttn_rs::fm_kway_gain_calc::FMKWayGainCalc;
-use ckpttn_rs::fm_kway_gain_mgr::FMKWayGainMgr;
 use ckpttn_rs::netlist_adapter::NetlistHypergraph;
 use ckpttn_rs::part_mgr_base::PartMgrBase;
 use ckpttn_rs::Hypergraph;
@@ -37,9 +34,7 @@ fn read_ibm_netd(path: &std::path::Path) -> Netlist {
 
     let mut netlist = Netlist::new();
     for i in 0..num_modules {
-        netlist
-            .add_module(format!("m{}", i))
-            .expect("add_module");
+        netlist.add_module(format!("m{}", i)).expect("add_module");
     }
 
     let mut edge_idx = num_modules;
@@ -59,12 +54,18 @@ fn read_ibm_netd(path: &std::path::Path) -> Netlist {
 
         let node: u32 = if chars[pos] == 'a' {
             pos += 1;
-            let num_str: String = chars[pos..].iter().take_while(|c| c.is_ascii_digit()).collect();
+            let num_str: String = chars[pos..]
+                .iter()
+                .take_while(|c| c.is_ascii_digit())
+                .collect();
             pos += num_str.len();
             num_str.parse().unwrap_or(0)
         } else if chars[pos] == 'p' {
             pos += 1;
-            let num_str: String = chars[pos..].iter().take_while(|c| c.is_ascii_digit()).collect();
+            let num_str: String = chars[pos..]
+                .iter()
+                .take_while(|c| c.is_ascii_digit())
+                .collect();
             pos += num_str.len();
             let n: u32 = num_str.parse().unwrap_or(0);
             n + pad_offset

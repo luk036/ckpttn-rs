@@ -36,7 +36,7 @@ impl<'a> MidHamCycle<'a> {
         let mut skip = 0i32;
         if xs[2 * n] == 1 {
             xs.rev_inv();
-            skip += xs.to_last_vertex() as i32;
+            skip += xs.to_last_vertex();
             xs.rev_inv();
             xs[2 * n] = 0;
             skip += 1;

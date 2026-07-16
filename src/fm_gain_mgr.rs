@@ -88,7 +88,7 @@ impl<Node: Clone + Eq + std::hash::Hash> BucketQueue<Node> {
             if idx < self.buckets.len() && !self.buckets[idx].is_empty() {
                 return;
             }
-            if self.current_max <= self.offset - 1 {
+            if self.current_max < self.offset {
                 break;
             }
             self.current_max -= 1;

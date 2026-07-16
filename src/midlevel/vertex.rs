@@ -175,9 +175,9 @@ impl MidVertex {
 
         let min_zero = usteps_neg.is_empty();
         let unique_min = if min_zero {
-            usteps_pos.first().map_or(false, |v| v.len() == 1)
+            usteps_pos.first().is_some_and(|v| v.len() == 1)
         } else {
-            usteps_neg.last().map_or(false, |v| v.len() == 1)
+            usteps_neg.last().is_some_and(|v| v.len() == 1)
         };
         let middle_level = 2 * self.count_ones() + 1 == self.bits.len();
 

@@ -260,7 +260,7 @@ impl MidTree {
             num_new_leaves = 0;
         }
 
-        assert!(num_leaves >= 1 && num_leaves <= 2);
+        assert!((1..=2).contains(&num_leaves));
         if num_leaves == 1 {
             *c1 = leaves[0];
             *c2 = -1;

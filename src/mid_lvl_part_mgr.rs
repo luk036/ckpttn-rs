@@ -90,7 +90,7 @@ impl<'a, Gnl: Hypergraph> MidLvlPartMgr<'a, Gnl> {
             let nbrs: Vec<_> = hyprgraph.neighbors(v).collect();
             for &net in &nbrs {
                 let degree = hyprgraph.degree(net);
-                if degree < 2 || degree > FM_MAX_DEGREE {
+                if !(2..=FM_MAX_DEGREE).contains(&degree) {
                     continue;
                 }
                 let move_info = MoveInfo {

@@ -84,7 +84,6 @@ where
         let mut totalgain = 0i32;
         let mut deferredsnapshot = false;
         let mut besttotalgain = 0i32;
-        let mut bestpart: Option<Vec<u8>> = None;
         let mut iter = 0u32;
 
         while !self.gain_mgr.is_empty() {
@@ -107,13 +106,11 @@ where
                 if !deferredsnapshot || totalgain > besttotalgain {
                     snapshot = Some(part.to_vec());
                     besttotalgain = totalgain;
-                    bestpart = Some(part.to_vec());
                 }
                 deferredsnapshot = true;
             } else if totalgain + gainmax >= besttotalgain {
                 besttotalgain = totalgain + gainmax;
                 deferredsnapshot = false;
-                bestpart = None;
             }
 
             self.gain_mgr.lock(move_info_v.to_part, move_info_v.v);
@@ -128,7 +125,6 @@ where
             if let Some(snap) = snapshot {
                 part.copy_from_slice(&snap);
             }
-            totalgain = besttotalgain;
         }
         // Recompute total cost from scratch (totalgain can drift from stale bucket entries)
         let recomputed_cost = self.gain_mgr.init(part);
