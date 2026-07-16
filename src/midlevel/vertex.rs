@@ -219,16 +219,16 @@ impl MidVertex {
 
         let dsteps_neg_len = dsteps_neg.len();
         let limit = if unique_min && middle_level { 1 } else { 0 };
-        for d in 0..dsteps_neg_len.saturating_sub(limit) {
-            if let Some(v) = dsteps_neg[d].first() {
+        for step in dsteps_neg.iter().take(dsteps_neg_len.saturating_sub(limit)) {
+            if let Some(v) = step.first() {
                 self.bits[v + 1] = 1;
             }
         }
 
         let usteps_neg_len = usteps_neg.len();
         let limit2 = if unique_min && !middle_level { 1 } else { 0 };
-        for d in 0..usteps_neg_len.saturating_sub(limit2) {
-            if let Some(v) = usteps_neg[d].last() {
+        for step in usteps_neg.iter().take(usteps_neg_len.saturating_sub(limit2)) {
+            if let Some(v) = step.last() {
                 self.bits[*v] = 0;
             }
         }

@@ -61,9 +61,7 @@ impl<'a> MidHamCycle<'a> {
         ham.y_ = xs;
 
         let mut seq: Vec<usize> = Vec::new();
-        let mut seq01: Vec<usize> = Vec::new();
-        seq01.reserve(1);
-        seq01.push(2 * n);
+        let seq01: Vec<usize> = vec![2 * n];
         let mut dist_to_start = skip;
         let mut final_path = false;
 
