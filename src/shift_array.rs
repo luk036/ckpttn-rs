@@ -7,6 +7,12 @@ pub struct ShiftArray<T> {
     start: usize,
 }
 
+impl<T: Clone + Default> Default for ShiftArray<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Clone + Default> ShiftArray<T> {
     /// Create a new empty ShiftArray.
     pub fn new() -> Self {

@@ -45,8 +45,8 @@ impl MidLvlKWayPartMgr {
             for i in 0..(self.num_parts as usize - 1) {
                 for j in (i + 1)..self.num_parts as usize {
                     let mut selected = Vec::new();
-                    for v in 0..total_modules {
-                        let pv = current_part[v] as usize;
+                    for (v, &p) in current_part.iter().enumerate().take(total_modules) {
+                        let pv = p as usize;
                         if pv == i || pv == j {
                             selected.push(v);
                         }
@@ -61,8 +61,7 @@ impl MidLvlKWayPartMgr {
 
                     let mut init_bits = vec![0i32; total_bits];
                     let mut init_part = vec![0u8; num_modules];
-                    for pos in 0..num_modules {
-                        let v = selected[pos];
+                    for (pos, &v) in selected.iter().enumerate().take(num_modules) {
                         init_part[pos] = if current_part[v] as usize == j {
                             1u8
                         } else {
@@ -185,8 +184,7 @@ impl MidLvlKWayPartMgr {
                     current_part = ps.current_part;
                     constr_mgr = ps.constr_mgr;
 
-                    for pos in 0..num_modules {
-                        let v = selected[pos];
+                    for (pos, &v) in selected.iter().enumerate().take(num_modules) {
                         current_part[v] = if best_part_cell.borrow()[pos] == 1 {
                             j as u8
                         } else {
@@ -253,8 +251,8 @@ mod tests {
         let n = hyprgraph.number_of_modules();
         let mut mgr = MidLvlKWayPartMgr::new(0.4, 3);
         let mut part = vec![0u8; n];
-        for i in 0..n {
-            part[i] = (i % 3) as u8;
+        for (i, p) in part.iter_mut().enumerate().take(n) {
+            *p = (i % 3) as u8;
         }
         mgr.optimize(&mut part, &hyprgraph);
         assert!(mgr.total_cost >= 0);

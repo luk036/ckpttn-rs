@@ -29,8 +29,8 @@ impl MidTree {
         let mut u = root;
         let mut n = 1usize;
 
-        for i in 0..xv.len() - 1 {
-            if xv[i] == 1 {
+        for &bit in xv.iter().take(xv.len() - 1) {
+            if bit == 1 {
                 children[u].push_back(n);
                 parent[n] = u;
                 u = n;
@@ -81,7 +81,7 @@ impl MidTree {
     fn is_tau_image(&self) -> bool {
         self.num_vertices >= 3
             && self.num_children(self.root) >= 2
-            && self.num_children(self.ith_child(self.root, 0)) <= 0
+            && self.num_children(self.ith_child(self.root, 0)) == 0
     }
 
     fn tau(&mut self) {
@@ -227,9 +227,9 @@ impl MidTree {
         let mut leaves = vec![0usize; self.num_vertices];
         let mut num_leaves = 0usize;
 
-        for i in 0..self.num_vertices {
-            degs[i] = self.deg(i);
-            if degs[i] == 1 {
+        for (i, d) in degs.iter_mut().enumerate().take(self.num_vertices) {
+            *d = self.deg(i);
+            if *d == 1 {
                 leaves[num_leaves] = i;
                 num_leaves += 1;
             }
@@ -260,7 +260,7 @@ impl MidTree {
             num_new_leaves = 0;
         }
 
-        assert!(num_leaves >= 1 && num_leaves <= 2);
+        assert!((1..=2).contains(&num_leaves));
         if num_leaves == 1 {
             *c1 = leaves[0];
             *c2 = -1;

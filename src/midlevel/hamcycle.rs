@@ -36,7 +36,7 @@ impl<'a> MidHamCycle<'a> {
         let mut skip = 0i32;
         if xs[2 * n] == 1 {
             xs.rev_inv();
-            skip += xs.to_last_vertex() as i32;
+            skip += xs.to_last_vertex();
             xs.rev_inv();
             xs[2 * n] = 0;
             skip += 1;
@@ -61,9 +61,7 @@ impl<'a> MidHamCycle<'a> {
         ham.y_ = xs;
 
         let mut seq: Vec<usize> = Vec::new();
-        let mut seq01: Vec<usize> = Vec::new();
-        seq01.reserve(1);
-        seq01.push(2 * n);
+        let seq01: Vec<usize> = vec![2 * n];
         let mut dist_to_start = skip;
         let mut final_path = false;
 

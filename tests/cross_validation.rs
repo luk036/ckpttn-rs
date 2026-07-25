@@ -42,7 +42,9 @@ fn test_xval_fm_bi_partition_simple() {
     let before = part_mgr.total_cost;
     part_mgr.optimize(&mut part);
     assert!(part_mgr.total_cost <= before || before == 0);
-    for &p in &part { assert!(p == 0 || p == 1); }
+    for &p in &part {
+        assert!(p == 0 || p == 1);
+    }
 }
 
 #[test]
@@ -56,7 +58,9 @@ fn test_xval_fm_bi_partition_chain() {
     let mut part = vec![0u8; hyprgraph.number_of_modules()];
     part_mgr.legalize(&mut part);
     part_mgr.optimize(&mut part);
-    for &p in &part { assert!(p == 0 || p == 1); }
+    for &p in &part {
+        assert!(p == 0 || p == 1);
+    }
     assert!(part_mgr.total_cost >= 0);
 }
 
