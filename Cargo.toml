@@ -2,6 +2,7 @@
 name = "ckpttn-rs"
 version = "0.1.5"
 edition = "2021"
+rust-version = "1.70"
 description = "Circuit Partitioning in Rust"
 repository = "https://github.com/luk036/ckpttn-rs"
 license = "MIT OR Apache-2.0"
@@ -19,7 +20,7 @@ version = "0.8.3"
 features = ["serde-1"]
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8.2", features = ["html_reports"] }
 
 [[bench]]
 name = "fm_bench"
