@@ -14,6 +14,93 @@ pub struct PartMgrBase<Gnl: Hypergraph, GainMgr, ConstrMgr> {
     pub total_cost: i32,
 }
 
+/// Shared FM-partitioning skeleton (Template Method).
+///
+/// `PartMgr` defines the partition-optimization skeleton once — `init`,
+/// `legalize`, `optimize` and `final_check` — with the single-pass behaviour
+/// left to the `optimize_1pass` hook implemented by each manager. Both
+/// `PartMgrBase` (FM with snapshot/rollback) and `NNPartMgr` (stops at the
+/// first non-positive-gain move) share this skeleton.
+pub(crate) trait PartMgr<Gnl: Hypergraph, GainMgr, ConstrMgr>
+where
+    GainMgr: GainMgrInterface<Gnl>,
+    ConstrMgr: ConstrMgrInterface<Gnl>,
+{
+    fn hyprgraph(&self) -> &Gnl;
+    fn gain_mgr(&mut self) -> &mut GainMgr;
+    fn validator(&mut self) -> &mut ConstrMgr;
+    fn total_cost(&self) -> i32;
+    fn total_cost_mut(&mut self) -> &mut i32;
+
+    /// Maximum number of optimize passes; `usize::MAX` means unbounded.
+    #[inline]
+    fn max_passes(&self) -> usize {
+        20
+    }
+
+    fn init(&mut self, part: &mut [u8]) {
+        let cost = self.gain_mgr().init(part);
+        *self.total_cost_mut() = cost;
+        self.validator().init(part);
+    }
+
+    fn legalize(&mut self, part: &mut [u8]) -> LegalCheck {
+        self.init(part);
+
+        let mut legalcheck = LegalCheck::NotSatisfied;
+        let mut iter = 0u32;
+        while legalcheck != LegalCheck::AllSatisfied {
+            iter += 1;
+            if iter > 20000 {
+                break;
+            }
+            let to_part = self.validator().select_togo();
+            if self.gain_mgr().is_empty_togo(to_part) {
+                break;
+            }
+            let (v, gainmax) = self.gain_mgr().select_togo(to_part);
+            let from_part = part[self.hyprgraph().module_index(v)];
+            let move_info_v = MoveInfoV {
+                v,
+                from_part,
+                to_part,
+            };
+            legalcheck = self.validator().check_legal(&move_info_v);
+            if legalcheck == LegalCheck::NotSatisfied {
+                continue;
+            }
+            self.gain_mgr().update_move(part, &move_info_v);
+            self.gain_mgr().update_move_v(&move_info_v, gainmax);
+            self.validator().update_move(&move_info_v);
+            part[self.hyprgraph().module_index(v)] = to_part;
+            *self.total_cost_mut() -= gainmax;
+        }
+        legalcheck
+    }
+
+    fn optimize(&mut self, part: &mut [u8]) {
+        let max_passes = self.max_passes();
+        let mut pass = 0usize;
+        while pass < max_passes {
+            pass += 1;
+            self.init(part);
+            let totalcost_before = self.total_cost();
+            self.optimize_1pass(part);
+            if self.total_cost() == totalcost_before {
+                break;
+            }
+        }
+    }
+
+    #[inline]
+    fn final_check(&mut self, part: &mut [u8]) -> bool {
+        self.validator().final_check(part)
+    }
+
+    /// Single pass of the optimization loop (the Template Method hook).
+    fn optimize_1pass(&mut self, part: &mut [u8]);
+}
+
 impl<Gnl, GainMgr, ConstrMgr> PartMgrBase<Gnl, GainMgr, ConstrMgr>
 where
     Gnl: Hypergraph,
@@ -30,53 +117,52 @@ where
         }
     }
 
+    #[inline]
     pub fn init(&mut self, part: &mut [u8]) {
-        self.total_cost = self.gain_mgr.init(part);
-        self.validator.init(part);
+        PartMgr::init(self, part)
     }
 
+    #[inline]
     pub fn legalize(&mut self, part: &mut [u8]) -> LegalCheck {
-        self.init(part);
-
-        let mut legalcheck = LegalCheck::NotSatisfied;
-        let mut iter = 0u32;
-        while legalcheck != LegalCheck::AllSatisfied {
-            iter += 1;
-            if iter > 20000 {
-                break;
-            }
-            let to_part = self.validator.select_togo();
-            if self.gain_mgr.is_empty_togo(to_part) {
-                break;
-            }
-            let (v, gainmax) = self.gain_mgr.select_togo(to_part);
-            let from_part = part[self.hyprgraph.module_index(v)];
-            let move_info_v = MoveInfoV {
-                v,
-                from_part,
-                to_part,
-            };
-            legalcheck = self.validator.check_legal(&move_info_v);
-            if legalcheck == LegalCheck::NotSatisfied {
-                continue;
-            }
-            self.gain_mgr.update_move(part, &move_info_v);
-            self.validator.update_move(&move_info_v);
-            part[self.hyprgraph.module_index(v)] = to_part;
-            self.total_cost -= gainmax;
-        }
-        legalcheck
+        PartMgr::legalize(self, part)
     }
 
+    #[inline]
     pub fn optimize(&mut self, part: &mut [u8]) {
-        for _pass in 0..20 {
-            self.init(part);
-            let totalcost_before = self.total_cost;
-            self.optimize_1pass(part);
-            if self.total_cost == totalcost_before {
-                break;
-            }
-        }
+        PartMgr::optimize(self, part)
+    }
+}
+
+impl<Gnl, GainMgr, ConstrMgr> PartMgr<Gnl, GainMgr, ConstrMgr>
+    for PartMgrBase<Gnl, GainMgr, ConstrMgr>
+where
+    Gnl: Hypergraph,
+    GainMgr: GainMgrInterface<Gnl>,
+    ConstrMgr: ConstrMgrInterface<Gnl>,
+{
+    #[inline]
+    fn hyprgraph(&self) -> &Gnl {
+        &self.hyprgraph
+    }
+
+    #[inline]
+    fn gain_mgr(&mut self) -> &mut GainMgr {
+        &mut self.gain_mgr
+    }
+
+    #[inline]
+    fn validator(&mut self) -> &mut ConstrMgr {
+        &mut self.validator
+    }
+
+    #[inline]
+    fn total_cost(&self) -> i32 {
+        self.total_cost
+    }
+
+    #[inline]
+    fn total_cost_mut(&mut self) -> &mut i32 {
+        &mut self.total_cost
     }
 
     fn optimize_1pass(&mut self, part: &mut [u8]) {
@@ -86,19 +172,19 @@ where
         let mut besttotalgain = 0i32;
         let mut iter = 0u32;
 
-        while !self.gain_mgr.is_empty() {
+        while !self.gain_mgr().is_empty() {
             iter += 1;
             if iter > 20000 {
                 break;
             }
-            if self.gain_mgr.is_empty() {
+            if self.gain_mgr().is_empty() {
                 break;
             }
-            let (move_info_v, gainmax) = self.gain_mgr.select(part);
+            let (move_info_v, gainmax) = self.gain_mgr().select(part);
             if gainmax <= -i32::MAX + 1 {
                 break;
             }
-            let satisfied_ok = self.validator.check_constraints(&move_info_v);
+            let satisfied_ok = self.validator().check_constraints(&move_info_v);
             if !satisfied_ok {
                 continue;
             }
@@ -113,12 +199,12 @@ where
                 deferredsnapshot = false;
             }
 
-            self.gain_mgr.lock(move_info_v.to_part, move_info_v.v);
-            self.gain_mgr.update_move(part, &move_info_v);
-            self.gain_mgr.update_move_v(&move_info_v, gainmax);
-            self.validator.update_move(&move_info_v);
+            self.gain_mgr().lock(move_info_v.to_part, move_info_v.v);
+            self.gain_mgr().update_move(part, &move_info_v);
+            self.gain_mgr().update_move_v(&move_info_v, gainmax);
+            self.validator().update_move(&move_info_v);
             totalgain += gainmax;
-            part[self.hyprgraph.module_index(move_info_v.v)] = move_info_v.to_part;
+            part[self.hyprgraph().module_index(move_info_v.v)] = move_info_v.to_part;
         }
 
         if deferredsnapshot {
@@ -127,8 +213,8 @@ where
             }
         }
         // Recompute total cost from scratch (totalgain can drift from stale bucket entries)
-        let recomputed_cost = self.gain_mgr.init(part);
-        self.total_cost = recomputed_cost;
+        let recomputed_cost = self.gain_mgr().init(part);
+        *self.total_cost_mut() = recomputed_cost;
     }
 }
 

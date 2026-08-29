@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::fm_gain_mgr::{BucketQueue, GainCalcTrait};
+use crate::fm_gain_mgr::{BucketQueue, GainCalcTrait, GainMgrInterface};
 use crate::hypergraph::Hypergraph;
 use crate::moveinfo::{MoveInfo, MoveInfoV};
 
@@ -45,10 +45,12 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
         total_cost
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.gain_bucket.iter().all(|b| b.is_empty())
     }
 
+    #[inline]
     pub fn is_empty_togo(&self, to_part: u8) -> bool {
         self.gain_bucket[to_part as usize].is_empty()
     }
@@ -145,14 +147,17 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
         }
     }
 
+    #[inline]
     pub fn lock(&mut self, _which_part: u8, v: Gnl::Node) {
         self.locked_nodes.insert(self.hyprgraph.module_index(v));
     }
 
+    #[inline]
     pub fn lock_all(&mut self, _from_part: u8, v: Gnl::Node) {
         self.locked_nodes.insert(self.hyprgraph.module_index(v));
     }
 
+    #[inline]
     pub fn update_move_v(&mut self, move_info_v: &MoveInfoV<Gnl::Node>, gain: i32) {
         self.set_key(move_info_v.from_part, move_info_v.v, -gain);
     }
@@ -164,51 +169,62 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
         self.set_key(part_w, w, key);
     }
 
+    #[inline]
     fn set_key(&mut self, which_part: u8, v: Gnl::Node, key: i32) {
         self.gain_bucket[which_part as usize].set_key(key, v);
     }
 }
 
 /// Trait for NN gain managers providing the interface used by NNPartMgr.
-pub trait NNGainMgrInterface<Gnl: Hypergraph> {
-    fn init(&mut self, part: &[u8]) -> i32;
-    fn is_empty(&self) -> bool;
-    fn is_empty_togo(&self, to_part: u8) -> bool;
-    fn select(&mut self, part: &[u8]) -> (MoveInfoV<Gnl::Node>, i32);
-    fn select_togo(&mut self, to_part: u8) -> (Gnl::Node, i32);
-    fn update_move(&mut self, part: &[u8], move_info_v: &MoveInfoV<Gnl::Node>);
-    fn update_move_v(&mut self, move_info_v: &MoveInfoV<Gnl::Node>, gain: i32);
-    fn lock(&mut self, which_part: u8, v: Gnl::Node);
+///
+/// A superset of [`GainMgrInterface`]: it adds `modify_key`, so any NN gain
+/// manager can also serve as a plain FM gain manager in the shared partition
+/// skeleton.
+pub trait NNGainMgrInterface<Gnl: Hypergraph>: GainMgrInterface<Gnl> {
     fn modify_key(&mut self, w: Gnl::Node, part_w: u8, key: i32);
+}
+
+impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> GainMgrInterface<Gnl>
+    for NNGainMgr<Gnl, GainCalc>
+{
+    #[inline]
+    fn init(&mut self, part: &[u8]) -> i32 {
+        self.init(part)
+    }
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
+    #[inline]
+    fn is_empty_togo(&self, to_part: u8) -> bool {
+        self.is_empty_togo(to_part)
+    }
+    #[inline]
+    fn select(&mut self, part: &[u8]) -> (MoveInfoV<Gnl::Node>, i32) {
+        self.select(part)
+    }
+    #[inline]
+    fn select_togo(&mut self, to_part: u8) -> (Gnl::Node, i32) {
+        self.select_togo(to_part)
+    }
+    #[inline]
+    fn update_move(&mut self, part: &[u8], move_info_v: &MoveInfoV<Gnl::Node>) {
+        self.update_move(part, move_info_v)
+    }
+    #[inline]
+    fn update_move_v(&mut self, move_info_v: &MoveInfoV<Gnl::Node>, gain: i32) {
+        self.update_move_v(move_info_v, gain)
+    }
+    #[inline]
+    fn lock(&mut self, which_part: u8, v: Gnl::Node) {
+        self.lock(which_part, v)
+    }
 }
 
 impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgrInterface<Gnl>
     for NNGainMgr<Gnl, GainCalc>
 {
-    fn init(&mut self, part: &[u8]) -> i32 {
-        self.init(part)
-    }
-    fn is_empty(&self) -> bool {
-        self.is_empty()
-    }
-    fn is_empty_togo(&self, to_part: u8) -> bool {
-        self.is_empty_togo(to_part)
-    }
-    fn select(&mut self, part: &[u8]) -> (MoveInfoV<Gnl::Node>, i32) {
-        self.select(part)
-    }
-    fn select_togo(&mut self, to_part: u8) -> (Gnl::Node, i32) {
-        self.select_togo(to_part)
-    }
-    fn update_move(&mut self, part: &[u8], move_info_v: &MoveInfoV<Gnl::Node>) {
-        self.update_move(part, move_info_v)
-    }
-    fn update_move_v(&mut self, move_info_v: &MoveInfoV<Gnl::Node>, gain: i32) {
-        self.update_move_v(move_info_v, gain)
-    }
-    fn lock(&mut self, which_part: u8, v: Gnl::Node) {
-        self.lock(which_part, v)
-    }
+    #[inline]
     fn modify_key(&mut self, w: Gnl::Node, part_w: u8, key: i32) {
         self.modify_key(w, part_w, key)
     }
@@ -295,23 +311,23 @@ mod tests {
         let mut mgr: NNGainMgr<_, FMBiGainCalc<_>> = NNGainMgr::new(netlist, calc, 2);
 
         let part = vec![0u8, 0, 1, 1];
-        let cost = NNGainMgrInterface::init(&mut mgr, &part);
+        let cost = GainMgrInterface::init(&mut mgr, &part);
         assert_eq!(cost, 0);
         // After init, buckets are populated, so NOT empty
-        assert!(!NNGainMgrInterface::is_empty(&mgr));
+        assert!(!GainMgrInterface::is_empty(&mgr));
         // Modules in part 0 go to bucket 1 (to move to partition 1)
         // Modules in part 1 go to bucket 0
         // So neither bucket should be empty
-        assert!(!NNGainMgrInterface::is_empty_togo(&mgr, 0));
-        assert!(!NNGainMgrInterface::is_empty_togo(&mgr, 1));
+        assert!(!GainMgrInterface::is_empty_togo(&mgr, 0));
+        assert!(!GainMgrInterface::is_empty_togo(&mgr, 1));
 
-        NNGainMgrInterface::lock(&mut mgr, 0, nodes[0]);
+        GainMgrInterface::lock(&mut mgr, 0, nodes[0]);
         let move_info_v = MoveInfoV {
             v: nodes[0],
             from_part: 0,
             to_part: 1,
         };
-        NNGainMgrInterface::update_move_v(&mut mgr, &move_info_v, 3);
+        GainMgrInterface::update_move_v(&mut mgr, &move_info_v, 3);
         NNGainMgrInterface::modify_key(&mut mgr, nodes[0], 0, 5);
     }
 }
