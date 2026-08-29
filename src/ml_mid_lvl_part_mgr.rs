@@ -28,6 +28,7 @@ impl MLMidLvlPartMgr {
         }
     }
 
+    #[inline]
     pub fn set_limitsize(&mut self, limit: usize) {
         self.limitsize = limit;
     }

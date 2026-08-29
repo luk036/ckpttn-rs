@@ -9,14 +9,17 @@ use crate::hypergraph::Hypergraph;
 pub struct FMBiConstrMgr<Gnl: Hypergraph>(pub FMConstrMgr<Gnl>);
 
 impl<Gnl: Hypergraph> FMBiConstrMgr<Gnl> {
+    #[inline]
     pub fn new(hyprgraph: Gnl, bal_tol: f64) -> Self {
         FMBiConstrMgr(FMConstrMgr::new(hyprgraph, bal_tol))
     }
 
+    #[inline]
     pub fn with_num_parts(hyprgraph: Gnl, bal_tol: f64, _num_parts: u8) -> Self {
         FMBiConstrMgr(FMConstrMgr::new(hyprgraph, bal_tol))
     }
 
+    #[inline]
     pub fn select_togo(&self) -> u8 {
         self.0.select_togo()
     }
@@ -24,33 +27,41 @@ impl<Gnl: Hypergraph> FMBiConstrMgr<Gnl> {
 
 impl<Gnl: Hypergraph> std::ops::Deref for FMBiConstrMgr<Gnl> {
     type Target = FMConstrMgr<Gnl>;
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<Gnl: Hypergraph> std::ops::DerefMut for FMBiConstrMgr<Gnl> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
 impl<Gnl: Hypergraph> ConstrMgrInterface<Gnl> for FMBiConstrMgr<Gnl> {
+    #[inline]
     fn init(&mut self, part: &[u8]) {
         self.0.init(part)
     }
+    #[inline]
     fn check_legal(&mut self, move_info_v: &crate::moveinfo::MoveInfoV<Gnl::Node>) -> LegalCheck {
         self.0.check_legal(move_info_v)
     }
+    #[inline]
     fn check_constraints(&self, move_info_v: &crate::moveinfo::MoveInfoV<Gnl::Node>) -> bool {
         self.0.check_constraints(move_info_v)
     }
+    #[inline]
     fn update_move(&mut self, move_info_v: &crate::moveinfo::MoveInfoV<Gnl::Node>) {
         self.0.update_move(move_info_v)
     }
+    #[inline]
     fn select_togo(&self) -> u8 {
         self.select_togo()
     }
+    #[inline]
     fn final_check(&mut self, part: &[u8]) -> bool {
         self.0.final_check(part)
     }

@@ -17,6 +17,7 @@ pub struct MLPartMgr {
 }
 
 impl Default for MLPartMgr {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

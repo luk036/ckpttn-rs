@@ -104,6 +104,7 @@ impl<'a> MidHamCycle<'a> {
         ham
     }
 
+    #[inline]
     pub fn get_length(&self) -> i64 {
         self.length_
     }

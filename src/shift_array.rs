@@ -8,6 +8,7 @@ pub struct ShiftArray<T> {
 }
 
 impl<T: Clone + Default> Default for ShiftArray<T> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -31,36 +32,43 @@ impl<T: Clone + Default> ShiftArray<T> {
     }
 
     /// Set the start offset for index shifting.
+    #[inline]
     pub fn set_start(&mut self, start: usize) {
         self.start = start;
     }
 
     /// Get the current start offset.
+    #[inline]
     pub fn start(&self) -> usize {
         self.start
     }
 
     /// Resize the underlying storage.
+    #[inline]
     pub fn resize(&mut self, new_len: usize, value: T) {
         self.data.resize(new_len, value);
     }
 
     /// Get the length of the underlying storage.
+    #[inline]
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
     /// Check if the storage is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
 
     /// Clear the storage.
+    #[inline]
     pub fn clear(&mut self) {
         self.data.clear();
     }
 
     /// Raw index (without shift) access.
+    #[inline]
     pub fn raw_index(&self, index: usize) -> usize {
         index - self.start
     }
@@ -70,12 +78,14 @@ use std::ops::{Index, IndexMut};
 
 impl<T: Clone + Default> Index<usize> for ShiftArray<T> {
     type Output = T;
+    #[inline]
     fn index(&self, index: usize) -> &T {
         &self.data[index - self.start]
     }
 }
 
 impl<T: Clone + Default> IndexMut<usize> for ShiftArray<T> {
+    #[inline]
     fn index_mut(&mut self, index: usize) -> &mut T {
         &mut self.data[index - self.start]
     }

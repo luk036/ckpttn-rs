@@ -32,10 +32,12 @@ impl<Node: Clone + Eq + std::hash::Hash> BucketQueue<Node> {
         }
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.current_max < self.offset || self.node_bucket.is_empty()
     }
 
+    #[inline]
     pub fn get_max(&self) -> i32 {
         self.current_max
     }
@@ -106,6 +108,7 @@ impl<Node: Clone + Eq + std::hash::Hash> BucketQueue<Node> {
     }
 
     /// Set key: same as modify_key (just push new entry, old becomes stale).
+    #[inline]
     pub fn set_key(&mut self, key: i32, node: Node) {
         self.modify_key(key, node);
     }
@@ -119,6 +122,7 @@ impl<Node: Clone + Eq + std::hash::Hash> BucketQueue<Node> {
     }
 
     /// Remove a specific node from tracking (used when node is locked/moved).
+    #[inline]
     pub fn remove_node(&mut self, node: &Node) {
         self.node_bucket.remove(node);
     }
@@ -169,10 +173,12 @@ where
         total_cost
     }
 
+    #[inline]
     pub fn is_empty_togo(&self, to_part: u8) -> bool {
         self.gain_bucket[to_part as usize].is_empty()
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.gain_bucket.iter().all(|b| b.is_empty())
     }
@@ -315,6 +321,7 @@ where
         self._set_key(part_w, w, key);
     }
 
+    #[inline]
     fn _set_key(&mut self, which_part: u8, v: Gnl::Node, key: i32) {
         self.gain_bucket[which_part as usize].set_key(key, v);
     }

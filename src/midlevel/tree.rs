@@ -57,6 +57,7 @@ impl MidTree {
         }
     }
 
+    #[inline]
     fn num_children(&self, u: usize) -> usize {
         self.children[u].len()
     }
@@ -138,6 +139,7 @@ impl MidTree {
         }
     }
 
+    #[inline]
     fn rotate_children(&mut self) {
         self.rotate_children_by(1);
     }

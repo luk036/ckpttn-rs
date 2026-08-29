@@ -25,6 +25,7 @@ pub struct FMConstrMgr<Gnl: Hypergraph> {
 
 impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
     /// Creates a new FMConstrMgr with 2 partitions.
+    #[inline]
     pub fn new(hyprgraph: Gnl, bal_tol: f64) -> Self {
         Self::with_num_parts(hyprgraph, bal_tol, 2)
     }
@@ -125,21 +126,27 @@ impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
 use crate::fm_gain_mgr::ConstrMgrInterface;
 
 impl<Gnl: Hypergraph> ConstrMgrInterface<Gnl> for FMConstrMgr<Gnl> {
+    #[inline]
     fn init(&mut self, part: &[u8]) {
         self.init(part)
     }
+    #[inline]
     fn check_legal(&mut self, move_info_v: &MoveInfoV<Gnl::Node>) -> LegalCheck {
         self.check_legal(move_info_v)
     }
+    #[inline]
     fn check_constraints(&self, move_info_v: &MoveInfoV<Gnl::Node>) -> bool {
         self.check_constraints(move_info_v)
     }
+    #[inline]
     fn update_move(&mut self, move_info_v: &MoveInfoV<Gnl::Node>) {
         self.update_move(move_info_v)
     }
+    #[inline]
     fn select_togo(&self) -> u8 {
         self.select_togo()
     }
+    #[inline]
     fn final_check(&mut self, part: &[u8]) -> bool {
         self.final_check(part)
     }

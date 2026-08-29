@@ -3,22 +3,27 @@ use crate::fm_gain_mgr::{FMGainMgr, GainCalcTrait};
 use crate::hypergraph::Hypergraph;
 
 impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMBiGainCalc<Gnl> {
+    #[inline]
     fn init(&mut self, part: &[u8]) -> i32 {
         self.init(part)
     }
 
+    #[inline]
     fn update_move_init(&mut self) {
         self.update_move_init()
     }
 
+    #[inline]
     fn init_idx_vec(&mut self, v: Gnl::Node, net: Gnl::Node) {
         self.init_idx_vec(v, net)
     }
 
+    #[inline]
     fn idx_vec(&self) -> &Vec<Gnl::Node> {
         &self.idx_vec
     }
 
+    #[inline]
     fn update_move_2pin_net(
         &mut self,
         part: &[u8],
@@ -27,6 +32,7 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMBiGainCalc<Gnl> {
         self.update_move_2pin_net(part, move_info)
     }
 
+    #[inline]
     fn update_move_3pin_net(
         &mut self,
         part: &[u8],
@@ -35,6 +41,7 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMBiGainCalc<Gnl> {
         self.update_move_3pin_net(part, move_info)
     }
 
+    #[inline]
     fn update_move_general_net(
         &mut self,
         part: &[u8],
@@ -43,6 +50,7 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMBiGainCalc<Gnl> {
         self.update_move_general_net(part, move_info)
     }
 
+    #[inline]
     fn delta_gain_w(&self) -> i32 {
         self.delta_gain_w()
     }

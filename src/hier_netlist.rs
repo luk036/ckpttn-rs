@@ -46,14 +46,17 @@ impl HierNetlist {
         }
     }
 
+    #[inline]
     pub fn add_edge(&mut self, module: NodeIndex, net: NodeIndex) {
         self.gr.add_edge(module, net, ());
     }
 
+    #[inline]
     pub fn number_of_modules(&self) -> usize {
         self.num_modules
     }
 
+    #[inline]
     pub fn number_of_nets(&self) -> usize {
         self.gr.node_count() - self.num_modules
     }
@@ -102,6 +105,7 @@ impl HierNetlist {
 impl Hypergraph for HierNetlist {
     type Node = NodeIndex;
 
+    #[inline]
     fn modules(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         Box::new((0..self.num_modules).map(NodeIndex::new))
     }
@@ -111,10 +115,12 @@ impl Hypergraph for HierNetlist {
         Box::new((self.num_modules..total).map(NodeIndex::new))
     }
 
+    #[inline]
     fn neighbors(&self, node: Self::Node) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         Box::new(self.gr.neighbors(node))
     }
 
+    #[inline]
     fn degree(&self, node: Self::Node) -> usize {
         self.gr.neighbors(node).count()
     }
@@ -133,14 +139,17 @@ impl Hypergraph for HierNetlist {
         *self.net_weight.get(&idx).unwrap_or(&1)
     }
 
+    #[inline]
     fn number_of_modules(&self) -> usize {
         self.num_modules
     }
 
+    #[inline]
     fn get_max_degree(&self) -> usize {
         self.get_max_degree()
     }
 
+    #[inline]
     fn module_index(&self, v: Self::Node) -> usize {
         v.index()
     }

@@ -49,6 +49,7 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         self.total_cost
     }
 
+    #[inline]
     pub fn update_move_init(&mut self) {
         self.delta_gain_v = vec![0; self.num_parts as usize];
     }
@@ -64,10 +65,12 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         }
     }
 
+    #[inline]
     pub fn idx_vec(&self) -> &Vec<Gnl::Node> {
         &self.idx_vec
     }
 
+    #[inline]
     fn module_idx(&self, v: Gnl::Node) -> usize {
         self.hyprgraph.module_index(v)
     }
@@ -372,22 +375,27 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
 use crate::fm_gain_mgr::GainCalcTrait;
 
 impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMKWayGainCalc<Gnl> {
+    #[inline]
     fn init(&mut self, part: &[u8]) -> i32 {
         self.init(part)
     }
 
+    #[inline]
     fn update_move_init(&mut self) {
         self.update_move_init()
     }
 
+    #[inline]
     fn init_idx_vec(&mut self, v: Gnl::Node, net: Gnl::Node) {
         self.init_idx_vec(v, net)
     }
 
+    #[inline]
     fn idx_vec(&self) -> &Vec<Gnl::Node> {
         &self.idx_vec
     }
 
+    #[inline]
     fn update_move_2pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Gnl::Node {
         self.update_move_2pin_net(part, move_info)
     }
@@ -419,6 +427,7 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMKWayGainCalc<Gnl> {
         per_neighbor
     }
 
+    #[inline]
     fn delta_gain_w(&self) -> i32 {
         0
     }

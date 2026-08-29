@@ -18,10 +18,12 @@ impl MidVertex {
         MidVertex { bits: x }
     }
 
+    #[inline]
     pub fn get_bits(&self) -> &Vec<i32> {
         &self.bits
     }
 
+    #[inline]
     pub fn size(&self) -> usize {
         self.bits.len()
     }
@@ -143,10 +145,12 @@ impl MidVertex {
         c
     }
 
+    #[inline]
     pub fn is_first_vertex(&self) -> bool {
         self.count_flaws() == 0 && self.count_ones() == self.bits.len() / 2
     }
 
+    #[inline]
     pub fn is_last_vertex(&self) -> bool {
         self.count_flaws() == 1 && self.count_ones() == self.bits.len() / 2
     }
@@ -452,12 +456,14 @@ impl MidVertex {
 }
 
 impl Clone for MidVertex {
+    #[inline]
     fn clone(&self) -> Self {
         MidVertex::new(self.bits.clone())
     }
 }
 
 impl PartialEq for MidVertex {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.bits == other.bits
     }
@@ -465,12 +471,14 @@ impl PartialEq for MidVertex {
 
 impl std::ops::Index<usize> for MidVertex {
     type Output = i32;
+    #[inline]
     fn index(&self, index: usize) -> &i32 {
         &self.bits[index]
     }
 }
 
 impl std::ops::IndexMut<usize> for MidVertex {
+    #[inline]
     fn index_mut(&mut self, index: usize) -> &mut i32 {
         &mut self.bits[index]
     }
@@ -488,6 +496,7 @@ pub fn bitstrings_less_than(x: &[i32], y: &[i32]) -> bool {
     false
 }
 
+#[inline]
 pub fn bitstrings_equal(x: &[i32], y: &[i32]) -> bool {
     x == y
 }

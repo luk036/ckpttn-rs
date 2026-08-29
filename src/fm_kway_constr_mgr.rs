@@ -12,6 +12,7 @@ use crate::moveinfo::MoveInfoV;
 pub struct FMKWayConstrMgr<Gnl: Hypergraph>(pub FMConstrMgr<Gnl>);
 
 impl<Gnl: Hypergraph> FMKWayConstrMgr<Gnl> {
+    #[inline]
     pub fn new(hyprgraph: Gnl, bal_tol: f64, num_parts: u8) -> Self {
         FMKWayConstrMgr(FMConstrMgr::with_num_parts(hyprgraph, bal_tol, num_parts))
     }
@@ -47,33 +48,41 @@ impl<Gnl: Hypergraph> FMKWayConstrMgr<Gnl> {
 
 impl<Gnl: Hypergraph> std::ops::Deref for FMKWayConstrMgr<Gnl> {
     type Target = FMConstrMgr<Gnl>;
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<Gnl: Hypergraph> std::ops::DerefMut for FMKWayConstrMgr<Gnl> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
 impl<Gnl: Hypergraph> ConstrMgrInterface<Gnl> for FMKWayConstrMgr<Gnl> {
+    #[inline]
     fn init(&mut self, part: &[u8]) {
         self.0.init(part)
     }
+    #[inline]
     fn check_legal(&mut self, move_info_v: &MoveInfoV<Gnl::Node>) -> LegalCheck {
         self.check_legal(move_info_v)
     }
+    #[inline]
     fn check_constraints(&self, move_info_v: &MoveInfoV<Gnl::Node>) -> bool {
         self.0.check_constraints(move_info_v)
     }
+    #[inline]
     fn update_move(&mut self, move_info_v: &MoveInfoV<Gnl::Node>) {
         self.0.update_move(move_info_v)
     }
+    #[inline]
     fn select_togo(&self) -> u8 {
         self.select_togo()
     }
+    #[inline]
     fn final_check(&mut self, part: &[u8]) -> bool {
         self.0.final_check(part)
     }

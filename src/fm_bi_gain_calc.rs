@@ -61,10 +61,12 @@ impl<Gnl: Hypergraph> FMBiGainCalc<Gnl> {
         }
     }
 
+    #[inline]
     pub fn idx_vec(&self) -> &Vec<Gnl::Node> {
         &self.idx_vec
     }
 
+    #[inline]
     pub fn delta_gain_w(&self) -> i32 {
         self.delta_gain_w
     }
