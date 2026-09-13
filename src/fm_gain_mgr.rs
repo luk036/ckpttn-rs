@@ -140,6 +140,7 @@ pub struct FMGainMgr<Gnl: Hypergraph, GainCalc> {
     pub(crate) gain_bucket: Vec<BucketQueue<Gnl::Node>>,
     pub(crate) num_parts: u8,
     pub(crate) locked_nodes: HashSet<usize>,
+    pub(crate) nbrs_buf: Vec<Gnl::Node>,
 }
 
 impl<Gnl: Hypergraph, GainCalc> FMGainMgr<Gnl, GainCalc>
@@ -160,6 +161,7 @@ where
             gain_bucket,
             num_parts,
             locked_nodes: HashSet::new(),
+            nbrs_buf: Vec::new(),
         }
     }
 
@@ -234,8 +236,11 @@ where
     {
         self.gain_calc.update_move_init();
         let v = move_info_v.v;
-        let nbrs: Vec<_> = self.hyprgraph.neighbors(v).collect();
-        for net in nbrs {
+        self.nbrs_buf.clear();
+        self.nbrs_buf.extend(self.hyprgraph.neighbors(v));
+        let num_nbrs = self.nbrs_buf.len();
+        for i in 0..num_nbrs {
+            let net = self.nbrs_buf[i];
             let degree = self.hyprgraph.degree(net);
             if !(2..=65536).contains(&degree) {
                 continue;
@@ -267,10 +272,9 @@ where
 
     fn update_move_3pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) {
         let delta_gain = self.gain_calc.update_move_3pin_net(part, move_info);
-        let idx_vec: Vec<_> = self.gain_calc.idx_vec().clone();
-        for (i, &w) in idx_vec.iter().enumerate() {
-            let dg = delta_gain[i];
+        for (i, &dg) in delta_gain.iter().enumerate() {
             if dg != 0 {
+                let w = self.gain_calc.idx_vec()[i];
                 let part_w = part[self.hyprgraph.module_index(w)];
                 self.modify_key(w, part_w, dg);
             }
@@ -279,10 +283,9 @@ where
 
     fn update_move_general_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) {
         let delta_gain = self.gain_calc.update_move_general_net(part, move_info);
-        let idx_vec: Vec<_> = self.gain_calc.idx_vec().clone();
-        for (i, &w) in idx_vec.iter().enumerate() {
-            let dg = delta_gain[i];
+        for (i, &dg) in delta_gain.iter().enumerate() {
             if dg != 0 {
+                let w = self.gain_calc.idx_vec()[i];
                 let part_w = part[self.hyprgraph.module_index(w)];
                 self.modify_key(w, part_w, dg);
             }

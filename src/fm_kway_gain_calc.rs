@@ -18,6 +18,8 @@ pub struct FMKWayGainCalc<Gnl: Hypergraph> {
     pub idx_vec: Vec<Gnl::Node>,
     pub delta_gain_w: Vec<Vec<i32>>,
     pub num_parts: u8,
+    nbrs_buf: Vec<Gnl::Node>,
+    nets_buf: Vec<Gnl::Node>,
 }
 
 impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
@@ -32,6 +34,8 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
             idx_vec: Vec::new(),
             delta_gain_w: Vec::new(),
             num_parts,
+            nbrs_buf: Vec::new(),
+            nets_buf: Vec::new(),
         }
     }
 
@@ -42,8 +46,11 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
                 *elem = 0;
             }
         }
-        let nets: Vec<_> = self.hyprgraph.nets().collect();
-        for net in nets {
+        self.nets_buf.clear();
+        self.nets_buf.extend(self.hyprgraph.nets());
+        let num_nets = self.nets_buf.len();
+        for i in 0..num_nets {
+            let net = self.nets_buf[i];
             self.init_gain(net, part);
         }
         self.total_cost
@@ -51,14 +58,13 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
 
     #[inline]
     pub fn update_move_init(&mut self) {
-        self.delta_gain_v = vec![0; self.num_parts as usize];
+        self.delta_gain_v.clear();
+        self.delta_gain_v.resize(self.num_parts as usize, 0);
     }
 
     pub fn init_idx_vec(&mut self, v: Gnl::Node, net: Gnl::Node) {
         self.idx_vec.clear();
-        let nbrs: Vec<_> = self.hyprgraph.neighbors(net).collect();
-        self.idx_vec.reserve(nbrs.len() - 1);
-        for w in nbrs {
+        for w in self.hyprgraph.neighbors(net) {
             if w != v {
                 self.idx_vec.push(w);
             }
@@ -98,9 +104,10 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
     }
 
     fn init_gain_2pin_net(&mut self, net: Gnl::Node, part: &[u8]) {
-        let nbrs: Vec<_> = self.hyprgraph.neighbors(net).collect();
-        let w = nbrs[0];
-        let v = nbrs[1];
+        let (w, v) = {
+            let mut nbrs = self.hyprgraph.neighbors(net);
+            (nbrs.next().unwrap(), nbrs.next().unwrap())
+        };
         let weight = self.hyprgraph.get_net_weight(net) as i32;
         let i_w = self.hyprgraph.module_index(w);
         let i_v = self.hyprgraph.module_index(v);
@@ -119,10 +126,14 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
     }
 
     fn init_gain_3pin_net(&mut self, net: Gnl::Node, part: &[u8]) {
-        let nbrs: Vec<_> = self.hyprgraph.neighbors(net).collect();
-        let w = nbrs[0];
-        let v = nbrs[1];
-        let u = nbrs[2];
+        let (w, v, u) = {
+            let mut nbrs = self.hyprgraph.neighbors(net);
+            (
+                nbrs.next().unwrap(),
+                nbrs.next().unwrap(),
+                nbrs.next().unwrap(),
+            )
+        };
         let weight = self.hyprgraph.get_net_weight(net) as i32;
         let i_u = self.hyprgraph.module_index(u);
         let i_v = self.hyprgraph.module_index(v);
@@ -197,9 +208,12 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
     /// For each partition $k$ with $\text{num}\[k\] = 1$, the single module in $k$ gets
     /// $G_{p,v} \mathrel{+}= w(n)$ for all $p \neq k$.
     fn init_gain_general_net(&mut self, net: Gnl::Node, part: &[u8]) {
-        let nbrs: Vec<_> = self.hyprgraph.neighbors(net).collect();
+        self.nbrs_buf.clear();
+        self.nbrs_buf.extend(self.hyprgraph.neighbors(net));
+        let num_nbrs = self.nbrs_buf.len();
         let mut num = vec![0usize; self.num_parts as usize];
-        for &w in &nbrs {
+        for i in 0..num_nbrs {
+            let w = self.nbrs_buf[i];
             let i_w = self.hyprgraph.module_index(w);
             let p = part[i_w] as usize;
             if p < self.num_parts as usize {
@@ -217,12 +231,14 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
 
         for (k, &c) in num.iter().enumerate() {
             if c == 0 {
-                for &w in &nbrs {
+                for i in 0..num_nbrs {
+                    let w = self.nbrs_buf[i];
                     let i_w = self.hyprgraph.module_index(w);
                     self.init_gain_matrix[k][i_w] -= weight;
                 }
             } else if c == 1 {
-                for &w in &nbrs {
+                for i in 0..num_nbrs {
+                    let w = self.nbrs_buf[i];
                     if part[self.module_idx(w)] as usize == k {
                         self.modify_gain(w, k as u8, weight);
                         break;
@@ -238,9 +254,10 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         part: &[u8],
         move_info: &MoveInfo<Gnl::Node>,
     ) -> Gnl::Node {
-        let nbrs: Vec<_> = self.hyprgraph.neighbors(move_info.net).collect();
-        let first = nbrs[0];
-        let second = nbrs[1];
+        let (first, second) = {
+            let mut nbrs = self.hyprgraph.neighbors(move_info.net);
+            (nbrs.next().unwrap(), nbrs.next().unwrap())
+        };
         let w = if first != move_info.v { first } else { second };
         let part_w = part[self.hyprgraph.module_index(w)];
         let mut weight = self.hyprgraph.get_net_weight(move_info.net) as i32;

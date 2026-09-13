@@ -87,8 +87,7 @@ impl<'a, Gnl: Hypergraph> MidLvlPartMgr<'a, Gnl> {
             let gain = s.current_gain[flipped_pos];
             s.current_cost -= gain;
 
-            let nbrs: Vec<_> = hyprgraph.neighbors(v).collect();
-            for &net in &nbrs {
+            for net in hyprgraph.neighbors(v) {
                 let degree = hyprgraph.degree(net);
                 if !(2..=FM_MAX_DEGREE).contains(&degree) {
                     continue;
@@ -106,7 +105,6 @@ impl<'a, Gnl: Hypergraph> MidLvlPartMgr<'a, Gnl> {
                     s.current_gain[hyprgraph.module_index(w)] += s.gain_calc.delta_gain_w();
                 } else {
                     s.gain_calc.init_idx_vec(v, net);
-                    let iv = s.gain_calc.idx_vec.clone();
                     let cp = s.current_part.clone();
                     let deltas = if degree == 3 {
                         s.gain_calc.update_move_3pin_net(&cp, &move_info)
@@ -114,8 +112,9 @@ impl<'a, Gnl: Hypergraph> MidLvlPartMgr<'a, Gnl> {
                         s.gain_calc.update_move_general_net(&cp, &move_info)
                     };
                     s.current_part = cp;
-                    for i in 0..iv.len() {
-                        s.current_gain[hyprgraph.module_index(iv[i])] += deltas[i];
+                    for (i, &dg) in deltas.iter().enumerate() {
+                        let w = s.gain_calc.idx_vec()[i];
+                        s.current_gain[hyprgraph.module_index(w)] += dg;
                     }
                 }
             }
