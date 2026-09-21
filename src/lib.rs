@@ -35,7 +35,7 @@ pub use mid_lvl_kway_part_mgr::MidLvlKWayPartMgr;
 pub use mid_lvl_part_mgr::MidLvlPartMgr;
 pub use ml_mid_lvl_kway_part_mgr::MLMidLvlKWayPartMgr;
 pub use ml_mid_lvl_part_mgr::MLMidLvlPartMgr;
-pub use ml_part_mgr::{MLBiPartMgr, MLKWayPartMgr};
+pub use ml_part_mgr::{MLBiNNPartMgr, MLBiPartMgr, MLKWayNNPartMgr, MLKWayPartMgr};
 pub use moveinfo::{MoveInfo, MoveInfoV};
 pub use multi_fpga_part_mgr::MultiFPGAPartMgr;
 pub use nn_gain_mgr::NNGainMgr;

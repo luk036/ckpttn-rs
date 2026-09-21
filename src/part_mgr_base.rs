@@ -211,10 +211,9 @@ where
             if let Some(snap) = snapshot {
                 part.copy_from_slice(&snap);
             }
+            totalgain = besttotalgain;
         }
-        // Recompute total cost from scratch (totalgain can drift from stale bucket entries)
-        let recomputed_cost = self.gain_mgr().init(part);
-        *self.total_cost_mut() = recomputed_cost;
+        *self.total_cost_mut() -= totalgain;
     }
 }
 

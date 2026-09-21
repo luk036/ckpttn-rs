@@ -286,7 +286,7 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
         move_info: &MoveInfo<Gnl::Node>,
     ) -> Vec<Vec<i32>> {
         let (_, fp, tp) = (move_info.v, move_info.from_part, move_info.to_part);
-        let weight = self.hyprgraph.get_net_weight(move_info.net) as i32;
+        let mut weight = self.hyprgraph.get_net_weight(move_info.net) as i32;
         let nparts = self.num_parts as usize;
 
         let mut delta_gain = vec![vec![0i32; nparts]; self.idx_vec.len()];
@@ -307,6 +307,7 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
                         }
                     }
                 }
+                weight = -weight;
                 std::mem::swap(&mut cur_fp, &mut cur_tp);
             }
             return delta_gain;
@@ -332,6 +333,7 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
                     }
                 }
             }
+            weight = -weight;
             std::mem::swap(&mut cur_fp, &mut cur_tp);
         }
 
@@ -389,7 +391,7 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
     }
 }
 
-use crate::fm_gain_mgr::GainCalcTrait;
+use crate::fm_gain_mgr::{GainCalcTrait, GainDelta};
 
 impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMKWayGainCalc<Gnl> {
     #[inline]
@@ -413,40 +415,41 @@ impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMKWayGainCalc<Gnl> {
     }
 
     #[inline]
-    fn update_move_2pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Gnl::Node {
-        self.update_move_2pin_net(part, move_info)
+    fn update_move_2pin_net(
+        &mut self,
+        part: &[u8],
+        move_info: &MoveInfo<Gnl::Node>,
+    ) -> (Gnl::Node, GainDelta) {
+        let w = self.update_move_2pin_net(part, move_info);
+        let row = self.delta_gain_w.first().cloned().unwrap_or_default();
+        (w, GainDelta::PerPart(row))
     }
 
-    fn update_move_3pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) -> Vec<i32> {
-        let result = self.update_move_3pin_net(part, move_info);
-        let mut per_neighbor = Vec::with_capacity(result.len());
-        for row in &result {
-            per_neighbor.push(row[move_info.to_part as usize]);
-        }
-        per_neighbor
+    fn update_move_3pin_net(
+        &mut self,
+        part: &[u8],
+        move_info: &MoveInfo<Gnl::Node>,
+    ) -> Vec<GainDelta> {
+        self.update_move_3pin_net(part, move_info)
+            .into_iter()
+            .map(GainDelta::PerPart)
+            .collect()
     }
 
     fn update_move_general_net(
         &mut self,
         part: &[u8],
         move_info: &MoveInfo<Gnl::Node>,
-    ) -> Vec<i32> {
-        let result = self.update_move_general_net(part, move_info);
-        // result is [degree x nparts] matrix. The FMGainMgr expects per-neighbor
-        // deltas: delta_gain[i] is the gain change for neighbor i (for k-way this
-        // is the delta for the column corresponding to the move to_part).
-        let mut per_neighbor = Vec::with_capacity(result.len());
-        for row in &result {
-            // For k-way, the gain change for neighbor i is the entry in
-            // the to_part column (the effect of v moving to to_part).
-            per_neighbor.push(row[move_info.to_part as usize]);
-        }
-        per_neighbor
+    ) -> Vec<GainDelta> {
+        self.update_move_general_net(part, move_info)
+            .into_iter()
+            .map(GainDelta::PerPart)
+            .collect()
     }
 
     #[inline]
-    fn delta_gain_w(&self) -> i32 {
-        0
+    fn delta_gain_v(&self) -> &[i32] {
+        &self.delta_gain_v
     }
 
     fn populate_buckets(
@@ -640,7 +643,7 @@ mod tests {
         let mut calc = FMKWayGainCalc::new(netlist, 2);
         let part = vec![0u8, 1];
         let _ = calc.init(&part);
-        assert_eq!(calc.delta_gain_w(), 0);
+        assert!(calc.delta_gain_w.is_empty());
         let mut calc2 = FMKWayGainCalc::new(SimpleNetlist::new(2, 0), 2);
         <FMKWayGainCalc<_> as GainCalcTrait<_>>::update_move_init(&mut calc2);
         assert!(calc2.idx_vec().is_empty());

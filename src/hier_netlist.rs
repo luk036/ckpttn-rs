@@ -48,7 +48,9 @@ impl HierNetlist {
 
     #[inline]
     pub fn add_edge(&mut self, module: NodeIndex, net: NodeIndex) {
-        self.gr.add_edge(module, net, ());
+        if self.gr.find_edge(module, net).is_none() {
+            self.gr.add_edge(module, net, ());
+        }
     }
 
     #[inline]
@@ -71,7 +73,12 @@ impl HierNetlist {
 
     pub fn get_max_degree(&self) -> usize {
         (0..self.num_modules)
-            .map(|i| self.gr.neighbors(NodeIndex::new(i)).count())
+            .map(|i| {
+                self.gr
+                    .neighbors(NodeIndex::new(i))
+                    .map(|net| self.get_net_weight(net) as usize)
+                    .sum::<usize>()
+            })
             .max()
             .unwrap_or(0)
     }

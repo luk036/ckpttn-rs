@@ -98,8 +98,9 @@ impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
 
     /// Updates internal state after a move.
     pub fn update_move(&mut self, move_info_v: &MoveInfoV<Gnl::Node>) {
-        self.diff[move_info_v.to_part as usize] += self.weight_cache;
-        self.diff[move_info_v.from_part as usize] -= self.weight_cache;
+        let weight = self.hyprgraph.get_module_weight(move_info_v.v);
+        self.diff[move_info_v.to_part as usize] += weight;
+        self.diff[move_info_v.from_part as usize] -= weight;
     }
 
     /// Performs a final legality check on a partition.

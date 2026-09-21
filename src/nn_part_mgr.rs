@@ -90,7 +90,7 @@ where
 
     #[inline]
     fn max_passes(&self) -> usize {
-        usize::MAX
+        100
     }
 
     fn optimize_1pass(&mut self, part: &mut [u8]) {

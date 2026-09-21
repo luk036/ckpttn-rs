@@ -1,6 +1,4 @@
-use std::collections::HashSet;
-
-use crate::fm_gain_mgr::{BucketQueue, GainCalcTrait, GainMgrInterface};
+use crate::fm_gain_mgr::{BucketQueue, GainCalcTrait, GainDelta, GainMgrInterface};
 use crate::hypergraph::Hypergraph;
 use crate::moveinfo::{MoveInfo, MoveInfoV};
 
@@ -15,23 +13,22 @@ pub struct NNGainMgr<Gnl: Hypergraph, GainCalc> {
     hyprgraph: Gnl,
     pub gain_bucket: Vec<BucketQueue<Gnl::Node>>,
     pub num_parts: u8,
-    locked_nodes: HashSet<usize>,
     nbrs_buf: Vec<Gnl::Node>,
 }
 
 impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
     pub fn new(hyprgraph: Gnl, gain_calc: GainCalc, num_parts: u8) -> Self {
         let max_deg = hyprgraph.get_max_degree() as i32;
+        let range = (num_parts as i32 - 1) * max_deg;
         let mut gain_bucket = Vec::with_capacity(num_parts as usize);
         for _ in 0..num_parts {
-            gain_bucket.push(BucketQueue::new(-max_deg, max_deg));
+            gain_bucket.push(BucketQueue::new(-range, range));
         }
         NNGainMgr {
             gain_calc,
             hyprgraph,
             gain_bucket,
             num_parts,
-            locked_nodes: HashSet::new(),
             nbrs_buf: Vec::new(),
         }
     }
@@ -60,17 +57,16 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
     pub fn select(&mut self, part: &[u8]) -> (MoveInfoV<Gnl::Node>, i32) {
         let mut best_idx = 0;
         let mut best_max = self.gain_bucket[0].get_max();
-        for (i, bucket) in self.gain_bucket.iter().enumerate().skip(1) {
-            let m = bucket.get_max();
+        for i in 1..self.gain_bucket.len() {
+            let m = self.gain_bucket[i].get_max();
             if m > best_max {
                 best_max = m;
                 best_idx = i;
             }
         }
         let to_part = best_idx as u8;
-        let gainmax = best_max;
-        let v = self.gain_bucket[best_idx]
-            .popleft()
+        let (v, gainmax) = self.gain_bucket[best_idx]
+            .popleft_with_key()
             .expect("bucket should not be empty");
         let from_part = part[self.hyprgraph.module_index(v)];
         (
@@ -84,9 +80,8 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
     }
 
     pub fn select_togo(&mut self, to_part: u8) -> (Gnl::Node, i32) {
-        let gainmax = self.gain_bucket[to_part as usize].get_max();
-        let v = self.gain_bucket[to_part as usize]
-            .popleft()
+        let (v, gainmax) = self.gain_bucket[to_part as usize]
+            .popleft_with_key()
             .expect("bucket should not be empty");
         (v, gainmax)
     }
@@ -123,68 +118,90 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgr<Gnl, GainCalc> {
     }
 
     fn update_move_2pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) {
-        let w = self.gain_calc.update_move_2pin_net(part, move_info);
+        let (w, delta) = self.gain_calc.update_move_2pin_net(part, move_info);
         let part_w = part[self.hyprgraph.module_index(w)];
-        self.modify_key(w, part_w, self.gain_calc.delta_gain_w());
+        self.modify_key(w, part_w, delta);
     }
 
     fn update_move_3pin_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) {
-        let delta_gain = self.gain_calc.update_move_3pin_net(part, move_info);
-        for (i, &dg) in delta_gain.iter().enumerate() {
-            if dg != 0 {
-                let w = self.gain_calc.idx_vec()[i];
-                let part_w = part[self.hyprgraph.module_index(w)];
-                self.modify_key(w, part_w, dg);
-            }
-        }
+        let deltas = self.gain_calc.update_move_3pin_net(part, move_info);
+        self.apply_neighbor_deltas(part, deltas);
     }
 
     fn update_move_general_net(&mut self, part: &[u8], move_info: &MoveInfo<Gnl::Node>) {
-        let delta_gain = self.gain_calc.update_move_general_net(part, move_info);
-        for (i, &dg) in delta_gain.iter().enumerate() {
-            if dg != 0 {
-                let w = self.gain_calc.idx_vec()[i];
+        let deltas = self.gain_calc.update_move_general_net(part, move_info);
+        self.apply_neighbor_deltas(part, deltas);
+    }
+
+    fn apply_neighbor_deltas(&mut self, part: &[u8], deltas: Vec<GainDelta>) {
+        let idx_vec = self.gain_calc.idx_vec().clone();
+        for (i, delta) in deltas.into_iter().enumerate() {
+            if let Some(&w) = idx_vec.get(i) {
                 let part_w = part[self.hyprgraph.module_index(w)];
-                self.modify_key(w, part_w, dg);
+                self.modify_key(w, part_w, delta);
             }
         }
     }
 
     #[inline]
-    pub fn lock(&mut self, _which_part: u8, v: Gnl::Node) {
-        self.locked_nodes.insert(self.hyprgraph.module_index(v));
+    pub fn lock(&mut self, which_part: u8, v: Gnl::Node) {
+        if self.num_parts == 2 {
+            for bucket in &mut self.gain_bucket {
+                bucket.lock(&v);
+            }
+        } else {
+            self.gain_bucket[which_part as usize].lock(&v);
+        }
     }
 
     #[inline]
-    pub fn lock_all(&mut self, _from_part: u8, v: Gnl::Node) {
-        self.locked_nodes.insert(self.hyprgraph.module_index(v));
+    pub fn lock_all(&mut self, _which_part: u8, v: Gnl::Node) {
+        for bucket in &mut self.gain_bucket {
+            bucket.lock(&v);
+        }
     }
 
     #[inline]
     pub fn update_move_v(&mut self, move_info_v: &MoveInfoV<Gnl::Node>, gain: i32) {
-        self.set_key(move_info_v.from_part, move_info_v.v, -gain);
-    }
-
-    pub fn modify_key(&mut self, w: Gnl::Node, part_w: u8, key: i32) {
-        if self.locked_nodes.contains(&self.hyprgraph.module_index(w)) {
+        let v = move_info_v.v;
+        let from_part = move_info_v.from_part;
+        let to_part = move_info_v.to_part;
+        if self.num_parts == 2 {
+            self.gain_bucket[from_part as usize].set_key(-gain, v);
             return;
         }
-        self.set_key(part_w, w, key);
+        let deltas: Vec<i32> = self.gain_calc.delta_gain_v().to_vec();
+        for k in 0..self.num_parts as usize {
+            if k != from_part as usize && k != to_part as usize {
+                let d = deltas.get(k).copied().unwrap_or(0);
+                if d != 0 {
+                    self.gain_bucket[k].modify_key(d, v);
+                }
+            }
+        }
+        self.gain_bucket[from_part as usize].set_key(-gain, v);
     }
 
-    #[inline]
-    fn set_key(&mut self, which_part: u8, v: Gnl::Node, key: i32) {
-        self.gain_bucket[which_part as usize].set_key(key, v);
+    pub fn modify_key(&mut self, w: Gnl::Node, part_w: u8, delta: GainDelta) {
+        match delta {
+            GainDelta::Scalar(d) => {
+                if d != 0 {
+                    let dest = (1 - part_w) as usize;
+                    self.gain_bucket[dest].modify_key(d, w);
+                }
+            }
+            GainDelta::PerPart(deltas) => {
+                for k in 0..self.num_parts as usize {
+                    if k != part_w as usize {
+                        let d = deltas.get(k).copied().unwrap_or(0);
+                        if d != 0 {
+                            self.gain_bucket[k].modify_key(d, w);
+                        }
+                    }
+                }
+            }
+        }
     }
-}
-
-/// Trait for NN gain managers providing the interface used by NNPartMgr.
-///
-/// A superset of [`GainMgrInterface`]: it adds `modify_key`, so any NN gain
-/// manager can also serve as a plain FM gain manager in the shared partition
-/// skeleton.
-pub trait NNGainMgrInterface<Gnl: Hypergraph>: GainMgrInterface<Gnl> {
-    fn modify_key(&mut self, w: Gnl::Node, part_w: u8, key: i32);
 }
 
 impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> GainMgrInterface<Gnl>
@@ -224,15 +241,6 @@ impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> GainMgrInterface<Gnl>
     }
 }
 
-impl<Gnl: Hypergraph, GainCalc: GainCalcTrait<Gnl>> NNGainMgrInterface<Gnl>
-    for NNGainMgr<Gnl, GainCalc>
-{
-    #[inline]
-    fn modify_key(&mut self, w: Gnl::Node, part_w: u8, key: i32) {
-        self.modify_key(w, part_w, key)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -256,7 +264,6 @@ mod tests {
         let calc = FMBiGainCalc::new(make_nl(), 2);
         let mgr: NNGainMgr<_, FMBiGainCalc<_>> = NNGainMgr::new(netlist, calc, 2);
         assert_eq!(mgr.num_parts, 2);
-        assert!(mgr.locked_nodes.is_empty());
         assert!(mgr.is_empty());
     }
 
@@ -286,9 +293,11 @@ mod tests {
         let calc = FMBiGainCalc::new(make_nl(), 2);
         let mut mgr: NNGainMgr<_, FMBiGainCalc<_>> = NNGainMgr::new(netlist, calc, 2);
         mgr.lock(0, nodes[0]);
-        assert!(mgr.locked_nodes.contains(&0));
+        assert!(mgr.gain_bucket[0].is_locked(&nodes[0]));
+        assert!(mgr.gain_bucket[1].is_locked(&nodes[0]));
         mgr.lock_all(0, nodes[1]);
-        assert!(mgr.locked_nodes.contains(&1));
+        assert!(mgr.gain_bucket[0].is_locked(&nodes[1]));
+        assert!(mgr.gain_bucket[1].is_locked(&nodes[1]));
     }
 
     #[test]
@@ -303,7 +312,9 @@ mod tests {
             to_part: 1,
         };
         mgr.update_move_v(&move_info_v, 5);
-        mgr.modify_key(nodes[0], 0, 3);
+        assert!(mgr.is_empty());
+        mgr.modify_key(nodes[0], 0, GainDelta::Scalar(1));
+        assert!(!mgr.is_empty());
     }
 
     #[test]
@@ -316,11 +327,7 @@ mod tests {
         let part = vec![0u8, 0, 1, 1];
         let cost = GainMgrInterface::init(&mut mgr, &part);
         assert_eq!(cost, 0);
-        // After init, buckets are populated, so NOT empty
         assert!(!GainMgrInterface::is_empty(&mgr));
-        // Modules in part 0 go to bucket 1 (to move to partition 1)
-        // Modules in part 1 go to bucket 0
-        // So neither bucket should be empty
         assert!(!GainMgrInterface::is_empty_togo(&mgr, 0));
         assert!(!GainMgrInterface::is_empty_togo(&mgr, 1));
 
@@ -331,6 +338,5 @@ mod tests {
             to_part: 1,
         };
         GainMgrInterface::update_move_v(&mut mgr, &move_info_v, 3);
-        NNGainMgrInterface::modify_key(&mut mgr, nodes[0], 0, 5);
     }
 }
