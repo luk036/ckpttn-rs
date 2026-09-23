@@ -26,7 +26,7 @@ pub enum GainDelta {
 /// per-link lock bit (`link.next is link`).
 ///
 /// Deletion is lazy: updating a key pushes a new entry and leaves the old one
-/// stale; [`BucketQueue::popleft_with_key`] and [`BucketQueue::refresh_max`]
+/// stale; [`BucketQueue::popleft_with_key`] and `refresh_max`
 /// skip entries that are not present or whose stored key no longer matches
 /// `node_key`.
 ///
