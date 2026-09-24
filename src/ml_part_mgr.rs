@@ -406,31 +406,7 @@ mod tests {
     use crate::hypergraph::{Hypergraph, SimpleNetlist};
 
     fn create_dwarf_netlist() -> (SimpleNetlist, Vec<u32>) {
-        let mut netlist = SimpleNetlist::new(7, 6);
-        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
-        // C++ dwarf: a0=0, a1=1, a2=2, a3=3, p1=4, p2=5, p3=6, n1=7..n6=12
-        // Edges: (p1,n1), (a0,n1), (a1,n1), (a0,n2), (a2,n2), (a3,n2),
-        //        (a1,n3), (a2,n3), (a3,n3), (a2,n4), (p2,n4), (a3,n5), (p3,n5), (a0,n6)
-        let edge_pairs: Vec<(usize, usize)> = vec![
-            (4, 7),
-            (0, 7),
-            (1, 7),
-            (0, 8),
-            (2, 8),
-            (3, 8),
-            (1, 9),
-            (2, 9),
-            (3, 9),
-            (2, 10),
-            (5, 10),
-            (3, 11),
-            (6, 11),
-            (0, 12),
-        ];
-        for (u, v) in &edge_pairs {
-            netlist.add_edge(nodes[*u], nodes[*v]);
-        }
-        netlist.module_weight = vec![1, 3, 4, 2, 0, 0, 0];
+        let netlist = crate::test_support::create_dwarf_netlist();
         let weights = netlist.module_weight.clone();
         (netlist, weights)
     }

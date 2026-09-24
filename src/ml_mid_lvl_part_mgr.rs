@@ -92,31 +92,7 @@ mod tests {
     use crate::hypergraph::SimpleNetlist;
     use petgraph::graph::NodeIndex;
 
-    fn create_dwarf_netlist() -> SimpleNetlist {
-        let mut netlist = SimpleNetlist::new(7, 6);
-        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
-        let edges: Vec<(usize, usize)> = vec![
-            (4, 7),
-            (0, 7),
-            (1, 7),
-            (0, 8),
-            (2, 8),
-            (3, 8),
-            (1, 9),
-            (2, 9),
-            (3, 9),
-            (2, 10),
-            (5, 10),
-            (3, 11),
-            (6, 11),
-            (0, 12),
-        ];
-        for (u, v) in &edges {
-            netlist.add_edge(nodes[*u], nodes[*v]);
-        }
-        netlist.module_weight = vec![1, 3, 4, 2, 0, 0, 0];
-        netlist
-    }
+    use crate::test_support::create_dwarf_netlist;
 
     fn create_star_netlist(m: usize) -> SimpleNetlist {
         let mut netlist = SimpleNetlist::new(m, 1);

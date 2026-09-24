@@ -39,3 +39,6 @@ pub use moveinfo::{MoveInfo, MoveInfoV};
 pub use multi_fpga_part_mgr::MultiFPGAPartMgr;
 pub use nn_part_mgr::NNPartMgr;
 pub use part_mgr_base::PartMgrBase;
+
+#[cfg(test)]
+mod test_support;

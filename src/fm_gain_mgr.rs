@@ -547,7 +547,6 @@ pub trait GainCalcTrait<Gnl: Hypergraph> {
 mod tests {
     use super::*;
     use crate::fm_bi_gain_calc::FMBiGainCalc;
-    use crate::hypergraph::SimpleNetlist;
     use petgraph::graph::NodeIndex;
 
     #[test]
@@ -651,15 +650,7 @@ mod tests {
         assert_eq!(bq.get_key(&42), Some(3));
     }
 
-    fn make_nl() -> SimpleNetlist {
-        let mut netlist = SimpleNetlist::new(4, 2);
-        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
-        netlist.add_edge(nodes[0], nodes[4]);
-        netlist.add_edge(nodes[1], nodes[4]);
-        netlist.add_edge(nodes[2], nodes[5]);
-        netlist.add_edge(nodes[3], nodes[5]);
-        netlist
-    }
+    use crate::test_support::make_nl;
 
     #[test]
     fn test_fm_gain_mgr_new() {

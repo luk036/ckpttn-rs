@@ -121,18 +121,8 @@ mod tests {
     use crate::fm_bi_gain_calc::FMBiGainCalc;
     use crate::fm_bi_gain_mgr::FMBiGainMgr;
     use crate::fm_constr_mgr::FMConstrMgr;
-    use crate::hypergraph::SimpleNetlist;
-    use petgraph::graph::NodeIndex;
 
-    fn make_nl() -> SimpleNetlist {
-        let mut netlist = SimpleNetlist::new(4, 2);
-        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
-        netlist.add_edge(nodes[0], nodes[4]);
-        netlist.add_edge(nodes[1], nodes[4]);
-        netlist.add_edge(nodes[2], nodes[5]);
-        netlist.add_edge(nodes[3], nodes[5]);
-        netlist
-    }
+    use crate::test_support::make_nl;
 
     #[test]
     fn test_nn_part_mgr_new() {
