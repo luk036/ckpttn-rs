@@ -6,6 +6,229 @@ use crate::fm_constr_mgr::LegalCheck;
 use crate::hypergraph::Hypergraph;
 use crate::min_cover::contract_subgraph;
 
+/// Per-family hooks for the shared multi-level skeleton.
+///
+/// Each implementation selects the (gain, constraint, partition-manager) triple
+/// for one algorithm family ({FM, NN} x {bi, k-way}); the recursive skeleton is
+/// written once in [`run_partition_with`].
+pub(crate) trait MlPartMgrSpec {
+    fn legalize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        num_parts: u8,
+        part: &mut [u8],
+    ) -> (LegalCheck, i32);
+
+    fn optimize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        num_parts: u8,
+        part: &mut [u8],
+    ) -> i32;
+}
+
+pub(crate) struct BiFmSpec;
+pub(crate) struct KWayFmSpec;
+pub(crate) struct BiNnSpec;
+pub(crate) struct KWayNnSpec;
+
+impl MlPartMgrSpec for BiFmSpec {
+    fn legalize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        _num_parts: u8,
+        part: &mut [u8],
+    ) -> (LegalCheck, i32) {
+        use crate::fm_bi_constr_mgr::FMBiConstrMgr;
+        use crate::fm_bi_gain_calc::FMBiGainCalc;
+        use crate::fm_bi_gain_mgr::FMBiGainMgr;
+        use crate::part_mgr_base::PartMgrBase;
+
+        let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
+        let gain_mgr = FMBiGainMgr::new(hyprgraph, gain_calc, 2);
+        let constr_mgr = FMBiConstrMgr::new(hyprgraph, bal_tol);
+        let mut part_mgr = PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, 2);
+        let legalcheck = part_mgr.legalize(part);
+        (legalcheck, part_mgr.total_cost)
+    }
+
+    fn optimize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        _num_parts: u8,
+        part: &mut [u8],
+    ) -> i32 {
+        use crate::fm_bi_constr_mgr::FMBiConstrMgr;
+        use crate::fm_bi_gain_calc::FMBiGainCalc;
+        use crate::fm_bi_gain_mgr::FMBiGainMgr;
+        use crate::part_mgr_base::PartMgrBase;
+
+        let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
+        let gain_mgr = FMBiGainMgr::new(hyprgraph, gain_calc, 2);
+        let constr_mgr = FMBiConstrMgr::new(hyprgraph, bal_tol);
+        let mut part_mgr = PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, 2);
+        part_mgr.optimize(part);
+        part_mgr.total_cost
+    }
+}
+
+impl MlPartMgrSpec for KWayFmSpec {
+    fn legalize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        num_parts: u8,
+        part: &mut [u8],
+    ) -> (LegalCheck, i32) {
+        use crate::fm_kway_constr_mgr::FMKWayConstrMgr;
+        use crate::fm_kway_gain_calc::FMKWayGainCalc;
+        use crate::fm_kway_gain_mgr::FMKWayGainMgr;
+        use crate::part_mgr_base::PartMgrBase;
+
+        let gain_calc = FMKWayGainCalc::new(hyprgraph, num_parts);
+        let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, num_parts);
+        let constr_mgr = FMKWayConstrMgr::new(hyprgraph, bal_tol, num_parts);
+        let mut part_mgr = PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, num_parts as usize);
+        let legalcheck = part_mgr.legalize(part);
+        (legalcheck, part_mgr.total_cost)
+    }
+
+    fn optimize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        num_parts: u8,
+        part: &mut [u8],
+    ) -> i32 {
+        use crate::fm_kway_constr_mgr::FMKWayConstrMgr;
+        use crate::fm_kway_gain_calc::FMKWayGainCalc;
+        use crate::fm_kway_gain_mgr::FMKWayGainMgr;
+        use crate::part_mgr_base::PartMgrBase;
+
+        let gain_calc = FMKWayGainCalc::new(hyprgraph, num_parts);
+        let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, num_parts);
+        let constr_mgr = FMKWayConstrMgr::new(hyprgraph, bal_tol, num_parts);
+        let mut part_mgr = PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, num_parts as usize);
+        part_mgr.optimize(part);
+        part_mgr.total_cost
+    }
+}
+
+impl MlPartMgrSpec for BiNnSpec {
+    fn legalize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        _num_parts: u8,
+        part: &mut [u8],
+    ) -> (LegalCheck, i32) {
+        use crate::fm_bi_constr_mgr::FMBiConstrMgr;
+        use crate::fm_bi_gain_calc::FMBiGainCalc;
+        use crate::fm_bi_gain_mgr::FMBiGainMgr;
+        use crate::nn_part_mgr::NNPartMgr;
+
+        let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
+        let gain_mgr = FMBiGainMgr::new(hyprgraph, gain_calc, 2);
+        let constr_mgr = FMBiConstrMgr::new(hyprgraph, bal_tol);
+        let mut part_mgr = NNPartMgr::new(hyprgraph, gain_mgr, constr_mgr, 2);
+        let legalcheck = part_mgr.legalize(part);
+        (legalcheck, part_mgr.total_cost)
+    }
+
+    fn optimize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        _num_parts: u8,
+        part: &mut [u8],
+    ) -> i32 {
+        use crate::fm_bi_constr_mgr::FMBiConstrMgr;
+        use crate::fm_bi_gain_calc::FMBiGainCalc;
+        use crate::fm_bi_gain_mgr::FMBiGainMgr;
+        use crate::nn_part_mgr::NNPartMgr;
+
+        let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
+        let gain_mgr = FMBiGainMgr::new(hyprgraph, gain_calc, 2);
+        let constr_mgr = FMBiConstrMgr::new(hyprgraph, bal_tol);
+        let mut part_mgr = NNPartMgr::new(hyprgraph, gain_mgr, constr_mgr, 2);
+        part_mgr.optimize(part);
+        part_mgr.total_cost
+    }
+}
+
+impl MlPartMgrSpec for KWayNnSpec {
+    fn legalize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        num_parts: u8,
+        part: &mut [u8],
+    ) -> (LegalCheck, i32) {
+        use crate::fm_kway_constr_mgr::FMKWayConstrMgr;
+        use crate::fm_kway_gain_calc::FMKWayGainCalc;
+        use crate::fm_kway_gain_mgr::FMKWayGainMgr;
+        use crate::nn_part_mgr::NNPartMgr;
+
+        let gain_calc = FMKWayGainCalc::new(hyprgraph, num_parts);
+        let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, num_parts);
+        let constr_mgr = FMKWayConstrMgr::new(hyprgraph, bal_tol, num_parts);
+        let mut part_mgr = NNPartMgr::new(hyprgraph, gain_mgr, constr_mgr, num_parts as usize);
+        let legalcheck = part_mgr.legalize(part);
+        (legalcheck, part_mgr.total_cost)
+    }
+
+    fn optimize<G: Hypergraph<Node = NodeIndex>>(
+        hyprgraph: &G,
+        bal_tol: f64,
+        num_parts: u8,
+        part: &mut [u8],
+    ) -> i32 {
+        use crate::fm_kway_constr_mgr::FMKWayConstrMgr;
+        use crate::fm_kway_gain_calc::FMKWayGainCalc;
+        use crate::fm_kway_gain_mgr::FMKWayGainMgr;
+        use crate::nn_part_mgr::NNPartMgr;
+
+        let gain_calc = FMKWayGainCalc::new(hyprgraph, num_parts);
+        let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, num_parts);
+        let constr_mgr = FMKWayConstrMgr::new(hyprgraph, bal_tol, num_parts);
+        let mut part_mgr = NNPartMgr::new(hyprgraph, gain_mgr, constr_mgr, num_parts as usize);
+        part_mgr.optimize(part);
+        part_mgr.total_cost
+    }
+}
+
+/// Shared multi-level recursion: legalize, optionally contract + recurse, then
+/// optimize at this level. `S` supplies the algorithm family.
+pub(crate) fn run_partition_with<S: MlPartMgrSpec, G: Hypergraph<Node = NodeIndex>>(
+    hyprgraph: &G,
+    module_weight: &[u32],
+    part: &mut [u8],
+    bal_tol: f64,
+    num_parts: u8,
+    limitsize: usize,
+) -> (LegalCheck, i32) {
+    let (legalcheck, total_cost) = S::legalize(hyprgraph, bal_tol, num_parts, part);
+    if legalcheck != LegalCheck::AllSatisfied {
+        return (legalcheck, total_cost);
+    }
+
+    if hyprgraph.number_of_modules() >= limitsize {
+        let (hgr2, module_weight2) = contract_subgraph(hyprgraph, module_weight, &HashSet::new());
+        if hgr2.number_of_modules() * 3 / 2 < hyprgraph.number_of_modules() {
+            let mut part2 = vec![0u8; hgr2.number_of_modules()];
+            hgr2.projection_up(part, &mut part2);
+            let (lc_recur, _) = run_partition_with::<S, _>(
+                &hgr2,
+                &module_weight2,
+                &mut part2,
+                bal_tol,
+                num_parts,
+                limitsize,
+            );
+            if lc_recur == LegalCheck::AllSatisfied {
+                hgr2.projection_down(&part2, part);
+            }
+        }
+    }
+
+    (legalcheck, S::optimize(hyprgraph, bal_tol, num_parts, part))
+}
+
 /// Multi-level FM partitioning manager.
 ///
 /// Implements multi-level recursive partitioning: contracts large hypergraphs
@@ -54,41 +277,15 @@ impl MLBiPartMgr {
         module_weight: &[u32],
         part: &mut [u8],
     ) -> LegalCheck {
-        use crate::fm_bi_constr_mgr::FMBiConstrMgr;
-        use crate::fm_bi_gain_calc::FMBiGainCalc;
-        use crate::fm_bi_gain_mgr::FMBiGainMgr;
-        use crate::part_mgr_base::PartMgrBase;
-
-        let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
-        let gain_mgr = FMBiGainMgr::new(hyprgraph, gain_calc, 2);
-        let constr_mgr = FMBiConstrMgr::new(hyprgraph, self.bal_tol);
-        let mut part_mgr = PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, 2);
-        let legalcheck = part_mgr.legalize(part);
-
-        if legalcheck != LegalCheck::AllSatisfied {
-            self.total_cost = part_mgr.total_cost;
-            return legalcheck;
-        }
-
-        if hyprgraph.number_of_modules() >= self.limitsize {
-            let (hgr2, module_weight2) =
-                contract_subgraph(hyprgraph, module_weight, &HashSet::new());
-            if hgr2.number_of_modules() * 3 / 2 < hyprgraph.number_of_modules() {
-                let mut part2 = vec![0u8; hgr2.number_of_modules()];
-                hgr2.projection_up(part, &mut part2);
-                let lc_recur = self.run_partition(&hgr2, &module_weight2, &mut part2);
-                if lc_recur == LegalCheck::AllSatisfied {
-                    hgr2.projection_down(&part2, part);
-                }
-            }
-        }
-
-        let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
-        let gain_mgr = FMBiGainMgr::new(hyprgraph, gain_calc, 2);
-        let constr_mgr = FMBiConstrMgr::new(hyprgraph, self.bal_tol);
-        let mut part_mgr = PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, 2);
-        part_mgr.optimize(part);
-        self.total_cost = part_mgr.total_cost;
+        let (legalcheck, total_cost) = run_partition_with::<BiFmSpec, _>(
+            hyprgraph,
+            module_weight,
+            part,
+            self.bal_tol,
+            2,
+            self.limitsize,
+        );
+        self.total_cost = total_cost;
         legalcheck
     }
 }
@@ -117,43 +314,15 @@ impl MLKWayPartMgr {
         module_weight: &[u32],
         part: &mut [u8],
     ) -> LegalCheck {
-        use crate::fm_kway_constr_mgr::FMKWayConstrMgr;
-        use crate::fm_kway_gain_calc::FMKWayGainCalc;
-        use crate::fm_kway_gain_mgr::FMKWayGainMgr;
-        use crate::part_mgr_base::PartMgrBase;
-
-        let gain_calc = FMKWayGainCalc::new(hyprgraph, self.num_parts);
-        let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, self.num_parts);
-        let constr_mgr = FMKWayConstrMgr::new(hyprgraph, self.bal_tol, self.num_parts);
-        let mut part_mgr =
-            PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, self.num_parts as usize);
-        let legalcheck = part_mgr.legalize(part);
-
-        if legalcheck != LegalCheck::AllSatisfied {
-            self.total_cost = part_mgr.total_cost;
-            return legalcheck;
-        }
-
-        if hyprgraph.number_of_modules() >= self.limitsize {
-            let (hgr2, module_weight2) =
-                contract_subgraph(hyprgraph, module_weight, &HashSet::new());
-            if hgr2.number_of_modules() * 3 / 2 < hyprgraph.number_of_modules() {
-                let mut part2 = vec![0u8; hgr2.number_of_modules()];
-                hgr2.projection_up(part, &mut part2);
-                let lc_recur = self.run_partition(&hgr2, &module_weight2, &mut part2);
-                if lc_recur == LegalCheck::AllSatisfied {
-                    hgr2.projection_down(&part2, part);
-                }
-            }
-        }
-
-        let gain_calc = FMKWayGainCalc::new(hyprgraph, self.num_parts);
-        let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, self.num_parts);
-        let constr_mgr = FMKWayConstrMgr::new(hyprgraph, self.bal_tol, self.num_parts);
-        let mut part_mgr =
-            PartMgrBase::new(hyprgraph, gain_mgr, constr_mgr, self.num_parts as usize);
-        part_mgr.optimize(part);
-        self.total_cost = part_mgr.total_cost;
+        let (legalcheck, total_cost) = run_partition_with::<KWayFmSpec, _>(
+            hyprgraph,
+            module_weight,
+            part,
+            self.bal_tol,
+            self.num_parts,
+            self.limitsize,
+        );
+        self.total_cost = total_cost;
         legalcheck
     }
 }
@@ -180,41 +349,15 @@ impl MLBiNNPartMgr {
         module_weight: &[u32],
         part: &mut [u8],
     ) -> LegalCheck {
-        use crate::fm_bi_constr_mgr::FMBiConstrMgr;
-        use crate::fm_bi_gain_calc::FMBiGainCalc;
-        use crate::fm_bi_gain_mgr::FMBiGainMgr;
-        use crate::nn_part_mgr::NNPartMgr;
-
-        let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
-        let gain_mgr = FMBiGainMgr::new(hyprgraph, gain_calc, 2);
-        let constr_mgr = FMBiConstrMgr::new(hyprgraph, self.bal_tol);
-        let mut part_mgr = NNPartMgr::new(hyprgraph, gain_mgr, constr_mgr, 2);
-        let legalcheck = part_mgr.legalize(part);
-
-        if legalcheck != LegalCheck::AllSatisfied {
-            self.total_cost = part_mgr.total_cost;
-            return legalcheck;
-        }
-
-        if hyprgraph.number_of_modules() >= self.limitsize {
-            let (hgr2, module_weight2) =
-                contract_subgraph(hyprgraph, module_weight, &HashSet::new());
-            if hgr2.number_of_modules() * 3 / 2 < hyprgraph.number_of_modules() {
-                let mut part2 = vec![0u8; hgr2.number_of_modules()];
-                hgr2.projection_up(part, &mut part2);
-                let lc_recur = self.run_partition(&hgr2, &module_weight2, &mut part2);
-                if lc_recur == LegalCheck::AllSatisfied {
-                    hgr2.projection_down(&part2, part);
-                }
-            }
-        }
-
-        let gain_calc = FMBiGainCalc::new(hyprgraph, 2);
-        let gain_mgr = FMBiGainMgr::new(hyprgraph, gain_calc, 2);
-        let constr_mgr = FMBiConstrMgr::new(hyprgraph, self.bal_tol);
-        let mut part_mgr = NNPartMgr::new(hyprgraph, gain_mgr, constr_mgr, 2);
-        part_mgr.optimize(part);
-        self.total_cost = part_mgr.total_cost;
+        let (legalcheck, total_cost) = run_partition_with::<BiNnSpec, _>(
+            hyprgraph,
+            module_weight,
+            part,
+            self.bal_tol,
+            2,
+            self.limitsize,
+        );
+        self.total_cost = total_cost;
         legalcheck
     }
 }
@@ -243,41 +386,15 @@ impl MLKWayNNPartMgr {
         module_weight: &[u32],
         part: &mut [u8],
     ) -> LegalCheck {
-        use crate::fm_kway_constr_mgr::FMKWayConstrMgr;
-        use crate::fm_kway_gain_calc::FMKWayGainCalc;
-        use crate::fm_kway_gain_mgr::FMKWayGainMgr;
-        use crate::nn_part_mgr::NNPartMgr;
-
-        let gain_calc = FMKWayGainCalc::new(hyprgraph, self.num_parts);
-        let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, self.num_parts);
-        let constr_mgr = FMKWayConstrMgr::new(hyprgraph, self.bal_tol, self.num_parts);
-        let mut part_mgr = NNPartMgr::new(hyprgraph, gain_mgr, constr_mgr, self.num_parts as usize);
-        let legalcheck = part_mgr.legalize(part);
-
-        if legalcheck != LegalCheck::AllSatisfied {
-            self.total_cost = part_mgr.total_cost;
-            return legalcheck;
-        }
-
-        if hyprgraph.number_of_modules() >= self.limitsize {
-            let (hgr2, module_weight2) =
-                contract_subgraph(hyprgraph, module_weight, &HashSet::new());
-            if hgr2.number_of_modules() * 3 / 2 < hyprgraph.number_of_modules() {
-                let mut part2 = vec![0u8; hgr2.number_of_modules()];
-                hgr2.projection_up(part, &mut part2);
-                let lc_recur = self.run_partition(&hgr2, &module_weight2, &mut part2);
-                if lc_recur == LegalCheck::AllSatisfied {
-                    hgr2.projection_down(&part2, part);
-                }
-            }
-        }
-
-        let gain_calc = FMKWayGainCalc::new(hyprgraph, self.num_parts);
-        let gain_mgr = FMKWayGainMgr::new(hyprgraph, gain_calc, self.num_parts);
-        let constr_mgr = FMKWayConstrMgr::new(hyprgraph, self.bal_tol, self.num_parts);
-        let mut part_mgr = NNPartMgr::new(hyprgraph, gain_mgr, constr_mgr, self.num_parts as usize);
-        part_mgr.optimize(part);
-        self.total_cost = part_mgr.total_cost;
+        let (legalcheck, total_cost) = run_partition_with::<KWayNnSpec, _>(
+            hyprgraph,
+            module_weight,
+            part,
+            self.bal_tol,
+            self.num_parts,
+            self.limitsize,
+        );
+        self.total_cost = total_cost;
         legalcheck
     }
 }
