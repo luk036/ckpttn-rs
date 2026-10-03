@@ -4,12 +4,11 @@ use std::rc::Rc;
 use crate::fm_bi_constr_mgr::FMBiConstrMgr;
 use crate::fm_bi_gain_calc::FMBiGainCalc;
 use crate::fm_constr_mgr::LegalCheck;
+use crate::fm_pmr_config::FM_MAX_DEGREE;
 use crate::hypergraph::{FromIndex, Hypergraph};
 use crate::midlevel::hamcycle::MidHamCycle;
 use crate::midlevel::vertex::MidVertex;
 use crate::moveinfo::{MoveInfo, MoveInfoV};
-
-const FM_MAX_DEGREE: usize = 500;
 
 pub struct MidLvlPartMgr<'a, Gnl: Hypergraph> {
     hyprgraph: &'a Gnl,

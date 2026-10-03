@@ -1,3 +1,4 @@
+use crate::fm_pmr_config::FM_MAX_DEGREE;
 use crate::hypergraph::Hypergraph;
 use crate::moveinfo::MoveInfo;
 
@@ -93,7 +94,7 @@ impl<Gnl: Hypergraph> FMKWayGainCalc<Gnl> {
 
     fn init_gain(&mut self, net: Gnl::Node, part: &[u8]) {
         let degree = self.hyprgraph.degree(net);
-        if !(2..=65536).contains(&degree) {
+        if !(2..=FM_MAX_DEGREE).contains(&degree) {
             return;
         }
         match degree {

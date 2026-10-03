@@ -7,6 +7,7 @@ pub mod fm_kway_constr_mgr;
 pub mod fm_kway_gain_calc;
 pub mod fm_kway_gain_mgr;
 pub mod fm_part_mgr;
+pub mod fm_pmr_config;
 pub mod hier_netlist;
 pub mod hypergraph;
 pub mod mid_lvl_kway_part_mgr;

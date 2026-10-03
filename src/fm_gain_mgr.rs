@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use crate::fm_pmr_config::FM_MAX_DEGREE;
 use crate::hypergraph::Hypergraph;
 use crate::moveinfo::{MoveInfo, MoveInfoV};
 
@@ -326,7 +327,7 @@ where
         for i in 0..num_nbrs {
             let net = self.nbrs_buf[i];
             let degree = self.hyprgraph.degree(net);
-            if !(2..=65536).contains(&degree) {
+            if !(2..=FM_MAX_DEGREE).contains(&degree) {
                 continue;
             }
             let move_info = MoveInfo {

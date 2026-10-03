@@ -218,10 +218,12 @@ fn construct_graph(
 
 // ── MinHash duplicate net pruning ─────────────────────────────────
 
-const LOW_PIN_NET_THRESHOLD: usize = 5;
 const MINHASH_SIG_SIZE: usize = 64;
 const MINHASH_SIMILARITY: f64 = 0.8;
 const MINHASH_MAX_DEGREE: usize = 200;
+// Exact set comparison is faster than the MinHash pre-filter on all benchmarked
+// graphs, so use it directly up to the degree cap by default.
+const LOW_PIN_NET_THRESHOLD: usize = MINHASH_MAX_DEGREE;
 
 type MinHashSig = [u64; MINHASH_SIG_SIZE];
 
