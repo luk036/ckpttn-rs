@@ -199,13 +199,16 @@ fn construct_graph(
     }
 
     for (i_net, &net) in nets.iter().enumerate() {
+        let net_node = NodeIndex::new(num_modules + i_net);
+        // Parallel edges are collapsed: a net may touch several modules mapped to the
+        // same cluster/cell index. This keeps `ugraph` simple, matching the C++ `py::set`
+        // adjacency (and making `degree`/`neighbors` set-based).
+        let mut seen: HashSet<usize> = HashSet::new();
         for v in hyprgraph.neighbors(net) {
             if let Some(&mapped_v) = node_up_map.get(&v.index()) {
-                ugraph.add_edge(
-                    NodeIndex::new(mapped_v),
-                    NodeIndex::new(num_modules + i_net),
-                    (),
-                );
+                if seen.insert(mapped_v) {
+                    ugraph.add_edge(NodeIndex::new(mapped_v), net_node, ());
+                }
             }
         }
     }
@@ -215,10 +218,12 @@ fn construct_graph(
 
 // ── MinHash duplicate net pruning ─────────────────────────────────
 
-const LOW_PIN_NET_THRESHOLD: usize = 5;
 const MINHASH_SIG_SIZE: usize = 64;
 const MINHASH_SIMILARITY: f64 = 0.8;
 const MINHASH_MAX_DEGREE: usize = 200;
+// Exact set comparison is faster than the MinHash pre-filter on all benchmarked
+// graphs, so use it directly up to the degree cap by default.
+const LOW_PIN_NET_THRESHOLD: usize = MINHASH_MAX_DEGREE;
 
 type MinHashSig = [u64; MINHASH_SIG_SIZE];
 
@@ -248,6 +253,17 @@ fn minhash_signature(
 fn jaccard_similarity(sig1: &MinHashSig, sig2: &MinHashSig) -> f64 {
     let matches = sig1.iter().zip(sig2.iter()).filter(|(a, b)| a == b).count();
     matches as f64 / MINHASH_SIG_SIZE as f64
+}
+
+/// Order- and duplicate-insensitive equality of two nets' neighbor sets.
+fn same_neighbor_set(
+    ugraph: &petgraph::Graph<(), (), petgraph::Undirected>,
+    net1: NodeIndex,
+    net2: NodeIndex,
+) -> bool {
+    let set1: HashSet<NodeIndex> = ugraph.neighbors(net1).collect();
+    let set2: HashSet<NodeIndex> = ugraph.neighbors(net2).collect();
+    set1.len() == set2.len() && set1.iter().all(|v| set2.contains(v))
 }
 
 /// Purge duplicate nets (nets connecting the same set of modules).
@@ -301,11 +317,7 @@ fn purge_duplicate_nets(
                 let mut same = false;
                 let deg = deg1;
                 if deg <= LOW_PIN_NET_THRESHOLD {
-                    let set1: Vec<_> = ugraph.neighbors(net1).collect();
-                    let set2: Vec<_> = ugraph.neighbors(net2).collect();
-                    if set1.len() == set2.len() {
-                        same = set1.iter().all(|v| set2.contains(v));
-                    }
+                    same = same_neighbor_set(ugraph, net1, net2);
                 } else if deg <= MINHASH_MAX_DEGREE {
                     // Compute/cache signatures, clone to avoid double-borrow
                     let s1 = *sig_cache
@@ -316,11 +328,7 @@ fn purge_duplicate_nets(
                         .or_insert_with(|| minhash_signature(ugraph, net2));
                     let sim = jaccard_similarity(&s1, &s2);
                     if sim >= MINHASH_SIMILARITY {
-                        let set1: Vec<_> = ugraph.neighbors(net1).collect();
-                        let set2: Vec<_> = ugraph.neighbors(net2).collect();
-                        if set1.len() == set2.len() {
-                            same = set1.iter().all(|v| set2.contains(v));
-                        }
+                        same = same_neighbor_set(ugraph, net1, net2);
                     }
                 }
 

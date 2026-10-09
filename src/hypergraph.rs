@@ -24,6 +24,7 @@ pub trait Hypergraph {
     fn get_module_weight(&self, v: Self::Node) -> u32;
 
     /// Get the weight of a net (default 1)
+    #[inline]
     fn get_net_weight(&self, _net: Self::Node) -> u32 {
         1
     }
@@ -66,6 +67,7 @@ impl SimpleNetlist {
         }
     }
 
+    #[inline]
     pub fn add_edge(&mut self, module: NodeIndex, net: NodeIndex) {
         self.gr.add_edge(module, net, ());
     }
@@ -74,18 +76,22 @@ impl SimpleNetlist {
 impl Hypergraph for SimpleNetlist {
     type Node = NodeIndex;
 
+    #[inline]
     fn modules(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         Box::new(self.gr.node_indices().take(self.num_modules))
     }
 
+    #[inline]
     fn nets(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         Box::new(self.gr.node_indices().skip(self.num_modules))
     }
 
+    #[inline]
     fn neighbors(&self, node: Self::Node) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         Box::new(self.gr.neighbors(node))
     }
 
+    #[inline]
     fn degree(&self, node: Self::Node) -> usize {
         self.gr.neighbors(node).count()
     }
@@ -99,14 +105,17 @@ impl Hypergraph for SimpleNetlist {
         }
     }
 
+    #[inline]
     fn number_of_modules(&self) -> usize {
         self.num_modules
     }
 
+    #[inline]
     fn get_max_degree(&self) -> usize {
         self.modules().map(|v| self.degree(v)).max().unwrap_or(0)
     }
 
+    #[inline]
     fn module_index(&self, v: Self::Node) -> usize {
         v.index()
     }
@@ -121,6 +130,7 @@ pub trait FromIndex: Copy + Eq + std::hash::Hash {
 }
 
 impl FromIndex for petgraph::graph::NodeIndex {
+    #[inline]
     fn from_index(idx: usize) -> Self {
         petgraph::graph::NodeIndex::new(idx)
     }
@@ -130,30 +140,39 @@ impl FromIndex for petgraph::graph::NodeIndex {
 impl<T: Hypergraph> Hypergraph for &T {
     type Node = T::Node;
 
+    #[inline]
     fn modules(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         (*self).modules()
     }
+    #[inline]
     fn nets(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         (*self).nets()
     }
+    #[inline]
     fn neighbors(&self, node: Self::Node) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         (*self).neighbors(node)
     }
+    #[inline]
     fn degree(&self, node: Self::Node) -> usize {
         (*self).degree(node)
     }
+    #[inline]
     fn get_module_weight(&self, v: Self::Node) -> u32 {
         (*self).get_module_weight(v)
     }
+    #[inline]
     fn get_net_weight(&self, net: Self::Node) -> u32 {
         (*self).get_net_weight(net)
     }
+    #[inline]
     fn number_of_modules(&self) -> usize {
         (*self).number_of_modules()
     }
+    #[inline]
     fn get_max_degree(&self) -> usize {
         (*self).get_max_degree()
     }
+    #[inline]
     fn module_index(&self, v: Self::Node) -> usize {
         (*self).module_index(v)
     }

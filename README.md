@@ -9,9 +9,12 @@
 
 ### 📦 Cargo
 
-- Install the rust toolchain in order to have cargo installed by following
-  [this](https://www.rust-lang.org/tools/install) guide.
-- run `cargo install ckpttn-rs`
+Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+ckpttn-rs = "0.1"
+```
 
 ## 📜 License
 

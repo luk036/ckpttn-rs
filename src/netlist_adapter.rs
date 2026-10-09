@@ -63,10 +63,12 @@ impl NetlistHypergraph {
 impl Hypergraph for NetlistHypergraph {
     type Node = NodeIndex;
 
+    #[inline]
     fn modules(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         Box::new((0..self.num_modules).map(NodeIndex::new))
     }
 
+    #[inline]
     fn nets(&self) -> Box<dyn Iterator<Item = Self::Node> + '_> {
         Box::new((self.num_modules..self.num_modules + self.num_nets).map(NodeIndex::new))
     }
@@ -108,14 +110,17 @@ impl Hypergraph for NetlistHypergraph {
         }
     }
 
+    #[inline]
     fn number_of_modules(&self) -> usize {
         self.num_modules
     }
 
+    #[inline]
     fn get_max_degree(&self) -> usize {
         self.max_degree
     }
 
+    #[inline]
     fn module_index(&self, v: Self::Node) -> usize {
         v.index()
     }

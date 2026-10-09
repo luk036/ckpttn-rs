@@ -1,50 +1,65 @@
 use crate::fm_bi_gain_calc::FMBiGainCalc;
-use crate::fm_gain_mgr::{FMGainMgr, GainCalcTrait};
+use crate::fm_gain_mgr::{FMGainMgr, GainCalcTrait, GainDelta};
 use crate::hypergraph::Hypergraph;
 
 impl<Gnl: Hypergraph> GainCalcTrait<Gnl> for FMBiGainCalc<Gnl> {
+    #[inline]
     fn init(&mut self, part: &[u8]) -> i32 {
         self.init(part)
     }
 
+    #[inline]
     fn update_move_init(&mut self) {
         self.update_move_init()
     }
 
+    #[inline]
     fn init_idx_vec(&mut self, v: Gnl::Node, net: Gnl::Node) {
         self.init_idx_vec(v, net)
     }
 
+    #[inline]
     fn idx_vec(&self) -> &Vec<Gnl::Node> {
         &self.idx_vec
     }
 
+    #[inline]
     fn update_move_2pin_net(
         &mut self,
         part: &[u8],
         move_info: &crate::moveinfo::MoveInfo<Gnl::Node>,
-    ) -> Gnl::Node {
-        self.update_move_2pin_net(part, move_info)
+    ) -> (Gnl::Node, GainDelta) {
+        let w = self.update_move_2pin_net(part, move_info);
+        (w, GainDelta::Scalar(self.delta_gain_w))
     }
 
+    #[inline]
     fn update_move_3pin_net(
         &mut self,
         part: &[u8],
         move_info: &crate::moveinfo::MoveInfo<Gnl::Node>,
-    ) -> Vec<i32> {
+    ) -> Vec<GainDelta> {
         self.update_move_3pin_net(part, move_info)
+            .into_iter()
+            .map(GainDelta::Scalar)
+            .collect()
     }
 
+    #[inline]
     fn update_move_general_net(
         &mut self,
         part: &[u8],
         move_info: &crate::moveinfo::MoveInfo<Gnl::Node>,
-    ) -> Vec<i32> {
+    ) -> Vec<GainDelta> {
         self.update_move_general_net(part, move_info)
+            .into_iter()
+            .map(GainDelta::Scalar)
+            .collect()
     }
 
-    fn delta_gain_w(&self) -> i32 {
-        self.delta_gain_w()
+    #[inline]
+    fn delta_gain_v(&self) -> &[i32] {
+        &[]
     }
 
     fn populate_buckets(
@@ -77,20 +92,11 @@ pub type FMBiGainMgr<Gnl> = FMGainMgr<Gnl, FMBiGainCalc<Gnl>>;
 mod tests {
     use super::FMBiGainMgr;
     use crate::fm_bi_gain_calc::FMBiGainCalc;
-    use crate::fm_gain_mgr::GainCalcTrait;
-    use crate::hypergraph::SimpleNetlist;
+    use crate::fm_gain_mgr::{GainCalcTrait, GainDelta};
     use crate::moveinfo::MoveInfo;
     use petgraph::graph::NodeIndex;
 
-    fn make_nl() -> SimpleNetlist {
-        let mut netlist = SimpleNetlist::new(4, 2);
-        let nodes: Vec<NodeIndex> = netlist.gr.node_indices().collect();
-        netlist.add_edge(nodes[0], nodes[4]);
-        netlist.add_edge(nodes[1], nodes[4]);
-        netlist.add_edge(nodes[2], nodes[5]);
-        netlist.add_edge(nodes[3], nodes[5]);
-        netlist
-    }
+    use crate::test_support::make_nl;
 
     #[test]
     fn test_gain_calc_trait_init() {
@@ -126,24 +132,9 @@ mod tests {
             from_part: 0,
             to_part: 1,
         };
-        let w = GainCalcTrait::update_move_2pin_net(&mut calc, &part, &move_info);
+        let (w, delta) = GainCalcTrait::update_move_2pin_net(&mut calc, &part, &move_info);
         assert_eq!(w, nodes[1]);
-    }
-
-    #[test]
-    fn test_gain_calc_trait_delta_gain_w() {
-        let nodes: Vec<NodeIndex> = make_nl().gr.node_indices().collect();
-        let mut calc = FMBiGainCalc::new(make_nl(), 2);
-        let part = vec![0u8, 0, 1, 1];
-        let move_info = MoveInfo {
-            net: nodes[4],
-            v: nodes[0],
-            from_part: 0,
-            to_part: 1,
-        };
-        let _ = GainCalcTrait::update_move_2pin_net(&mut calc, &part, &move_info);
-        let dg = GainCalcTrait::delta_gain_w(&calc);
-        assert_eq!(dg, 2);
+        assert_eq!(delta, GainDelta::Scalar(2));
     }
 
     #[test]

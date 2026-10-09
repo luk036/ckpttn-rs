@@ -25,6 +25,7 @@ pub struct FMConstrMgr<Gnl: Hypergraph> {
 
 impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
     /// Creates a new FMConstrMgr with 2 partitions.
+    #[inline]
     pub fn new(hyprgraph: Gnl, bal_tol: f64) -> Self {
         Self::with_num_parts(hyprgraph, bal_tol, 2)
     }
@@ -33,7 +34,7 @@ impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
     ///
     /// Computes the lower bound for each partition:
     ///
-    /// $$ L = \left\lfloor \frac{2 \cdot \text{total\_weight}}{k} \cdot \text{bal\_tol} \right\rceil $$
+    /// $$ L = \left(1 - \text{bal\_tol}\right) \cdot \frac{\text{total\_weight}}{k} $$
     ///
     /// where $k$ is the number of partitions.
     pub fn with_num_parts(hyprgraph: Gnl, bal_tol: f64, num_parts: u8) -> Self {
@@ -41,8 +42,8 @@ impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
         for v in hyprgraph.modules() {
             total_weight += hyprgraph.get_module_weight(v);
         }
-        let totalweight_k = (total_weight as f64) * (2.0 / num_parts as f64);
-        let lowerbound = (totalweight_k * bal_tol).round() as u32;
+        let ideal_block_weight = (total_weight as f64) / num_parts as f64;
+        let lowerbound = ((1.0 - bal_tol) * ideal_block_weight).round() as u32;
 
         FMConstrMgr {
             hyprgraph,
@@ -97,8 +98,9 @@ impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
 
     /// Updates internal state after a move.
     pub fn update_move(&mut self, move_info_v: &MoveInfoV<Gnl::Node>) {
-        self.diff[move_info_v.to_part as usize] += self.weight_cache;
-        self.diff[move_info_v.from_part as usize] -= self.weight_cache;
+        let weight = self.hyprgraph.get_module_weight(move_info_v.v);
+        self.diff[move_info_v.to_part as usize] += weight;
+        self.diff[move_info_v.from_part as usize] -= weight;
     }
 
     /// Performs a final legality check on a partition.
@@ -125,21 +127,27 @@ impl<Gnl: Hypergraph> FMConstrMgr<Gnl> {
 use crate::fm_gain_mgr::ConstrMgrInterface;
 
 impl<Gnl: Hypergraph> ConstrMgrInterface<Gnl> for FMConstrMgr<Gnl> {
+    #[inline]
     fn init(&mut self, part: &[u8]) {
         self.init(part)
     }
+    #[inline]
     fn check_legal(&mut self, move_info_v: &MoveInfoV<Gnl::Node>) -> LegalCheck {
         self.check_legal(move_info_v)
     }
+    #[inline]
     fn check_constraints(&self, move_info_v: &MoveInfoV<Gnl::Node>) -> bool {
         self.check_constraints(move_info_v)
     }
+    #[inline]
     fn update_move(&mut self, move_info_v: &MoveInfoV<Gnl::Node>) {
         self.update_move(move_info_v)
     }
+    #[inline]
     fn select_togo(&self) -> u8 {
         self.select_togo()
     }
+    #[inline]
     fn final_check(&mut self, part: &[u8]) -> bool {
         self.final_check(part)
     }
@@ -174,7 +182,7 @@ mod tests {
         assert_eq!(mgr.diff[0], 3);
         assert_eq!(mgr.diff[1], 1);
 
-        // Moving from 0 to 1: diff_from=3 >= lowerbound(2)+weight(1)=3 → ok
+        // Moving from 0 to 1: diff_from=3 >= lowerbound(1)+weight(1)=2 → ok
         let move_info = MoveInfoV {
             v: nodes[2], // weight 1, in part 0
             from_part: 0,
@@ -229,9 +237,9 @@ mod tests {
 
     #[test]
     fn test_check_legal_not_satisfied() {
-        let netlist = SimpleNetlist::new(4, 0);
-        let mut mgr = FMConstrMgr::new(netlist, 0.5);
-        let part = vec![0u8, 0, 1, 1];
+        let netlist = SimpleNetlist::new(8, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.25);
+        let part = vec![0u8, 0, 0, 1, 1, 1, 1, 1];
         mgr.init(&part);
         let move_info = MoveInfoV {
             v: NodeIndex::new(0),
@@ -244,9 +252,9 @@ mod tests {
 
     #[test]
     fn test_check_legal_get_better() {
-        let netlist = SimpleNetlist::new(4, 0);
-        let mut mgr = FMConstrMgr::new(netlist, 0.5);
-        let part = vec![0u8, 0, 0, 0];
+        let netlist = SimpleNetlist::new(8, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.25);
+        let part = vec![0u8, 0, 0, 0, 0, 0, 0, 1];
         mgr.init(&part);
         let move_info = MoveInfoV {
             v: NodeIndex::new(0),
@@ -273,9 +281,9 @@ mod tests {
 
     #[test]
     fn test_check_constraints_false() {
-        let netlist = SimpleNetlist::new(4, 0);
-        let mut mgr = FMConstrMgr::new(netlist, 0.5);
-        let part = vec![0u8, 0, 1, 1];
+        let netlist = SimpleNetlist::new(8, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.25);
+        let part = vec![0u8, 0, 0, 1, 1, 1, 1, 1];
         mgr.init(&part);
         let move_info = MoveInfoV {
             v: NodeIndex::new(0),
@@ -323,9 +331,9 @@ mod tests {
 
     #[test]
     fn test_constr_mgr_interface_check_legal() {
-        let netlist = SimpleNetlist::new(4, 0);
-        let mut mgr = FMConstrMgr::new(netlist, 0.5);
-        let part = vec![0u8, 0, 0, 0];
+        let netlist = SimpleNetlist::new(8, 0);
+        let mut mgr = FMConstrMgr::new(netlist, 0.25);
+        let part = vec![0u8, 0, 0, 0, 0, 0, 0, 1];
         ConstrMgrInterface::init(&mut mgr, &part);
         let move_info = MoveInfoV {
             v: NodeIndex::new(0),
@@ -389,13 +397,11 @@ mod tests {
 
     #[test]
     fn test_chain_move_legal_checks() {
-        let netlist = SimpleNetlist::new(4, 0);
+        let netlist = SimpleNetlist::new(8, 0);
         let mut mgr = FMConstrMgr::new(netlist, 0.25);
-        let part = vec![0u8, 0, 1, 1];
+        let part = vec![0u8, 0, 0, 0, 1, 1, 1, 1];
         mgr.init(&part);
-        // diff = [2, 2], lowerbound = 1
 
-        // Move vertex 0 from part 0 to part 1 → AllSatisfied
         let move_info = MoveInfoV {
             v: NodeIndex::new(0),
             from_part: 0,
@@ -404,9 +410,7 @@ mod tests {
         assert_eq!(mgr.check_legal(&move_info), LegalCheck::AllSatisfied);
 
         mgr.update_move(&move_info);
-        // diff = [1, 3]
 
-        // Move vertex 1 from part 0 to part 1 → NotSatisfied
         let move_info2 = MoveInfoV {
             v: NodeIndex::new(1),
             from_part: 0,
@@ -414,9 +418,8 @@ mod tests {
         };
         assert_eq!(mgr.check_legal(&move_info2), LegalCheck::NotSatisfied);
 
-        // Move vertex 2 from part 1 to part 0 → AllSatisfied
         let move_info3 = MoveInfoV {
-            v: NodeIndex::new(2),
+            v: NodeIndex::new(4),
             from_part: 1,
             to_part: 0,
         };
@@ -425,9 +428,9 @@ mod tests {
 
     #[test]
     fn test_chain_move_constraints() {
-        let netlist = SimpleNetlist::new(4, 0);
+        let netlist = SimpleNetlist::new(8, 0);
         let mut mgr = FMConstrMgr::new(netlist, 0.25);
-        let part = vec![0u8, 0, 1, 1];
+        let part = vec![0u8, 0, 0, 0, 1, 1, 1, 1];
         mgr.init(&part);
 
         let move_info = MoveInfoV {
@@ -437,7 +440,6 @@ mod tests {
         };
         assert!(mgr.check_constraints(&move_info));
 
-        // Rust update_move requires weight_cache from check_legal
         let _ = mgr.check_legal(&move_info);
         mgr.update_move(&move_info);
 
@@ -473,7 +475,7 @@ mod tests {
         let mut mgr = FMConstrMgr::with_num_parts(netlist, 0.3, 3);
         let part = vec![0u8, 0, 1, 1, 2, 2];
         mgr.init(&part);
-        // diff = [2, 2, 2], totalweight = 6, totalweightK = 6 * 2/3 = 4, lowerbound = round(4*0.3) = 1
+        // diff = [2, 2, 2], totalweight = 6, lowerbound = round((1 - 0.3) * 6 / 3) = 1
 
         let move_info = MoveInfoV {
             v: NodeIndex::new(0),

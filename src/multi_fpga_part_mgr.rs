@@ -96,6 +96,7 @@ impl MultiFPGAPartMgr {
         (true, details)
     }
 
+    #[inline]
     pub fn optimize_inter_fpga_connections(&self, partition: &[u8]) -> Vec<u8> {
         partition.to_vec()
     }
