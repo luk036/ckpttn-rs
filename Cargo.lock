@@ -106,7 +106,7 @@ dependencies = [
 
 [[package]]
 name = "ckpttn-rs"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "criterion",
  "netlistx-rs",
