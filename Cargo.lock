@@ -356,12 +356,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
-name = "netlistx-rs"
-version = "0.1.5"
+name = "mwmatching"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04ee091e875abd15ce6d40f3ff0c868143ff420d7797befa9a6497a10a19dddf"
+checksum = "f13b50448d988736cc2c938a76ae336241fcb31a225017c0e3121bd349e7dc06"
+
+[[package]]
+name = "netlistx-rs"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bc9561060db2ae97311c3c090ba3fedc17cb1f65a719706eff7959b6445b003"
 dependencies = [
  "indexmap",
+ "mwmatching",
  "petgraph",
  "rand",
  "serde",
